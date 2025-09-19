@@ -1,9 +1,18 @@
-import { View, Text } from 'react-native';
+import React from 'react';
+import { SafeAreaView, StyleSheet } from 'react-native';
+import SandboxScreen from './screens/SandboxScreen';
 
 export default function App() {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Galactic Havoc – Iniciando...</Text>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <SandboxScreen />
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+});
