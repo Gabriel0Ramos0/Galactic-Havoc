@@ -38,10 +38,6 @@ export default function SandboxScreen() {
     pointLight.position.set(10, 10, 10);
     scene.add(pointLight);
 
-    // Estrelas
-    const stars = await createStars();
-    scene.add(stars);
-
     // Nave
     const shipGeometry = new THREE.ConeGeometry(0.5, 1, 16);
     const shipMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffcc });
@@ -53,13 +49,17 @@ export default function SandboxScreen() {
 
     const velocity = new THREE.Vector3(0, 0, +0.1);
 
+    // Estrelas
+    const stars = await createStars();
+    scene.add(stars);
+
     // Loop de animação
     const animate = () => {
       requestAnimationFrame(animate);
 
       ship.position.add(velocity); // nave anda pra frente
       updateCamera();
-
+      stars.recycle(ship.position);
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };
