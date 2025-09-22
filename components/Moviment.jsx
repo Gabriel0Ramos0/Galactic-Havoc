@@ -1,0 +1,80 @@
+import * as THREE from "three";
+import { useEffect, useRef } from "react";
+
+export default function useMovement(shipRef) {
+    const velocity = useRef(new THREE.Vector3(0, 0, 0));
+    const acceleration = useRef(new THREE.Vector3(0, 0, 0));
+    const joystickDelta = useRef({ x: 0, y: 0 });
+
+    const keys = useRef({
+        w: false,
+        a: false,
+        s: false,
+        d: false,
+        ArrowUp: false,
+        ArrowDown: false,
+    });
+
+    const speed = 0.02;
+    const friction = 0.95;
+    const rotationSmoothness = 0.1;
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (keys.current.hasOwnProperty(e.key)) {
+                keys.current[e.key] = true;
+            }
+        };
+        const handleKeyUp = (e) => {
+            if (keys.current.hasOwnProperty(e.key)) {
+                keys.current[e.key] = false;
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keyup", handleKeyUp);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("keyup", handleKeyUp);
+        };
+    }, []);
+
+    const updateShip = () => {
+        if (!shipRef.current) return;
+
+        acceleration.current.set(0, 0, 0);
+
+        if (joystickDelta.current.x !== 0 || joystickDelta.current.y !== 0) {
+            acceleration.current.x += joystickDelta.current.x * speed;
+            acceleration.current.z -= joystickDelta.current.y * speed;
+        }
+
+        if (keys.current.w) acceleration.current.z += speed;
+        if (keys.current.s) acceleration.current.z -= speed;
+        if (keys.current.a) acceleration.current.x += speed;
+        if (keys.current.d) acceleration.current.x -= speed;
+        if (keys.current.ArrowUp) acceleration.current.y += speed;
+        if (keys.current.ArrowDown) acceleration.current.y -= speed;
+
+        velocity.current.add(acceleration.current);
+        velocity.current.multiplyScalar(friction);
+
+        shipRef.current.position.add(velocity.current);
+
+        if (velocity.current.lengthSq() > 0.0001) {
+            const target = new THREE.Vector3().copy(shipRef.current.position).add(velocity.current);
+            const targetQuaternion = new THREE.Quaternion();
+            const dummy = new THREE.Object3D();
+            dummy.position.copy(shipRef.current.position);
+            dummy.lookAt(target);
+            dummy.rotateX(Math.PI / 2);
+            targetQuaternion.copy(dummy.quaternion);
+            shipRef.current.quaternion.slerp(targetQuaternion, rotationSmoothness);
+        }
+    };
+    return {
+        updateShip,
+        joystickDelta,
+    };
+}

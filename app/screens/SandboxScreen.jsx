@@ -3,12 +3,11 @@ import React, { useRef } from "react";
 import { View, StyleSheet } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
-import { Asset } from "expo-asset";
-import { Platform } from "react-native";
 import * as THREE from "three";
 
 import useCameraController from "@/components/CameraController";
 import createStars from "@/components/Star";
+import useMovement from "@/components/Moviment";
 
 export default function SandboxScreen() {
   const glRef = useRef();
@@ -16,6 +15,7 @@ export default function SandboxScreen() {
   const shipRef = useRef();
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
+  const { updateShip } = useMovement(shipRef);
 
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
@@ -47,8 +47,6 @@ export default function SandboxScreen() {
     scene.add(ship);
     shipRef.current = ship;
 
-    const velocity = new THREE.Vector3(0, 0, +0.1);
-
     // Estrelas
     const stars = await createStars();
     scene.add(stars);
@@ -57,7 +55,7 @@ export default function SandboxScreen() {
     const animate = () => {
       requestAnimationFrame(animate);
 
-      ship.position.add(velocity); // nave anda pra frente
+      updateShip();
       updateCamera();
       stars.recycle(ship.position);
       renderer.render(scene, camera);

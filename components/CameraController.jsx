@@ -1,52 +1,38 @@
-// app/components/CameraController.jsx
 import { useRef } from "react";
 import { PanResponder, Platform } from "react-native";
+import * as THREE from "three";
 
-export default function useCameraController(cameraRef, shipRef) {
-  const orbit = useRef({ theta: 0, phi: Math.PI / 4, radius: 6 });
+export default function useCameraController(cameraRef, shipRef, velocityRef) {
+  const orbit = useRef({ theta: Math.PI, phi: Math.PI / 8, radius: 6 });
   const isDragging = useRef(false);
   const lastTouch = useRef({ x: 0, y: 0 });
-  const pinchDistance = useRef(null); // para zoom por pinça no mobile
+  const pinchDistance = useRef(null);
 
-  // Atualiza o zoom (mantém limites)
   const applyZoom = (delta) => {
-    orbit.current.radius = Math.max(
-      2,
-      Math.min(50, orbit.current.radius + delta)
-    );
+    orbit.current.radius = Math.max(2, Math.min(50, orbit.current.radius + delta));
   };
 
-  // PanResponder para drag e pinch
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
         if (evt.nativeEvent.touches.length === 2) {
-          // iniciar pinça
           const [a, b] = evt.nativeEvent.touches;
           const dx = a.pageX - b.pageX;
           const dy = a.pageY - b.pageY;
           pinchDistance.current = Math.sqrt(dx * dx + dy * dy);
         } else {
           isDragging.current = true;
-          lastTouch.current = {
-            x: evt.nativeEvent.locationX,
-            y: evt.nativeEvent.locationY,
-          };
+          lastTouch.current = { x: evt.nativeEvent.locationX, y: evt.nativeEvent.locationY };
         }
       },
       onPanResponderMove: (evt) => {
         if (evt.nativeEvent.touches.length === 2) {
-          // gesto de pinça → zoom
           const [a, b] = evt.nativeEvent.touches;
           const dx = a.pageX - b.pageX;
           const dy = a.pageY - b.pageY;
           const newDistance = Math.sqrt(dx * dx + dy * dy);
-
-          if (pinchDistance.current) {
-            const delta = (pinchDistance.current - newDistance) * 0.01;
-            applyZoom(delta);
-          }
+          if (pinchDistance.current) applyZoom((pinchDistance.current - newDistance) * 0.01);
           pinchDistance.current = newDistance;
           return;
         }
@@ -55,16 +41,10 @@ export default function useCameraController(cameraRef, shipRef) {
         const dx = evt.nativeEvent.locationX - lastTouch.current.x;
         const dy = evt.nativeEvent.locationY - lastTouch.current.y;
 
-        orbit.current.theta += dx * 0.005; // Giroscópico
-        orbit.current.phi = Math.max(
-          0.1,
-          Math.min(Math.PI - 0.1, orbit.current.phi - dy * 0.005)
-        );
+        orbit.current.theta += dx * 0.005;
+        orbit.current.phi = Math.max(0.05, Math.min(Math.PI / 2, orbit.current.phi - dy * 0.005));
 
-        lastTouch.current = {
-          x: evt.nativeEvent.locationX,
-          y: evt.nativeEvent.locationY,
-        };
+        lastTouch.current = { x: evt.nativeEvent.locationX, y: evt.nativeEvent.locationY };
       },
       onPanResponderRelease: () => {
         isDragging.current = false;
@@ -73,26 +53,34 @@ export default function useCameraController(cameraRef, shipRef) {
     })
   ).current;
 
-  // Handler para scroll no Web
   const onWheel = (event) => {
     if (Platform.OS === "web") {
-      const delta = event.deltaY * 0.01;
-      applyZoom(delta);
+      applyZoom(event.deltaY * 0.01);
     }
   };
 
-  // Atualização da posição da câmera
+  const lastDirection = useRef(new THREE.Vector3(0, 0, 1));
+
   const updateCamera = () => {
     if (!cameraRef.current || !shipRef.current) return;
 
-    const target = shipRef.current.position;
-    const { theta, phi, radius } = orbit.current;
+    const target = shipRef.current.position.clone();
+    const velocity = velocityRef?.current || new THREE.Vector3();
 
-    const x = target.x + radius * Math.sin(phi) * Math.cos(theta);
-    const y = target.y + radius * Math.cos(phi);
-    const z = target.z + radius * Math.sin(phi) * Math.sin(theta);
+    const offsetDistance = orbit.current.radius;
+    const offsetHeight = orbit.current.radius * 0.2;
 
-    cameraRef.current.position.set(x, y, z);
+    let desiredPos = new THREE.Vector3();
+
+    if (velocity.length() > 0.001) {
+      lastDirection.current.copy(velocity).normalize();
+    }
+
+    const back = lastDirection.current.clone().multiplyScalar(-offsetDistance);
+    desiredPos.set(target.x + back.x, target.y + back.y + offsetHeight, target.z + back.z);
+
+    // interpolação suave
+    cameraRef.current.position.lerp(desiredPos, 0.1);
     cameraRef.current.lookAt(target);
   };
 
