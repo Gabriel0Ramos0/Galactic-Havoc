@@ -14,7 +14,7 @@ export default function SandboxScreen() {
   const cameraRef = useRef();
   const shipRef = useRef();
 
-  const { panHandlers, updateCamera } = useCameraController(cameraRef, shipRef);
+  const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
 
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
@@ -103,7 +103,7 @@ export default function SandboxScreen() {
   };
 
   return (
-    <View style={styles.container} {...panHandlers}>
+    <View style={styles.container} {...panHandlers} onWheel={onWheel}>
       <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
     </View>
   );
