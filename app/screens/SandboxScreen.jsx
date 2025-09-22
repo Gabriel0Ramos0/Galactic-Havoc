@@ -1,50 +1,20 @@
 // app/screens/SandboxScreen.jsx
-import React, { useRef, useEffect } from "react";
-import { View, StyleSheet, PanResponder } from "react-native";
+import React, { useRef } from "react";
+import { View, StyleSheet } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
-import { Asset } from 'expo-asset';
-import { Platform } from 'react-native';
+import { Asset } from "expo-asset";
+import { Platform } from "react-native";
 import * as THREE from "three";
+
+import useCameraController from "@/components/CameraController";
 
 export default function SandboxScreen() {
   const glRef = useRef();
   const cameraRef = useRef();
   const shipRef = useRef();
-  const orbit = useRef({ theta: 0, phi: Math.PI / 4, radius: 6 });
-  const isDragging = useRef(false);
-  const lastTouch = useRef({ x: 0, y: 0 });
 
-  // PanResponder para arrastar e girar a câmera
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
-        isDragging.current = true;
-        lastTouch.current = {
-          x: evt.nativeEvent.locationX,
-          y: evt.nativeEvent.locationY,
-        };
-      },
-      onPanResponderMove: (evt) => {
-        if (!isDragging.current) return;
-        const dx = evt.nativeEvent.locationX - lastTouch.current.x;
-        const dy = evt.nativeEvent.locationY - lastTouch.current.y;
-        orbit.current.theta += dx * 0.005; // sensibilidade horizontal
-        orbit.current.phi = Math.max(
-          0.1,
-          Math.min(Math.PI - 0.1, orbit.current.phi - dy * 0.005)
-        );
-        lastTouch.current = {
-          x: evt.nativeEvent.locationX,
-          y: evt.nativeEvent.locationY,
-        };
-      },
-      onPanResponderRelease: () => {
-        isDragging.current = false;
-      },
-    })
-  ).current;
+  const { panHandlers, updateCamera } = useCameraController(cameraRef, shipRef);
 
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
@@ -67,7 +37,7 @@ export default function SandboxScreen() {
     pointLight.position.set(10, 10, 10);
     scene.add(pointLight);
 
-    /// Estrelas
+    // Estrelas
     const starGeometry = new THREE.BufferGeometry();
     const starCount = 5000;
     const starVertices = [];
@@ -79,14 +49,13 @@ export default function SandboxScreen() {
       );
     }
     starGeometry.setAttribute(
-      'position',
+      "position",
       new THREE.Float32BufferAttribute(starVertices, 3)
     );
 
     let starMaterial;
-    if (Platform.OS === 'web') {
-      // Textura funciona no web
-      const asset = Asset.fromModule(require('../assets/textures/circle.png'));
+    if (Platform.OS === "web") {
+      const asset = Asset.fromModule(require("@/assets/textures/circle.png"));
       await asset.downloadAsync();
       const starTexture = new THREE.TextureLoader().load(asset.localUri);
 
@@ -98,7 +67,6 @@ export default function SandboxScreen() {
         alphaTest: 0.5,
       });
     } else {
-      // Mobile: usar cor sólida
       starMaterial = new THREE.PointsMaterial({
         color: 0xffffff,
         size: 1.5,
@@ -110,7 +78,7 @@ export default function SandboxScreen() {
     const stars = new THREE.Points(starGeometry, starMaterial);
     scene.add(stars);
 
-    // Nave (cone)
+    // Nave
     const shipGeometry = new THREE.ConeGeometry(0.5, 1, 16);
     const shipMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffcc });
     const ship = new THREE.Mesh(shipGeometry, shipMaterial);
@@ -119,23 +87,14 @@ export default function SandboxScreen() {
     scene.add(ship);
     shipRef.current = ship;
 
-    const velocity = new THREE.Vector3(0, 0, -0.1); // velocidade da nave
+    const velocity = new THREE.Vector3(0, 0, +0.1);
 
-    // Animação
+    // Loop de animação
     const animate = () => {
       requestAnimationFrame(animate);
 
-      // Movimento da nave
-      ship.position.add(velocity);
-
-      // Atualiza posição da câmera ao redor da nave
-      const target = ship.position;
-      const { theta, phi, radius } = orbit.current;
-      const x = target.x + radius * Math.sin(phi) * Math.cos(theta);
-      const y = target.y + radius * Math.cos(phi);
-      const z = target.z + radius * Math.sin(phi) * Math.sin(theta);
-      camera.position.set(x, y, z);
-      camera.lookAt(target);
+      ship.position.add(velocity); // nave anda pra frente
+      updateCamera();
 
       renderer.render(scene, camera);
       gl.endFrameEXP();
@@ -144,12 +103,8 @@ export default function SandboxScreen() {
   };
 
   return (
-    <View style={styles.container} {...panResponder.panHandlers}>
-      <GLView
-        style={{ flex: 1 }}
-        onContextCreate={onContextCreate}
-        ref={glRef}
-      />
+    <View style={styles.container} {...panHandlers}>
+      <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
     </View>
   );
 }
