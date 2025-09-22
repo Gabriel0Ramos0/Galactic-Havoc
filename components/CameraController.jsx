@@ -12,6 +12,9 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
     orbit.current.radius = Math.max(2, Math.min(50, orbit.current.radius + delta));
   };
 
+  // Vetor de direção atual da câmera, suavizado
+  const currentDirection = useRef(new THREE.Vector3(0, 1, 0));
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -59,30 +62,35 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
     }
   };
 
-  const lastDirection = useRef(new THREE.Vector3(0, 0, 1));
-
   const updateCamera = () => {
     if (!cameraRef.current || !shipRef.current) return;
 
     const target = shipRef.current.position.clone();
-    const velocity = velocityRef?.current || new THREE.Vector3();
 
+    // Direção desejada (frente da nave)
+    const desiredDirection = new THREE.Vector3(0, 1, 0);
+    desiredDirection.applyQuaternion(shipRef.current.quaternion).normalize();
+
+    // Suaviza a direção atual
+    currentDirection.current.lerp(desiredDirection, 0.05);
+
+    // Calcula posição atrás da nave
     const offsetDistance = orbit.current.radius;
-    const offsetHeight = orbit.current.radius * 0.2;
+    const offsetHeight = orbit.current.radius * 0.3;
 
-    let desiredPos = new THREE.Vector3();
+    const desiredPos = target.clone().sub(currentDirection.current.clone().multiplyScalar(offsetDistance));
+    desiredPos.y += offsetHeight;
 
-    if (velocity.length() > 0.001) {
-      lastDirection.current.copy(velocity).normalize();
-    }
+    // Suaviza posição
+    cameraRef.current.position.lerp(desiredPos, 0.05);
 
-    const back = lastDirection.current.clone().multiplyScalar(-offsetDistance);
-    desiredPos.set(target.x + back.x, target.y + back.y + offsetHeight, target.z + back.z);
-
-    // interpolação suave
-    cameraRef.current.position.lerp(desiredPos, 0.1);
+    // Suaviza rotação
+    const desiredQuat = new THREE.Quaternion();
     cameraRef.current.lookAt(target);
+    desiredQuat.copy(cameraRef.current.quaternion);
+    cameraRef.current.quaternion.slerp(desiredQuat, 0.05);
   };
+
 
   return { panHandlers: panResponder.panHandlers, onWheel, updateCamera };
 }

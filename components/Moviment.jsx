@@ -50,10 +50,18 @@ export default function useMovement(shipRef) {
             acceleration.current.z -= joystickDelta.current.y * speed;
         }
 
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(shipRef.current.quaternion);
+        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipRef.current.quaternion);
+
+        // Teclas de movimento
+
+        // recalcular direção da nave
+        // recolocar movimentação da camera em volta da nave
+
         if (keys.current.w) acceleration.current.z += speed;
         if (keys.current.s) acceleration.current.z -= speed;
-        if (keys.current.a) acceleration.current.x += speed;
-        if (keys.current.d) acceleration.current.x -= speed;
+        if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(speed));
+        if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(-speed));
         if (keys.current.ArrowUp) acceleration.current.y += speed;
         if (keys.current.ArrowDown) acceleration.current.y -= speed;
 
