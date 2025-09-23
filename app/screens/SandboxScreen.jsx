@@ -1,13 +1,16 @@
 // app/screens/SandboxScreen.jsx
 import React, { useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
+import { Platform } from "react-native";
+import styles from "./style";
 
 import useCameraController from "@/components/CameraController";
 import createStars from "@/components/Star";
 import useMovement from "@/components/Moviment";
+import Joystick from "@/components/Joystick";
 
 export default function SandboxScreen() {
   const glRef = useRef();
@@ -15,7 +18,7 @@ export default function SandboxScreen() {
   const shipRef = useRef();
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
-  const { updateShip } = useMovement(shipRef);
+  const { updateShip, joystickDelta } = useMovement(shipRef);
 
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
@@ -67,13 +70,14 @@ export default function SandboxScreen() {
   return (
     <View style={styles.container} {...panHandlers} onWheel={onWheel}>
       <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
+
+      {Platform.OS !== "web" && (
+        <Joystick
+          onMove={(delta) => {
+            joystickDelta.current = delta;
+          }}
+        />
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-});

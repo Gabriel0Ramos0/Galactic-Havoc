@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 export default function useMovement(shipRef) {
     const velocity = useRef(new THREE.Vector3(0, 0, 0));
     const acceleration = useRef(new THREE.Vector3(0, 0, 0));
-    const joystickDelta = useRef({ x: 0, y: 0 });
 
     const keys = useRef({
         w: false,
@@ -14,6 +13,8 @@ export default function useMovement(shipRef) {
         ArrowUp: false,
         ArrowDown: false,
     });
+
+    const joystickDelta = useRef({ x: 0, y: 0, yUpDown: 0 });
 
     const speed = 0.02;
     const friction = 0.95;
@@ -45,10 +46,6 @@ export default function useMovement(shipRef) {
 
         acceleration.current.set(0, 0, 0);
 
-        if (joystickDelta.current.x !== 0 || joystickDelta.current.y !== 0) {
-            acceleration.current.x += joystickDelta.current.x * speed;
-            acceleration.current.z -= joystickDelta.current.y * speed;
-        }
         const forward = new THREE.Vector3(0, 1, 0).applyQuaternion(shipRef.current.quaternion);
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipRef.current.quaternion);
 
@@ -58,6 +55,11 @@ export default function useMovement(shipRef) {
         if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(-speed));
         if (keys.current.ArrowUp) acceleration.current.y += speed;
         if (keys.current.ArrowDown) acceleration.current.y -= speed;
+
+        // Joystick mobile
+        acceleration.current.add(forward.clone().multiplyScalar(joystickDelta.current.y * speed));
+        acceleration.current.add(right.clone().multiplyScalar(joystickDelta.current.x * speed));
+        acceleration.current.y += joystickDelta.current.yUpDown * speed;
 
         velocity.current.add(acceleration.current);
         velocity.current.multiplyScalar(friction);
