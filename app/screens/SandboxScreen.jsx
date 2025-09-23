@@ -9,6 +9,7 @@ import styles from "./style";
 
 import useCameraController from "@/components/CameraController";
 import createStars from "@/components/Star";
+import { createShip } from "@/components/Nave";
 import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
 
@@ -42,12 +43,7 @@ export default function SandboxScreen() {
     scene.add(pointLight);
 
     // Nave
-    const shipGeometry = new THREE.ConeGeometry(0.5, 1, 16);
-    const shipMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffcc });
-    const ship = new THREE.Mesh(shipGeometry, shipMaterial);
-    ship.rotation.x = Math.PI / 2;
-    ship.position.set(0, -0.1, 0);
-    scene.add(ship);
+    const ship = createShip(scene);
     shipRef.current = ship;
 
     // Estrelas

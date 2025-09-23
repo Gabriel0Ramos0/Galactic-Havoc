@@ -3,7 +3,7 @@ import { PanResponder, Platform } from "react-native";
 import * as THREE from "three";
 
 export default function useCameraController(cameraRef, shipRef, velocityRef) {
-  const orbit = useRef({ theta: Math.PI, phi: Math.PI / 8, radius: 6 });
+  const orbit = useRef({ theta: Math.PI, phi: Math.PI / 8, radius: 15 });
   const isDragging = useRef(false);
   const lastTouch = useRef({ x: 0, y: 0 });
   const pinchDistance = useRef(null);
