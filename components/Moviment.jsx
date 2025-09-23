@@ -50,16 +50,12 @@ export default function useMovement(shipRef) {
             acceleration.current.z -= joystickDelta.current.y * speed;
         }
 
-        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(shipRef.current.quaternion);
+        const forward = new THREE.Vector3(0, 1, 0).applyQuaternion(shipRef.current.quaternion);
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipRef.current.quaternion);
 
         // Teclas de movimento
-
-        // recalcular direção da nave
-        // recolocar movimentação da camera em volta da nave
-
-        if (keys.current.w) acceleration.current.z += speed;
-        if (keys.current.s) acceleration.current.z -= speed;
+        if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(speed));
+        if (keys.current.s) acceleration.current.add(forward.clone().multiplyScalar(-speed));
         if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(speed));
         if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(-speed));
         if (keys.current.ArrowUp) acceleration.current.y += speed;
@@ -71,15 +67,18 @@ export default function useMovement(shipRef) {
         shipRef.current.position.add(velocity.current);
 
         if (velocity.current.lengthSq() > 0.0001) {
-            const target = new THREE.Vector3().copy(shipRef.current.position).add(velocity.current);
-            const targetQuaternion = new THREE.Quaternion();
-            const dummy = new THREE.Object3D();
-            dummy.position.copy(shipRef.current.position);
-            dummy.lookAt(target);
-            dummy.rotateX(Math.PI / 2);
-            targetQuaternion.copy(dummy.quaternion);
-            shipRef.current.quaternion.slerp(targetQuaternion, rotationSmoothness);
+            if (!keys.current.s) {
+                const target = new THREE.Vector3().copy(shipRef.current.position).add(velocity.current);
+                const targetQuaternion = new THREE.Quaternion();
+                const dummy = new THREE.Object3D();
+                dummy.position.copy(shipRef.current.position);
+                dummy.lookAt(target);
+                dummy.rotateX(Math.PI / 2);
+                targetQuaternion.copy(dummy.quaternion);
+                shipRef.current.quaternion.slerp(targetQuaternion, rotationSmoothness);
+            }
         }
+
     };
     return {
         updateShip,
