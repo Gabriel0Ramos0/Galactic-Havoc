@@ -45,7 +45,7 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
         const dy = evt.nativeEvent.locationY - lastTouch.current.y;
 
         orbit.current.theta += dx * 0.005;
-        orbit.current.phi = Math.max(0.05, Math.min(Math.PI / 2, orbit.current.phi - dy * 0.005));
+        orbit.current.phi = Math.max(0.05, Math.min(Math.PI - 0.01, orbit.current.phi - dy * 0.005));
 
         lastTouch.current = { x: evt.nativeEvent.locationX, y: evt.nativeEvent.locationY };
       },
@@ -67,30 +67,35 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
 
     const target = shipRef.current.position.clone();
 
-    // Direção desejada (frente da nave)
-    const desiredDirection = new THREE.Vector3(0, 1, 0);
-    desiredDirection.applyQuaternion(shipRef.current.quaternion).normalize();
+    let desiredPos;
 
-    // Suaviza a direção atual
-    currentDirection.current.lerp(desiredDirection, 0.05);
+    if (isDragging.current) {
+      const x = orbit.current.radius * Math.sin(orbit.current.phi) * Math.sin(orbit.current.theta);
+      const y = orbit.current.radius * Math.cos(orbit.current.phi);
+      const z = orbit.current.radius * Math.sin(orbit.current.phi) * Math.cos(orbit.current.theta);
+      desiredPos = target.clone().add(new THREE.Vector3(x, y, z));
+    } else {
+      const desiredDirection = new THREE.Vector3(0, 1, 0)
+        .applyQuaternion(shipRef.current.quaternion)
+        .normalize();
 
-    // Calcula posição atrás da nave
-    const offsetDistance = orbit.current.radius;
-    const offsetHeight = orbit.current.radius * 0.3;
+      currentDirection.current.lerp(desiredDirection, 0.05);
 
-    const desiredPos = target.clone().sub(currentDirection.current.clone().multiplyScalar(offsetDistance));
-    desiredPos.y += offsetHeight;
+      const offsetDistance = orbit.current.radius;
+      const offsetHeight = orbit.current.radius * 0.3;
 
-    // Suaviza posição
+      desiredPos = target.clone()
+        .sub(currentDirection.current.clone().multiplyScalar(offsetDistance));
+      desiredPos.y += offsetHeight;
+    }
     cameraRef.current.position.lerp(desiredPos, 0.05);
 
-    // Suaviza rotação
+    // Rotação sempre olhando para a nave
     const desiredQuat = new THREE.Quaternion();
     cameraRef.current.lookAt(target);
     desiredQuat.copy(cameraRef.current.quaternion);
     cameraRef.current.quaternion.slerp(desiredQuat, 0.05);
   };
-
 
   return { panHandlers: panResponder.panHandlers, onWheel, updateCamera };
 }
