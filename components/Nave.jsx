@@ -10,8 +10,7 @@ export function createShip(scene) {
         require("../assets/models/Nave/neghvar.obj"),
         (object) => {
             object.scale.set(1, 1, 1);
-            object.rotation.x = Math.PI / 2; // deita para frente (X)
-            object.rotation.z = -Math.PI * 2; // gira a nave 180° em X
+            object.rotation.x = Math.PI / 2;
             ship.add(object);
         },
         (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% carregado"),

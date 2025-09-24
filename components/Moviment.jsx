@@ -51,8 +51,8 @@ export default function useMovement(shipRef) {
 
         if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(speed));
         if (keys.current.s) acceleration.current.add(forward.clone().multiplyScalar(-speed));
-        if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(speed));
-        if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(-speed));
+        if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-speed));
+        if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(speed));
         if (keys.current.ArrowUp) acceleration.current.y += speed;
         if (keys.current.ArrowDown) acceleration.current.y -= speed;
 
@@ -74,6 +74,7 @@ export default function useMovement(shipRef) {
                 dummy.position.copy(shipRef.current.position);
                 dummy.lookAt(target);
                 dummy.rotateX(Math.PI / 2);
+                dummy.rotateY(Math.PI);
                 targetQuaternion.copy(dummy.quaternion);
                 shipRef.current.quaternion.slerp(targetQuaternion, rotationSmoothness);
             }
