@@ -12,11 +12,13 @@ export default function useMovement(shipRef) {
         d: false,
         ArrowUp: false,
         ArrowDown: false,
+        Shift: false,
     });
 
     const joystickDelta = useRef({ x: 0, y: 0, yUpDown: 0 });
 
-    const speed = 0.02;
+    const speed = 0.05;
+    const warpMultiplier = 5;
     const friction = 0.95;
     const rotationSmoothness = 0.1;
 
@@ -48,18 +50,20 @@ export default function useMovement(shipRef) {
 
         const forward = new THREE.Vector3(0, 1, 0).applyQuaternion(shipRef.current.quaternion);
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipRef.current.quaternion);
+        const currentSpeed = keys.current.Shift ? speed * warpMultiplier : speed;
 
-        if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(speed));
-        if (keys.current.s) acceleration.current.add(forward.clone().multiplyScalar(-speed));
-        if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-speed));
-        if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(speed));
-        if (keys.current.ArrowUp) acceleration.current.y += speed;
-        if (keys.current.ArrowDown) acceleration.current.y -= speed;
+        // Controles WASD + setas
+        if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(currentSpeed));
+        if (keys.current.s) acceleration.current.add(forward.clone().multiplyScalar(-currentSpeed));
+        if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-currentSpeed));
+        if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(currentSpeed));
+        if (keys.current.ArrowUp) acceleration.current.y += currentSpeed;
+        if (keys.current.ArrowDown) acceleration.current.y -= currentSpeed;
 
         // Joystick mobile
-        acceleration.current.add(forward.clone().multiplyScalar(joystickDelta.current.y * speed));
-        acceleration.current.add(right.clone().multiplyScalar(joystickDelta.current.x * speed));
-        acceleration.current.y += joystickDelta.current.yUpDown * speed;
+        acceleration.current.add(forward.clone().multiplyScalar(joystickDelta.current.y * currentSpeed));
+        acceleration.current.add(right.clone().multiplyScalar(joystickDelta.current.x * currentSpeed));
+        acceleration.current.y += joystickDelta.current.yUpDown * currentSpeed;
 
         velocity.current.add(acceleration.current);
         velocity.current.multiplyScalar(friction);

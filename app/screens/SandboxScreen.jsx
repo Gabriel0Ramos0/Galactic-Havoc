@@ -75,7 +75,6 @@ export default function SandboxScreen() {
 
       stars.recycle(ship.position, universeGroup.position, 900);
       suns.recycle(ship.position, universeGroup.position, 1500);
-       
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };
