@@ -6,7 +6,7 @@ export function createShip(scene) {
   const ship = new THREE.Group();
 
   mtlLoader.load(
-    require("../assets/models/Nave v2/d5class.mtl"),
+    require("../assets/models/Nave/neghvar.mtl"),
     (materials) => {
       materials.preload();
 
@@ -14,7 +14,7 @@ export function createShip(scene) {
       objLoader.setMaterials(materials);
 
       objLoader.load(
-        require("../assets/models/Nave v2/d5class.obj"),
+        require("../assets/models/Nave/neghvar.obj"),
         (object) => {
           object.scale.set(1, 1, 1);
           object.rotation.x = Math.PI / 2;
