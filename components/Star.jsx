@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Asset } from "expo-asset";
 import { Platform } from "react-native";
 
-export default async function createStars(starCount = 15000, spread = 2000) {
+export default async function createStars(starCount = 7000, spread = 2000) {
   const starGeometry = new THREE.BufferGeometry();
   const starVertices = [];
 
@@ -45,14 +45,16 @@ export default async function createStars(starCount = 15000, spread = 2000) {
 
   const stars = new THREE.Points(starGeometry, starMaterial);
 
-  // Função de reciclagem: atualiza posições baseado na nave
-  stars.recycle = (shipPosition, maxDistance = spread / 2) => {
+  stars.frustumCulled = false;
+
+  stars.recycle = (shipPosition, universePos, maxDistance = spread / 2) => {
     const positions = starGeometry.getAttribute("position");
 
     for (let i = 0; i < positions.count; i++) {
-      const x = positions.getX(i);
-      const y = positions.getY(i);
-      const z = positions.getZ(i);
+      // posição global da estrela
+      const x = positions.getX(i) + universePos.x;
+      const y = positions.getY(i) + universePos.y;
+      const z = positions.getZ(i) + universePos.z;
 
       const dx = x - shipPosition.x;
       const dy = y - shipPosition.y;
@@ -60,12 +62,11 @@ export default async function createStars(starCount = 15000, spread = 2000) {
       const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
       if (distance > maxDistance) {
-        // reposiciona a estrela à frente da nave
         positions.setXYZ(
           i,
-          shipPosition.x + (Math.random() - 0.5) * spread,
-          shipPosition.y + (Math.random() - 0.5) * spread,
-          shipPosition.z + (Math.random() - 0.5) * spread
+          shipPosition.x + (Math.random() - 0.5) * spread - universePos.x,
+          shipPosition.y + (Math.random() - 0.5) * spread - universePos.y,
+          shipPosition.z + (Math.random() - 0.5) * spread - universePos.z
         );
       }
     }

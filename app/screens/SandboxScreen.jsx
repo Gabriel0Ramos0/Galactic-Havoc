@@ -21,6 +21,8 @@ export default function SandboxScreen() {
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
   const { updateShip, joystickDelta } = useMovement(shipRef);
 
+  const view = 2000; // tamanho do cubo de visão
+
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
 
@@ -32,7 +34,7 @@ export default function SandboxScreen() {
     const scene = new THREE.Scene();
 
     // Câmera
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.01, 10000);
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 2000);
     cameraRef.current = camera;
 
     // Luz
@@ -47,16 +49,18 @@ export default function SandboxScreen() {
     shipRef.current = ship;
     ship.position.set(0, 0, 0);
 
-    // Grupo do universo
+    // Universo
     const universeGroup = new THREE.Group();
     scene.add(universeGroup);
 
     // Estrelas
     const stars = await createStars();
+    stars.children.forEach(s => s.frustumCulled = false);
     universeGroup.add(stars);
 
     // Sóis
-    const suns = await createSuns(5, 5000);
+    const suns = await createSuns(5, view);
+    suns.children.forEach(s => s.frustumCulled = false);
     universeGroup.add(suns);
 
     // Loop de animação
@@ -69,8 +73,9 @@ export default function SandboxScreen() {
       ship.position.set(0, 0, 0);
       universeGroup.position.sub(shipDelta);
 
-      suns.recycle(ship.position);
-      stars.recycle(ship.position);
+      stars.recycle(ship.position, universeGroup.position, 900);
+      suns.recycle(ship.position, universeGroup.position, 1500);
+       
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };
