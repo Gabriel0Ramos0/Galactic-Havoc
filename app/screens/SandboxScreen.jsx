@@ -1,14 +1,14 @@
 // app/screens/SandboxScreen.jsx
 import React, { useRef } from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import { View, Platform } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
-import { Platform } from "react-native";
 import styles from "./style";
 
 import useCameraController from "@/components/CameraController";
 import createStars from "@/components/Star";
+import createSuns from "@/components/Sun";
 import { createShip } from "@/components/Nave";
 import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
@@ -32,7 +32,7 @@ export default function SandboxScreen() {
     const scene = new THREE.Scene();
 
     // Câmera
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 2000);
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.01, 10000);
     cameraRef.current = camera;
 
     // Luz
@@ -45,10 +45,19 @@ export default function SandboxScreen() {
     // Nave
     const ship = createShip(scene);
     shipRef.current = ship;
+    ship.position.set(0, 0, 0);
+
+    // Grupo do universo
+    const universeGroup = new THREE.Group();
+    scene.add(universeGroup);
 
     // Estrelas
     const stars = await createStars();
-    scene.add(stars);
+    universeGroup.add(stars);
+
+    // Sóis
+    const suns = await createSuns(5, 5000);
+    universeGroup.add(suns);
 
     // Loop de animação
     const animate = () => {
@@ -56,6 +65,11 @@ export default function SandboxScreen() {
 
       updateShip();
       updateCamera();
+      const shipDelta = ship.position.clone();
+      ship.position.set(0, 0, 0);
+      universeGroup.position.sub(shipDelta);
+
+      suns.recycle(ship.position);
       stars.recycle(ship.position);
       renderer.render(scene, camera);
       gl.endFrameEXP();

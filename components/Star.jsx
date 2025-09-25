@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Asset } from "expo-asset";
 import { Platform } from "react-native";
 
-export default async function createStars(starCount = 5000, spread = 2000) {
+export default async function createStars(starCount = 15000, spread = 2000) {
   const starGeometry = new THREE.BufferGeometry();
   const starVertices = [];
 
