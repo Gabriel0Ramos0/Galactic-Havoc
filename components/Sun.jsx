@@ -19,7 +19,7 @@ export default async function createSuns(sunCount = 10, spread = 2000) {
     );
 
     for (let i = 0; i < sunCount; i++) {
-        const size = Math.random() * 5 + 25;
+        const size = Math.random() * (100 - 10) + 10;
         const sunGeometry = new THREE.SphereGeometry(size, 32, 32);
 
         const randomTexture = loadedTextures[Math.floor(Math.random() * loadedTextures.length)];

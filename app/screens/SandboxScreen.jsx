@@ -12,6 +12,7 @@ import createSuns from "@/components/Sun";
 import { createShip } from "@/components/Nave";
 import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
+import { setupLighting } from "@/components/lighting";
 
 export default function SandboxScreen() {
   const glRef = useRef();
@@ -37,13 +38,6 @@ export default function SandboxScreen() {
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 2000);
     cameraRef.current = camera;
 
-    // Luz
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 1);
-    pointLight.position.set(10, 10, 10);
-    scene.add(pointLight);
-
     // Nave
     const ship = createShip(scene);
     shipRef.current = ship;
@@ -62,6 +56,9 @@ export default function SandboxScreen() {
     const suns = await createSuns(5, view);
     suns.children.forEach(s => s.frustumCulled = false);
     universeGroup.add(suns);
+
+    // Iluminação global
+    setupLighting(scene, ship, suns.children);
 
     // Loop de animação
     const animate = () => {
