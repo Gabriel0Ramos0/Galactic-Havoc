@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Asset } from 'expo-asset';
+import { createSunLight } from "@/components/lighting";
 
 const textures = [
     require('@/assets/textures/sol.png'),
@@ -7,7 +8,7 @@ const textures = [
 ];
 
 export default async function createSuns(sunCount = 10, spread = 2000) {
-    const sun = new THREE.Group();
+    const sunsGroup = new THREE.Group();
 
     // Carregar todas as texturas primeiro
     const loadedTextures = await Promise.all(
@@ -40,11 +41,13 @@ export default async function createSuns(sunCount = 10, spread = 2000) {
 
         sunMesh.frustumCulled = false;
 
-        sun.add(sunMesh);
+        createSunLight(sunMesh, 1000, 1000);
+
+        sunsGroup.add(sunMesh);
     }
 
-    sun.recycle = (shipPosition, universePos, maxDistance = spread / 2) => {
-        sun.children.forEach((sunMesh) => {
+    sunsGroup.recycle = (shipPosition, universePos, maxDistance = spread) => {
+        sunsGroup.children.forEach((sunMesh) => {
             const x = sunMesh.position.x + universePos.x;
             const y = sunMesh.position.y + universePos.y;
             const z = sunMesh.position.z + universePos.z;
@@ -64,5 +67,5 @@ export default async function createSuns(sunCount = 10, spread = 2000) {
         });
     };
 
-    return sun;
+    return sunsGroup;
 }

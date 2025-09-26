@@ -1,17 +1,17 @@
 import * as THREE from "three";
 
 /**
+ * Configura a iluminação da nave
  * @param {THREE.Scene} scene
  * @param {THREE.Object3D} ship
- * @param {THREE.Group|THREE.Object3D[]} suns
  * @param {boolean} isWarpSpeed
  */
-export function setupLighting(scene, ship, suns = [], isWarpSpeed = false) {
-    // Luz ambiente
+
+export function setupShipLighting(scene, ship, isWarpSpeed = false) {
+    // 🔹 Luz ambiente
     const ambientLight = new THREE.DirectionalLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
-    // Luz interna da nave
     if (ship) {
         const shipLight = new THREE.PointLight(0x00ffff, 1, 50);
         shipLight.position.set(0, -5, 0);
@@ -36,17 +36,37 @@ export function setupLighting(scene, ship, suns = [], isWarpSpeed = false) {
             ship.add(engineLight);
         });
     }
+}
 
-    // Luz de cada sol
-    // Está com problema e não está batendo na nave direito
-    // suns.forEach((sun, index) => {
-    //     const intensity = 1 + Math.random() * 2;
-    //     const distance = 1000 + Math.random() * 2000;
+/**
+ * Cria luz de sol/planeta presa ao mesh
+ * @param {THREE.Object3D} sun - mesh do sol/planeta (a luz será adicionada como child)
+ * @param {Object} opts
+ * @param {number} opts.color
+ * @param {number} opts.intensity
+ * @param {number} opts.distance
+ * @param {number} opts.decay
+ * @param {boolean} opts.debug
+ */
+export function createSunLight(
+    sun,
+    {
+        color = 0xffcc66,
+        intensity = 1000,
+        distance = 1000,
+        decay = 1,
+        debug = false
+    } = {}
+) {
+    const sunLight = new THREE.PointLight(color, intensity, distance, decay);
+    sunLight.position.set(0, 0, 0);
+    sun.add(sunLight);
 
-    //     const sunLight = new THREE.PointLight(0xffcc66, intensity, distance);
-    //     sunLight.position.copy(sun.position);
+    if (debug) {
+        const helper = new THREE.PointLightHelper(sunLight, 1000);
+        sun.add(helper);
 
-    //     scene.add(sunLight);
-    // });
+    }
 
+    return sunLight;
 }

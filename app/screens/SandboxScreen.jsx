@@ -12,7 +12,7 @@ import createSuns from "@/components/Sun";
 import { createShip } from "@/components/Nave";
 import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
-import { setupLighting } from "@/components/lighting";
+import { setupShipLighting } from "@/components/lighting";
 
 export default function SandboxScreen() {
   const glRef = useRef();
@@ -53,12 +53,12 @@ export default function SandboxScreen() {
     universeGroup.add(stars);
 
     // Sóis
-    const suns = await createSuns(5, view);
+    const suns = await createSuns(3, view);
     suns.children.forEach(s => s.frustumCulled = false);
     universeGroup.add(suns);
 
-    // Iluminação global
-    setupLighting(scene, ship, suns.children);
+    // Iluminação Nave
+    setupShipLighting(scene, ship);
 
     // Loop de animação
     const animate = () => {
