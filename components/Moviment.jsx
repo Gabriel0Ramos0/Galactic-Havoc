@@ -65,7 +65,9 @@ export default function useMovement(shipRef) {
 
         // Controles WASD + setas
         if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(currentSpeed));
-        if (keys.current.s) acceleration.current.add(forward.clone().multiplyScalar(-currentSpeed));
+        if (keys.current.s) {
+            velocity.current.multiplyScalar(0.97);
+        }
         if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-currentSpeed));
         if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(currentSpeed));
         if (keys.current.ArrowUp) acceleration.current.y += currentSpeed;
@@ -86,7 +88,7 @@ export default function useMovement(shipRef) {
 
         shipRef.current.position.add(velocity.current);
 
-        if (velocity.current.lengthSq() > 0.0001 && !keys.current.s) {
+        if (velocity.current.lengthSq() > 0.0001) {
             const target = new THREE.Vector3().copy(shipRef.current.position).add(velocity.current);
             const targetQuaternion = new THREE.Quaternion();
             const dummy = new THREE.Object3D();
