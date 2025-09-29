@@ -19,8 +19,14 @@ export default function useMovement(shipRef) {
 
     const speed = 0.05;
     const warpMultiplier = 5;
-    const friction = 0.95;
+    const friction = 0.995;
     const rotationSmoothness = 0.1;
+
+    // controle de velocidade
+    const baseMaxSpeed = 2.5;
+    const warpMaxSpeed = 7;
+    const currentMaxSpeed = useRef(baseMaxSpeed);
+    const speedLerpFactor = 0.02;
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -48,9 +54,14 @@ export default function useMovement(shipRef) {
 
         acceleration.current.set(0, 0, 0);
 
+        const isWarp = keys.current.Shift;
+        const currentSpeed = isWarp ? speed * warpMultiplier : speed;
+        const targetMaxSpeed = isWarp ? warpMaxSpeed : baseMaxSpeed;
+
+        currentMaxSpeed.current += (targetMaxSpeed - currentMaxSpeed.current) * speedLerpFactor;
+
         const forward = new THREE.Vector3(0, 1, 0).applyQuaternion(shipRef.current.quaternion);
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipRef.current.quaternion);
-        const currentSpeed = keys.current.Shift ? speed * warpMultiplier : speed;
 
         // Controles WASD + setas
         if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(currentSpeed));
@@ -66,22 +77,25 @@ export default function useMovement(shipRef) {
         acceleration.current.y += joystickDelta.current.yUpDown * currentSpeed;
 
         velocity.current.add(acceleration.current);
+
+        if (velocity.current.length() > currentMaxSpeed.current) {
+            velocity.current.setLength(currentMaxSpeed.current);
+        }
+
         velocity.current.multiplyScalar(friction);
 
         shipRef.current.position.add(velocity.current);
 
-        if (velocity.current.lengthSq() > 0.0001) {
-            if (!keys.current.s) {
-                const target = new THREE.Vector3().copy(shipRef.current.position).add(velocity.current);
-                const targetQuaternion = new THREE.Quaternion();
-                const dummy = new THREE.Object3D();
-                dummy.position.copy(shipRef.current.position);
-                dummy.lookAt(target);
-                dummy.rotateX(Math.PI / 2);
-                dummy.rotateY(Math.PI);
-                targetQuaternion.copy(dummy.quaternion);
-                shipRef.current.quaternion.slerp(targetQuaternion, rotationSmoothness);
-            }
+        if (velocity.current.lengthSq() > 0.0001 && !keys.current.s) {
+            const target = new THREE.Vector3().copy(shipRef.current.position).add(velocity.current);
+            const targetQuaternion = new THREE.Quaternion();
+            const dummy = new THREE.Object3D();
+            dummy.position.copy(shipRef.current.position);
+            dummy.lookAt(target);
+            dummy.rotateX(Math.PI / 2);
+            dummy.rotateY(Math.PI);
+            targetQuaternion.copy(dummy.quaternion);
+            shipRef.current.quaternion.slerp(targetQuaternion, rotationSmoothness);
         }
     };
     return {
