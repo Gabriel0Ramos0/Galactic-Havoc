@@ -4,6 +4,7 @@ import * as THREE from "three";
 export function createShip(scene) {
   const mtlLoader = new MTLLoader();
   const ship = new THREE.Group();
+  //../assets/models/Nave v2/d5class.mtl
 
   mtlLoader.load(
     require("../assets/models/Nave/neghvar.mtl"),

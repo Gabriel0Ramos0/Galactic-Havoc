@@ -24,7 +24,7 @@ export default function useMovement(shipRef) {
 
     // controle de velocidade
     const baseMaxSpeed = 2.5;
-    const warpMaxSpeed = 7;
+    const warpMaxSpeed = 10;
     const currentMaxSpeed = useRef(baseMaxSpeed);
     const speedLerpFactor = 0.02;
 

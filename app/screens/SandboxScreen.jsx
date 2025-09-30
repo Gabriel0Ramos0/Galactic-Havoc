@@ -9,6 +9,7 @@ import styles from "./style";
 import useCameraController from "@/components/CameraController";
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
+import createAsteroids from "@/components/Asteroids";
 import { createShip } from "@/components/Nave";
 import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
@@ -57,6 +58,10 @@ export default function SandboxScreen() {
     suns.children.forEach(s => s.frustumCulled = false);
     universeGroup.add(suns);
 
+    // Asteroides
+    const asteroids = createAsteroids({ count: 300, spread: 8000 });
+    universeGroup.add(asteroids);
+
     // Iluminação Nave
     setupShipLighting(scene, ship);
 
@@ -72,6 +77,7 @@ export default function SandboxScreen() {
 
       stars.recycle(ship.position, universeGroup.position, 900);
       suns.recycle(ship.position, universeGroup.position, 1500);
+      asteroids.recycle(ship.position, universeGroup.position, 3000, 1200);
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };
