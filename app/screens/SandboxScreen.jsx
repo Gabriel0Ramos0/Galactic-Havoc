@@ -59,7 +59,7 @@ export default function SandboxScreen() {
     universeGroup.add(suns);
 
     // Asteroides
-    const asteroids = createAsteroids({ count: 300, spread: 8000 });
+    const asteroids = await createAsteroids({ count: 300, spread: 8000 });
     universeGroup.add(asteroids);
 
     // Iluminação Nave
