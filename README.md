@@ -39,5 +39,9 @@ Este projeto está licenciado sob a **MIT License**. Veja o arquivo [LICENSE](LI
 
 ## 🌟 Contribuição
 
-Contribuições são bem-vindas! Sinta-se à vontade para abrir **issues**, sugerir melhorias ou enviar **pull requests**.  
-Vamos juntos expandir o universo de **Galactic Havoc**! 🌠
+Contribuições são sempre bem-vindas!  
+Sinta-se à vontade para abrir **issues**, sugerir melhorias ou enviar **pull requests**.  
+Vamos juntos expandir o universo de **Galactic Havoc**! 🌠  
+
+### 👨‍🎨 Contribuidores
+- **[@GustavoWarmeling05](https://github.com/GustavoWarmeling05)** — responsável pela modelagem dos asteroides que hoje cruzam o nosso cosmos 🪨✨
