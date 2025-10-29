@@ -1,11 +1,12 @@
 // app/screens/SandboxScreen.jsx
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { View, Platform } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
 import styles from "./style";
 
+import Hud from "@/components/Hud";
 import useCameraController from "@/components/CameraController";
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
@@ -22,6 +23,9 @@ export default function SandboxScreen() {
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
   const { updateShip, joystickDelta } = useMovement(shipRef);
+
+  const [currentHP] = useState(100); // vida da nave
+  const [currentScore] = useState(0); // pontuação
 
   const view = 2000; // tamanho do cubo de visão
 
@@ -87,6 +91,13 @@ export default function SandboxScreen() {
   return (
     <View style={styles.container} {...panHandlers} onWheel={onWheel}>
       <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
+
+      <Hud
+        shipHP={currentHP}
+        score={currentScore}
+        onMenuPress={() => console.log("Menu pressionado")}
+      />
+
 
       {Platform.OS !== "web" && (
         <Joystick
