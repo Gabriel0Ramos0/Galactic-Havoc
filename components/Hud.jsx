@@ -2,7 +2,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
-export default function Hud({ shipHP = 100, score = 0, onMenuPress }) {
+export default function Hud({ shipHP = 100, score = 0, coords = { x: 0, y: 0, z: 0 }, onMenuPress }) {
+
   return (
     <View style={styles.container}>
       {/* Coluna esquerda: Vida */}
@@ -12,6 +13,10 @@ export default function Hud({ shipHP = 100, score = 0, onMenuPress }) {
           <View style={[styles.hpBarFill, { width: `${shipHP}%` }]} />
         </View>
         <Text style={styles.hpText}>{shipHP} HP</Text>
+        {/* Coordenadas */}
+        <Text style={styles.coords}>
+          X: {coords.x.toFixed(0)} Y: {coords.y.toFixed(0)} Z: {coords.z.toFixed(0)}
+        </Text>
       </View>
 
       {/* Coluna central: Pontuação */}
@@ -56,6 +61,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#555",
     borderRadius: 6,
     overflow: "hidden",
+  },
+  coords: {
+    fontSize: 12,
+    color: "#aaa",
+    marginTop: 4,
+    fontFamily: "monospace",
   },
   hpBarFill: {
     height: "100%",

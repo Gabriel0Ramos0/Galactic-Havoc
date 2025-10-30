@@ -26,6 +26,7 @@ export default function SandboxScreen() {
 
   const [currentHP] = useState(100); // vida da nave
   const [currentScore] = useState(0); // pontuação
+  const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
 
   const view = 2000; // tamanho do cubo de visão
 
@@ -79,6 +80,13 @@ export default function SandboxScreen() {
       ship.position.set(0, 0, 0);
       universeGroup.position.sub(shipDelta);
 
+      const scale = 0.01; // 100 unidades espaciais = 1 no HUD
+      setCoords({
+        x: (-universeGroup.position.x * scale),
+        y: (-universeGroup.position.y * scale),
+        z: (-universeGroup.position.z * scale),
+      });
+
       stars.recycle(ship.position, universeGroup.position, 900);
       suns.recycle(ship.position, universeGroup.position, 1500);
       asteroids.recycle(ship.position, universeGroup.position, 3000, 1200);
@@ -95,6 +103,7 @@ export default function SandboxScreen() {
       <Hud
         shipHP={currentHP}
         score={currentScore}
+        coords={coords}
         onMenuPress={() => console.log("Menu pressionado")}
       />
 
