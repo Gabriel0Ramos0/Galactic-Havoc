@@ -14,6 +14,7 @@ import createAsteroids from "@/components/Asteroids";
 import { createShip } from "@/components/Nave";
 import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
+import Menu from "@/components/Menu";
 import { setupShipLighting } from "@/components/lighting";
 
 export default function SandboxScreen() {
@@ -24,9 +25,10 @@ export default function SandboxScreen() {
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
   const { updateShip, joystickDelta } = useMovement(shipRef);
 
-  const [currentHP] = useState(100); // vida da nave
-  const [currentScore] = useState(0); // pontuação
+  const [currentHP] = useState(100);
+  const [currentScore] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
+  const [menuVisible, setMenuVisible] = useState(true);
 
   const view = 2000; // tamanho do cubo de visão
 
@@ -98,22 +100,30 @@ export default function SandboxScreen() {
 
   return (
     <View style={styles.container} {...panHandlers} onWheel={onWheel}>
-      <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
-
-      <Hud
-        shipHP={currentHP}
-        score={currentScore}
-        coords={coords}
-        onMenuPress={() => console.log("Menu pressionado")}
-      />
-
-
-      {Platform.OS !== "web" && (
-        <Joystick
-          onMove={(delta) => {
-            joystickDelta.current = delta;
-          }}
+      {menuVisible ? (
+        <Menu
+          onStart={() => setMenuVisible(false)}
+          onConfig={() => console.log("Abrir Configurações")}
+          onCredits={() => console.log("Mostrar Créditos")}
+          onExit={() => console.log("Sair do jogo")}
         />
+      ) : (
+        <>
+          <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
+          <Hud
+            shipHP={currentHP}
+            score={currentScore}
+            coords={coords}
+            onMenuPress={() => setMenuVisible(true)}
+          />
+          {Platform.OS !== "web" && (
+            <Joystick
+              onMove={(delta) => {
+                joystickDelta.current = delta;
+              }}
+            />
+          )}
+        </>
       )}
     </View>
   );
