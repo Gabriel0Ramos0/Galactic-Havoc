@@ -11,7 +11,10 @@ import useCameraController from "@/components/CameraController";
 import {
   startMenuMusic,
   stopMenuMusic,
-  startGameMusic
+  startGameMusic,
+  stopGameMusic,
+  setMusicVolume,
+  getMusicVolume
 } from "@/components/AudioController";
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
@@ -136,7 +139,10 @@ export default function SandboxScreen() {
             shipHP={currentHP}
             score={currentScore}
             coords={coords}
-            onMenuPress={() => setMenuVisible(true)}
+            onMenuPress={async () => {
+              setMenuVisible(true)
+              await stopGameMusic();
+            }}
           />
           {Platform.OS !== "web" && (
             <Joystick

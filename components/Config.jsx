@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Switch } from "react-native";
 import Slider from "@react-native-community/slider";
-import { setMusicVolume, getMusicVolume } from "@/components/AudioController";
+import { startMenuMusic, stopMenuMusic, setMusicVolume, getMusicVolume, setUseNostalgia, getUseNostalgia } from "@/components/AudioController";
 
 export default function Config({ visible, onClose }) {
   const [volume, setVolume] = useState(getMusicVolume());
+  const [nostalgia, setNostalgia] = useState(getUseNostalgia());
 
   useEffect(() => {
     setVolume(getMusicVolume());
@@ -15,11 +16,24 @@ export default function Config({ visible, onClose }) {
     await setMusicVolume(value);
   };
 
+  const toggleNostalgia = async (value) => {
+    setNostalgia(value);
+    setUseNostalgia(value);
+    await stopMenuMusic();
+    await startMenuMusic();
+  };
+
   return (
     <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.container}>
           <Text style={styles.title}>⚙️ Configurações</Text>
+
+          {/* Música nostálgica */}
+          <View style={styles.option}>
+            <Text style={styles.optionText}>🎶 Usar música nostálgica</Text>
+            <Switch value={nostalgia} onValueChange={toggleNostalgia} />
+          </View>
 
           <View style={styles.option}>
             <Text style={styles.optionText}>🎵 Volume</Text>
