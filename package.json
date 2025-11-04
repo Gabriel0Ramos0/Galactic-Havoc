@@ -42,7 +42,9 @@
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
     "three": "^0.166.0",
-    "three-stdlib": "^2.36.0"
+    "three-stdlib": "^2.36.0",
+    "expo-av": "~16.0.7",
+    "@react-native-community/slider": "5.0.1"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

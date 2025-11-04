@@ -1,5 +1,5 @@
 // app/screens/SandboxScreen.jsx
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { View, Platform } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
@@ -8,6 +8,11 @@ import styles from "./style";
 
 import Hud from "@/components/Hud";
 import useCameraController from "@/components/CameraController";
+import {
+  startMenuMusic,
+  stopMenuMusic,
+  startGameMusic
+} from "@/components/AudioController";
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";
@@ -15,6 +20,7 @@ import { createShip } from "@/components/Nave";
 import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
 import Menu from "@/components/Menu";
+import Config from "@/components/Config";
 import { setupShipLighting } from "@/components/lighting";
 
 export default function SandboxScreen() {
@@ -29,6 +35,17 @@ export default function SandboxScreen() {
   const [currentScore] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
   const [menuVisible, setMenuVisible] = useState(true);
+  const [configVisible, setConfigVisible] = useState(false);
+
+  // Controla a música do menu
+  useEffect(() => {
+    if (menuVisible) {
+      startMenuMusic();
+    } else {
+      stopMenuMusic();
+    }
+  }, [menuVisible]);
+
 
   const view = 2000; // tamanho do cubo de visão
 
@@ -102,10 +119,15 @@ export default function SandboxScreen() {
     <View style={styles.container} {...panHandlers} onWheel={onWheel}>
       {menuVisible ? (
         <Menu
-          onStart={() => setMenuVisible(false)}
-          onConfig={() => console.log("Abrir Configurações")}
+          onStart={async () => {
+            await stopMenuMusic();
+            await startGameMusic();
+            setMenuVisible(false);
+          }}
+          onConfig={() => setConfigVisible(true)}
           onCredits={() => console.log("Mostrar Créditos")}
           onExit={() => console.log("Sair do jogo")}
+          onLogin={() => console.log("Abrir tela de Login")}
         />
       ) : (
         <>
@@ -125,6 +147,7 @@ export default function SandboxScreen() {
           )}
         </>
       )}
+      <Config visible={configVisible} onClose={() => setConfigVisible(false)} />
     </View>
   );
 }
