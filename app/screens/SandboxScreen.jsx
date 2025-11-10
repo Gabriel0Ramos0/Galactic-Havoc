@@ -25,6 +25,7 @@ import Joystick from "@/components/Joystick";
 import Menu from "@/components/Menu";
 import Config from "@/components/Config";
 import { setupShipLighting } from "@/components/lighting";
+import CutsceneScreen from "@/components/CutsceneScreen";
 
 export default function SandboxScreen() {
   const glRef = useRef();
@@ -39,6 +40,8 @@ export default function SandboxScreen() {
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
   const [menuVisible, setMenuVisible] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
+  const [cutsceneVisible, setCutsceneVisible] = useState(true);
+  const [inGame, setInGame] = useState(false);
 
   // Controla a música do menu
   useEffect(() => {
@@ -118,21 +121,44 @@ export default function SandboxScreen() {
     animate();
   };
 
+  // Handlers para cutscene fim / pular
+  const handleCutsceneFinish = async () => {
+    // Ao terminar a cutscene, mostrar menu e tocar música do menu
+    setCutsceneVisible(false);
+    setMenuVisible(true);
+    setInGame(false);
+    // startMenuMusic() será chamado pelo useEffect de menuVisible
+  };
+
   return (
     <View style={styles.container} {...panHandlers} onWheel={onWheel}>
-      {menuVisible ? (
+      {/* CUTSCENE */}
+      {cutsceneVisible && (
+        <CutsceneScreen
+          onFinish={() => {
+            handleCutsceneFinish();
+          }}
+        />
+      )}
+
+      {/* MENU */}
+      {!cutsceneVisible && menuVisible && (
         <Menu
           onStart={async () => {
             await stopMenuMusic();
             await startGameMusic();
             setMenuVisible(false);
+            setInGame(true);
           }}
           onConfig={() => setConfigVisible(true)}
           onCredits={() => console.log("Mostrar Créditos")}
           onExit={() => console.log("Sair do jogo")}
           onLogin={() => console.log("Abrir tela de Login")}
         />
-      ) : (
+      )}
+
+      {/* JOGO (GLView + HUD) */}
+      {!cutsceneVisible && !menuVisible && inGame && (
         <>
           <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
           <Hud
@@ -140,7 +166,9 @@ export default function SandboxScreen() {
             score={currentScore}
             coords={coords}
             onMenuPress={async () => {
-              setMenuVisible(true)
+              // voltar ao menu a partir do jogo
+              setMenuVisible(true);
+              setInGame(false);
               await stopGameMusic();
             }}
           />
