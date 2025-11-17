@@ -123,11 +123,9 @@ export default function SandboxScreen() {
 
   // Handlers para cutscene fim / pular
   const handleCutsceneFinish = async () => {
-    // Ao terminar a cutscene, mostrar menu e tocar música do menu
     setCutsceneVisible(false);
     setMenuVisible(true);
     setInGame(false);
-    // startMenuMusic() será chamado pelo useEffect de menuVisible
   };
 
   return (
@@ -166,7 +164,6 @@ export default function SandboxScreen() {
             score={currentScore}
             coords={coords}
             onMenuPress={async () => {
-              // voltar ao menu a partir do jogo
               setMenuVisible(true);
               setInGame(false);
               await stopGameMusic();
