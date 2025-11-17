@@ -14,14 +14,11 @@ export default function CutsceneScreen({ onFinish }) {
   const [started, setStarted] = useState(false);
   const [ready, setReady] = useState(false);
   const videoRef = useRef(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current; // controla o fade
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Quando vídeo estiver pronto e iniciado
   useEffect(() => {
     if (started && ready && videoRef.current) {
-      console.log("🎬 Cutscene: vídeo pronto, iniciando reprodução...");
 
-      // Fade-in suave
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1000,
@@ -29,25 +26,22 @@ export default function CutsceneScreen({ onFinish }) {
       }).start();
 
       videoRef.current.playAsync().catch((e) => {
-        console.warn("Erro ao tocar vídeo:", e);
         onFinish && onFinish();
       });
     }
   }, [started, ready]);
 
   const handleStart = () => {
-    console.log("Cutscene: iniciar pressionado");
     setStarted(true);
   };
 
   const handleEnd = () => {
-    console.log("🎬 Cutscene: vídeo terminou, aplicando fade-out...");
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 1200,
       useNativeDriver: true,
     }).start(() => {
-      onFinish && onFinish(); // chama o menu depois do fade
+      onFinish && onFinish();
     });
   };
 
@@ -72,10 +66,9 @@ export default function CutsceneScreen({ onFinish }) {
             resizeMode="contain"
             shouldPlay={false}
             onLoad={() => {
-              console.log("Cutscene: vídeo carregado");
               setReady(true);
             }}
-            onPlaybackStatusUpdate={onStatusUpdate}
+          onPlaybackStatusUpdate={onStatusUpdate}
           />
         </Animated.View>
       )}
@@ -97,13 +90,9 @@ const styles = StyleSheet.create({
     height: height,
   },
   video: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: "100%",
-    height: "100%",
+    width: width,
+    height: height,
+    marginLeft: "40px",
     backgroundColor: "black",
   },
   button: {
