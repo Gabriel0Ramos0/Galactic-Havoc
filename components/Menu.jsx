@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, Animated } from "react-native";
 
-export default function Menu({ onStart, onConfig, onCredits, onExit, onLogin }) {
+export default function Menu({ onStart, onConfig, onCredits, onHistory, onExit, onLogin }) {
   // Animação do título
   const titleAnim = useRef(new Animated.Value(0)).current;
   const [open, setOpen] = useState(false);
@@ -60,6 +60,10 @@ export default function Menu({ onStart, onConfig, onCredits, onExit, onLogin }) 
 
         <TouchableOpacity style={styles.button} onPress={onConfig}>
           <Text style={styles.buttonText}>Configurações</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.button} onPress={onHistory}>
+          <Text style={styles.buttonText}>Terminal MK-IV</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.button} onPress={onCredits}>

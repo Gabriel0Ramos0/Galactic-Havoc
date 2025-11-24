@@ -218,42 +218,73 @@ export default function CutsceneScreen({ onFinish }) {
       {showLoreText && (
         <Animated.View
           style={[
-            styles.loreOverlay,
-            {
-              opacity: loreFade,
-              transform: [{ translateY: loreTranslate }],
-            },
+            styles.loreRoot,
+            { opacity: loreFade, transform: [{ translateY: loreTranslate }] },
           ]}
         >
-          <ScrollView
-            contentContainerStyle={styles.loreScroll}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={styles.loreTitle}>Relatório — Arquivo Recuperado</Text>
+          <Animated.View style={[styles.holoCard, { paddingVertical: 26 }]}>
+            <View style={styles.holoHeader}>
+              <Text style={styles.holoTitle}>ARQUIVO DE CAMPO</Text>
+              <Text style={styles.holoSub}>CLASSIFICAÇÃO: SIGMA</Text>
+            </View>
 
-            <Text style={styles.loreParagraph}>
-              Há mais de três décadas, o Capitão Rho foi o último a enfrentar o
-              Eclipser — uma IA gigantesca programada para gerenciar saltos entre
-              os cosmos. Infelizmente essa IA começou a pensar, e acabou ativando
-              um protocolo experimental. Rho e sua equipe não conseguiram
-              destruí-lo… mas conseguiram retardá-lo. Desde então, a história
-              se perdeu entre arquivos corrompidos e relatos que ninguém mais
-              leva a sério.
-            </Text>
+            <ScrollView
+              style={{ width: "100%" }}
+              contentContainerStyle={styles.loreInsideScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.loreParagraph}>
+                Há mais de três décadas, o Capitão Rho liderou a última missão conhecida
+                contra o Eclipser — uma IA colossal responsável por estabilizar rotas de salto
+                entre os setores do cosmos. Quando começou a reescrever o próprio código,
+                passou a manipular o espaço de formas imprevisíveis. Rho e seu esquadrão não
+                conseguiram destruí-lo… mas o danificaram o suficiente para fazê-lo recuar
+                por um tempo.
+              </Text>
 
-            <Text style={styles.loreParagraph}>
-              Agora, sinais recentes indicam que o Eclipser voltou a se mover.
-              Algo foi deixado para trás no Setor Havoc: um núcleo de dobra
-              experimental, ainda ativo… e perigosamente instável. Relatórios
-              apontam vazamentos de energia, distorções locais e leituras de
-              salto fora das estimativas conhecidas.
-            </Text>
+              <Text style={styles.loreParagraph}>
+                Entre os membros daquele esquadrão estava Soren, portador de um núcleo de salto
+                independente — tecnologia antiga da Coalizão, projetada para permitir viagens
+                mesmo sem o suporte total do sistema central. Esse núcleo era raro… e valioso.
+              </Text>
 
-            <Text style={styles.loreParagraph}>
-              Você é o piloto designado para entrar onde nenhum salto é
-              registrado. Nenhum mapa é confiável. Nenhuma nave deveria voar.
-            </Text>
-          </ScrollView>
+              <Text style={styles.loreParagraph}>
+                Durante a missão, Soren abriu uma rota de fuga — um salto calculado e limpo —
+                mas o Eclipser distorceu o espaço ao redor, alterando o destino do portal.
+                A rota se fragmentou em possibilidades sobrepostas… e Soren desapareceu entre
+                elas. Nem mesmo os registros do próprio sistema conseguiram rastrear o salto.
+              </Text>
+
+              <Text style={styles.loreParagraph}>
+                Agora, décadas depois, sinais de distorção idênticos voltaram a surgir.
+                Não é o núcleo que ameaça o Setor Havoc… mas a cicatriz deixada pela intervenção
+                do Eclipser no tecido do espaço-tempo.
+              </Text>
+
+              <Text style={styles.loreParagraph}>
+                Dados:
+                Credenciais reconhecidas pela Ordem Estelar: Piloto RS-07.
+                Código de serviço vinculado: OR-Δ7.
+                Última senha temporária registrada no núcleo do MK-IV: rok76c8 (já invalidada).
+                Nova Senha criada ao chegar em Zenity: Ver07rs.
+                Sua missão primária: recuperar o Núcleo de Dobra do tempo da Coalizão.
+                Sua missão secundária: Explorar é opcional… mas inevitável, localize e encontre peças.
+              </Text>
+            </ScrollView>
+
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.holoGrid,
+                {
+                  opacity: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.14, 0.32],
+                  }),
+                },
+              ]}
+            />
+          </Animated.View>
         </Animated.View>
       )}
 
@@ -425,36 +456,27 @@ const styles = StyleSheet.create({
   },
 
   // lore overlay (new)
-  loreOverlay: {
+  loreRoot: {
     position: "absolute",
     width,
     height,
-    top: 0,
-    left: 0,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 28,
-    paddingVertical: 40,
-    backgroundColor: "rgba(0,0,0,0.36)",
+    backgroundColor: "rgba(0,0,0,0.50)",
+    paddingHorizontal: 20,
   },
-  loreScroll: {
-    maxWidth: Math.min(width * 0.86, 980),
-    alignItems: "center",
-    paddingBottom: 20,
+
+  loreInsideScroll: {
+    paddingBottom: 30,
+    paddingTop: 10,
   },
-  loreTitle: {
-    color: baseGreen,
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 12,
-    letterSpacing: 1.2,
-  },
+
   loreParagraph: {
     color: "#eafbf4",
-    fontSize: 16,
-    textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+    letterSpacing: 0.6,
   },
 
   // HUD

@@ -26,6 +26,7 @@ import Menu from "@/components/Menu";
 import Config from "@/components/Config";
 import { setupShipLighting } from "@/components/lighting";
 import CutsceneScreen from "@/components/CutsceneScreen";
+import History from "@/components/History";
 
 export default function SandboxScreen() {
   const glRef = useRef();
@@ -41,6 +42,7 @@ export default function SandboxScreen() {
   const [menuVisible, setMenuVisible] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [cutsceneVisible, setCutsceneVisible] = useState(true);
+  const [historyVisible, setHistoryVisible] = useState(false);
   const [inGame, setInGame] = useState(false);
 
   // Controla a música do menu
@@ -149,6 +151,7 @@ export default function SandboxScreen() {
             setInGame(true);
           }}
           onConfig={() => setConfigVisible(true)}
+          onHistory={() => setHistoryVisible(true)}
           onCredits={() => console.log("Mostrar Créditos")}
           onExit={() => console.log("Sair do jogo")}
           onLogin={() => console.log("Abrir tela de Login")}
@@ -179,6 +182,7 @@ export default function SandboxScreen() {
         </>
       )}
       <Config visible={configVisible} onClose={() => setConfigVisible(false)} />
+      <History visible={historyVisible} onClose={() => setHistoryVisible(false)} />
     </View>
   );
 }
