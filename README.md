@@ -1,4 +1,4 @@
-# 🌌 Galactic Havoc 🚀
+# Galactic Havoc
 
 ![Galactic Havoc Banner](assets/images/Game.png)
 
@@ -7,11 +7,9 @@ O jogo combina aventura espacial, controle via joystick virtual e ranking online
 
 ## 🎮 Funcionalidades Principais
 
-- **Joystick virtual** para controle do player em tempo real  
-- **Arena responsiva** adaptável para qualquer tela  
 - **Cutscenes e narrativa interativa**  
 - **Ranking online** integrado via API  
-- **Interface intuitiva** e menus otimizados para mobile
+- **Interface intuitiva** e menus otimizados
 
 ## 🛠️ Tecnologias
 
@@ -22,16 +20,16 @@ O jogo combina aventura espacial, controle via joystick virtual e ranking online
 ## 📱 Disponibilidade
 
 Em breve disponível na **Google Play Store** e **Apple App Store**!  
-[🛒 Acompanhe o lançamento](#) – Em breve o link será colocado!
+[Acompanhe o lançamento](#) – Em breve o link será colocado!
 
-## 🚀 Status do Projeto
+## Status do Projeto
 
 Em desenvolvimento – lógica do jogo e componentes base estão sendo construídos, marcando o início da era **Galactic Havoc**.
 
-## 📷 Screenshots
+## Screenshots
 
-![Espaço](assets/images/Espaço.png)  
-![Iluminação](assets/images/Iluminação.png)
+![Espaço](assets/images/Espaço.jpeg)  
+![Iluminação](assets/images/terminal.jpeg)
 
 ## 📜 Licença
 
@@ -44,4 +42,22 @@ Sinta-se à vontade para abrir **issues**, sugerir melhorias ou enviar **pull re
 Vamos juntos expandir o universo de **Galactic Havoc**! 🌠  
 
 ### 👨‍🎨 Contribuidores
-- **[@GustavoWarmeling05](https://github.com/GustavoWarmeling05)** — responsável pela modelagem dos asteroides que hoje cruzam o nosso cosmos 🪨✨
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Gabriel0Ramos0">
+        <img src="https://github.com/Gabriel0Ramos0.png" width="100" style="border-radius:12px;" /><br/>
+        <strong>@Gabriel0Ramos0</strong><br/>
+        Desenvolvimento principal
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/GustavoWarmeling05">
+        <img src="https://github.com/GustavoWarmeling05.png" width="100" style="border-radius:12px;" /><br/>
+        <strong>@GustavoWarmeling05</strong><br/>
+        Modelagem dos asteroides
+      </a>
+    </td>
+  </tr>
+</table>
