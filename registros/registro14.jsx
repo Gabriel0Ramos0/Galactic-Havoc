@@ -1,0 +1,49 @@
+export const registro14 = {
+    titulo: "Missão Nova, Tarefa Antiga",
+    conteudo: [
+        "(O som ambiente se retrai, o ar parece parar. Verrin ergue o olhar lentamente, o brilho do núcleo intensifica-se. Um reflexo metálico cruza o olhar dele, como se algo dentro do próprio tempo tivesse acabado de despertar.)",
+
+        "Verrin (sussurrando):",
+        "...no lugar onde o tempo nunca parou.",
+
+        "",
+
+        "(O bracelete do piloto agora mostra a coordenada enviada pela Coalizão: “SETOR HAVOC-9 // SINAL RESIDUAL DETECTADO”. O som do vento estelar ressoa distante, como se o bar inteiro respirasse com a lembrança.)",
+
+        "Piloto (ainda encarando o painel):",
+        "Setor Havoc-9... como é possível um sinal tão velho chegar pra mim agora?",
+        "O envio desta mensagem está datado de 2 mil anos atrás...",
+        "Minha missão principal é praticamente a mesma, então é pra lá que tudo me leva.",
+
+        "",
+
+        "Verrin (com um meio-sorriso triste):",
+        "Você acha que está escolhendo o caminho, garoto... mas ele já foi traçado antes mesmo de você nascer.",
+        "A missão que carrega — seja lá quem mandou — vai te levar direto pra esse ponto.",
+
+        "",
+
+        "(O piloto se afasta lentamente do balcão, pegando a garrafa pela metade e virando-a num gole pesado.)",
+
+        "",
+
+        "Verrin (continuando olhando pro vazio):",
+        "O Setor Havoc chama quem ainda escuta o eco do Eclipser.",
+        "Não importa quantos uniformes mudem, quantas ordens surjam...",
+        "no fim, todos voltam pra lá.",
+        "Pra procurar o que sobrou...",
+        "ou o que ainda espera pra despertar.",
+
+        "",
+
+        "(O piloto se levanta, fechando o bracelete. A projeção se apaga com um bip grave. O bar inteiro parece desmoronar em silêncio — a luz vermelha piscante dá lugar a um tom azulado, quase espectral.)",
+
+        "Piloto (firme):",
+        "Então... eu só preciso encontrá-la e destruí-la.",
+
+        "",
+
+        "Verrin (baixo, com um olhar pesado):",
+        "Ela vai te encontrar primeiro.",
+    ],
+};

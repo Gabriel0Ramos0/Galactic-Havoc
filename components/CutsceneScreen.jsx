@@ -266,7 +266,7 @@ export default function CutsceneScreen({ onFinish }) {
                 Credenciais reconhecidas pela Ordem Estelar: Piloto RS-07.
                 Código de serviço vinculado: OR-Δ7.
                 Última senha temporária registrada no núcleo do MK-IV: rok76c8 (já invalidada).
-                Nova Senha criada ao chegar em Zenity: Ver07rs.
+                Nova Senha criada ao chegar em Zenity: Bruxo.
                 Sua missão primária: recuperar o Núcleo de Dobra do tempo da Coalizão.
                 Sua missão secundária: Explorar é opcional… mas inevitável, localize e encontre peças.
               </Text>

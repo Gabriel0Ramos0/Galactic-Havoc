@@ -1,0 +1,48 @@
+export const registro15 = {
+    titulo: "Um Novo Ciclo Começa",
+    conteudo: [
+        "(O piloto inicia a nave pelo bracelete, se preparando para ir pra casa.)",
+
+        "(Um som metálico ecoa do lado de fora — o motor da nave iniciando sequência de ignição. O vento entra pelas frestas da porta, carregando poeira e o cheiro de plasma antigo.)",
+
+        "(O piloto ajeita o casaco, passa ao lado de Verrin sem olhar pra trás. Quando alcança a porta, o velho fala uma última vez.)",
+
+        "Verrin (voz rouca, quase um sussurro):",
+        "Se cruzar com o brilho dela...",
+        "não olhe direto para o núcleo do Eclipser.",
+        "Ele sempre reconhece quem duvida...",
+
+        "",
+
+        "(O piloto para por um instante. A luz do bracelete projeta uma fraca névoa azul no chão, refletindo o rosto cansado de Verrin. Ele continua, a voz agora trêmula, entre o pedido e a lembrança.)",
+
+        "Verrin:",
+        "E se... se por acaso encontrar uma nave antiga à deriva...",
+        "modelo B40-30, casco preto, marca da antiga Coalizão nas asas...",
+        "tente trazê-la de volta pra mim.",
+        "Era a nave do Capitão Rho. Você mesmo viu como ela era.",
+        "Ele...",
+        "(ele respira fundo, como se o ar o cortasse)",
+        "ele acreditava que sempre haveria alguém pra terminar o que começamos.",
+
+        "",
+
+        "(Silêncio. O piloto não responde. Apenas acena levemente com a cabeça antes de abrir a porta. Um vento frio entra, misturando-se ao cheiro metálico e velho do bar.)",
+
+        "(Som de motores se ativando ao fundo. O bar inteiro vibra com o eco distante da partida da nave do piloto.)",
+
+        "Verrin (olhando para o reflexo dele na garrafa vazia):",
+        "O ciclo começa outra vez...",
+
+        "",
+
+        "(O bar se apaga lentamente. As luzes se transformam em poeira luminosa até restar apenas o brilho do núcleo pulsando em meio à escuridão.)",
+
+        "(Fade-out. Som de motor desaparecendo no espaço.)",
+
+        "[Letreiro — texto holográfico surgindo na tela:]",
+        "“MISSÃO REGISTRADA — SETOR HAVOC-9.”",
+
+        "Submissão paralela desbloqueada: ‘Nave B40-30 — Ecos de Rho’.",
+    ],
+};

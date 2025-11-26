@@ -10,6 +10,7 @@ import {
   TextInput,
   Pressable,
 } from "react-native";
+import * as registros from "@/registros";
 
 export default function History({ visible, onClose }) {
   const scrollRef = useRef();
@@ -20,6 +21,8 @@ export default function History({ visible, onClose }) {
   const [lines, setLines] = useState([]);
   const [current, setCurrent] = useState(""); // linha sendo digitada
   const [cursorVisible, setCursorVisible] = useState(true);
+  const [messagesMode, setMessagesMode] = useState(false);
+  const [prompt, setPrompt] = useState("$ MK-IV>");
 
   // login
   const [logged, setLogged] = useState(false);
@@ -40,6 +43,8 @@ export default function History({ visible, onClose }) {
       setCurrent("");
       setLogged(false);
       setStep("user");
+      setMessagesMode(false);
+      setPrompt("$ MK-IV>");
       startFade();
 
       let delay = 0;
@@ -67,9 +72,15 @@ export default function History({ visible, onClose }) {
     const cmd = current.trim();
     if (!cmd) return;
 
-    setLines((p) => [...p, `$ ${cmd}`]);
+    setLines((p) => [...p, `${prompt} ${cmd}`]);
+
     processCommand(cmd);
     setCurrent("");
+    if (messagesMode) {
+      setPrompt("$ messages>");
+    } else {
+      setPrompt("$ MK-IV>");
+    }
 
     setTimeout(
       () => scrollRef.current?.scrollToEnd({ animated: true }),
@@ -81,35 +92,88 @@ export default function History({ visible, onClose }) {
   function processCommand(cmd) {
     if (!logged) return handleLogin(cmd);
 
+    // abrir registros
+    if (cmd.startsWith("abrirRegistro-")) {
+      const num = cmd.replace("abrirRegistro-", "");
+      const index = parseInt(num, 10) - 1;
+
+      const keys = Object.keys(registros);
+      const fileKey = keys[index];
+
+      try {
+        const data = registros[fileKey];
+        if (!data) throw new Error();
+
+        print([
+          "",
+          `>>> ABRINDO REGISTRO ${num} — ${data.titulo}`,
+          "----------------------------------------------",
+          ...data.conteudo,
+          "",
+        ]);
+      } catch {
+        print([`> Registro ${num} não encontrado.`]);
+      }
+      return;
+    }
+
+    // Se estivermos no modo messages, só aceitar subcomandos de messages
+    if (messagesMode) {
+      switch (cmd.toLowerCase()) {
+        case "group()":
+          print(groupBlock);
+          break;
+        case "system()":
+          print(systemBlock);
+          break;
+        case "order()":
+          print(orderBlock);
+          break;
+        case "exit()":
+          setMessagesMode(false);
+          print(["> Saindo de messages()."]);
+          break;
+        default:
+          print([`> Comando não reconhecido no modo messages(): ${cmd}`]);
+      }
+      return;
+    }
+
     switch (cmd.toLowerCase()) {
       case "mission()":
         print(missionBlock);
         break;
-
       case "records()":
-        print(recordsBlock);
+        print(getRecordsList());
         break;
-
       case "echo()":
         print(echoBlock);
         break;
-
+      case "messages()":
+        setMessagesMode(true);
+        print(messagesBlock);
+        break;
       case "help()":
         print([
           "",
           "Comandos disponíveis:",
-          "  mission()   → Detalhes da missão",
-          "  records()   → Arquivos recuperados",
-          "  echo()      → Transmissão fragmentada",
-          "  clear()     → Limpar terminal",
+          "  mission()    → Detalhes da missão",
+          "  records()    → Arquivos recuperados",
+          "  echo()       → Transmissão fragmentada",
+          "  messages()   → Seção de mensagens internas",
+          "      group()  → Chat do grupo",
+          "      system() → Logs do núcleo",
+          "      order()  → Comunicados da Ordem",
+          "  clear()      → Limpar terminal",
           "",
         ]);
         break;
-
       case "clear()":
         setLines([]);
         break;
-
+      case "exit()":
+        print(["> Nenhum modo especial ativo."]);
+        break;
       default:
         print([`Comando não reconhecido: ${cmd}`]);
     }
@@ -139,7 +203,7 @@ export default function History({ visible, onClose }) {
     }
 
     if (step === "pass") {
-      if (cmd === "Ver07rs") {
+      if (cmd === "Bruxo") {
         setLogged(true);
         setStep("logged");
 
@@ -228,24 +292,77 @@ export default function History({ visible, onClose }) {
   ];
 
   // RECORDS
-  const recordsBlock = [
+  function getRecordsList() {
+    const keys = Object.keys(registros);
+    if (keys.length === 0) return ["Nenhum registro encontrado."];
+
+    const list = [
+      "",
+      "============== REGISTROS MK-IV ==============",
+      "Arquivos recuperados da Rota Estelar:",
+      "",
+    ];
+
+    keys.forEach((key, index) => {
+      const reg = registros[key];
+      const num = String(index + 1).padStart(2, "0");
+      list.push(` [${num}] ${reg.titulo}`);
+    });
+
+    list.push(
+      "",
+      "Para abrir um registro, use:",
+      "  abrirRegistro-00",
+      ""
+    );
+
+    return list;
+  }
+
+  // MESSAGES ROOT
+  const messagesBlock = [
     "",
-    ">> Arquivos do Setor Havoc:",
-    "Data: 07.04.2237 / Prioridade: Ômega",
+    "=========== MENSAGENS MK-IV ===========",
+    "Subcomandos disponíveis:",
+    "  group()   → Mensagens do grupo: Amizades do Barulho",
+    "  system()  → Logs da Nave Sirius Marrow",
+    "  order()   → Comunicados oficiais da Ordem",
+    "  exit()    → Sair do modo mensagens",
     "",
-    "O Setor Havoc permanece classificado como zona de risco alto desde o alinhamento com o Eclipser.",
-    "Naves enviadas para reconhecimento retornaram com danos críticos — quando retornaram.",
-    "Quinze sinais de emergência foram captados nos últimos 30 dias.",
-    "Todos encerrados abruptamente.",
+    "Digite um subcomando.",
     "",
-    "Relatos indicam ecos visuais:",
-    "Múltiplas versões da mesma nave surgindo simultaneamente.",
-    "Distorções espaciais como se o espaço estivesse refletindo a si mesmo.",
+  ];
+
+  // GROUP
+  const groupBlock = [
     "",
-    "Um piloto registrou:",
-    "“Eu vi minha nave atravessar eu mesmo… e depois desaparecer.”",
+    ">>> REGISTRO DE COMUNICAÇÕES // GRUPO DO PILOTO",
     "",
-    "Indícios sugerem que o Eclipser está acordando.",
+    "[Zack] Ei, RS-07, lembra do dia que quase fritou o motor tentando ultrapassar um cometa? Bons tempos.",
+    "[Lyra] Não incentiva ele, Zack.",
+    "[Dave] Eu ainda tenho aquele módulo derretido guardado.",
+    "",
+  ];
+
+  // SYSTEM
+  const systemBlock = [
+    "",
+    ">>> LOGS DO SISTEMA MK-IV",
+    "",
+    "[CORE] Análise de vibração: normal.",
+    "[CORE] Tentativa de acesso anômalo: 1 detectada.",
+    "[CORE] Banco de memória 7: setor corrompido (isolado).",
+    "",
+  ];
+
+  // ORDER
+  const orderBlock = [
+    "",
+    ">>> COMUNICADOS DA ORDEM ESTELAR",
+    "",
+    "[ORDEM] Piloto RS-07, sua conduta permanece sob observação.",
+    "[ORDEM] A missão Havoc permanece prioritária — nível ÔMEGA.",
+    "[ORDEM] Mantenha o terminal ativo para transmissões emergenciais.",
     "",
   ];
 
@@ -291,7 +408,7 @@ export default function History({ visible, onClose }) {
 
           {/* Linha atual com cursor */}
           <Text style={styles.terminalText}>
-            $ {current}
+            {prompt} {current}
             {cursorVisible ? "|" : " "}
           </Text>
         </ScrollView>
