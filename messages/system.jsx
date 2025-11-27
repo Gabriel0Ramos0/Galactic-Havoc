@@ -1,0 +1,47 @@
+export const system = [
+  "",
+  "=========== LOGS DO SISTEMA — NAVE SIRIUS MARROW ===========",
+  "",
+
+  "60 dias atrás – 06:42 — Sistema de Manutenção [AUTOMÁTICO]:",
+  "  “⧉ Relatório programado: inspeção pré-salto aprovada parcialmente.",
+  "   Pendências mínimas: 1.”",
+  "",
+  "Piloto (engolindo seco):",
+  "  “...eu devia ter revisado isso... O Dave também...”",
+  "",
+
+  "-------------------------------------------------------------",
+  "",
+
+  "10 dias atrás – 14:11 — Sistema de Manutenção [AUTOMÁTICO]:",
+  "  “⧉ Verificação técnica obrigatória, ultrapassou 30 dias desde a última checagem.",
+  "   Recomendação: agendar nova checagem.”",
+  "",
+  "Piloto (fechando os olhos):",
+  "  “Eu nunca… tive chance de agendar nada.”",
+  "",
+
+  "-------------------------------------------------------------",
+  "",
+
+  "Registro Atual — 12:03 — Núcleo MK-IV:",
+  "  “⧉ Consumo anômalo detectado no subsistema de dobra.”",
+  "  “⧉ Fonte: padrão de ressonância não catalogado.”",
+  "",
+  "Aviso Automático de Dave (voz memorizada pelo sistema):",
+  "  “Se vir isso de novo… RS-07, NÃO ativa o módulo sozinho.”",
+  "",
+  "-------------------------------------------------------------",
+  "",
+
+  "Status Geral:",
+  "  - Sistemas geral: 22% da capacidade total",
+  "  - Pendências: 2 não tratadas",
+  "  - Última manutenção completa: 60 dias atrás",
+  "  - Integridade estrutural: 89%",
+  "  - Núcleo de dobra: Desativado",
+  "",
+  ">>> Fim dos logs do sistema.",
+  "",
+];

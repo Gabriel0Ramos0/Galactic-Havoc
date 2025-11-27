@@ -11,6 +11,7 @@ import {
   Pressable,
 } from "react-native";
 import * as registros from "@/registros";
+import * as mensagens from "@/messages";
 
 export default function History({ visible, onClose }) {
   const scrollRef = useRef();
@@ -117,17 +118,17 @@ export default function History({ visible, onClose }) {
       return;
     }
 
-    // Se estivermos no modo messages, só aceitar subcomandos de messages
+    // Se estivermos no modo messages
     if (messagesMode) {
       switch (cmd.toLowerCase()) {
         case "group()":
-          print(groupBlock);
+          print(getMessageBlock("group"));
           break;
         case "system()":
-          print(systemBlock);
+          print(getMessageBlock("system"));
           break;
         case "order()":
-          print(orderBlock);
+          print(getMessageBlock("order"));
           break;
         case "exit()":
           setMessagesMode(false);
@@ -334,37 +335,11 @@ export default function History({ visible, onClose }) {
   ];
 
   // GROUP
-  const groupBlock = [
-    "",
-    ">>> REGISTRO DE COMUNICAÇÕES // GRUPO DO PILOTO",
-    "",
-    "[Zack] Ei, RS-07, lembra do dia que quase fritou o motor tentando ultrapassar um cometa? Bons tempos.",
-    "[Lyra] Não incentiva ele, Zack.",
-    "[Dave] Eu ainda tenho aquele módulo derretido guardado.",
-    "",
-  ];
-
-  // SYSTEM
-  const systemBlock = [
-    "",
-    ">>> LOGS DO SISTEMA MK-IV",
-    "",
-    "[CORE] Análise de vibração: normal.",
-    "[CORE] Tentativa de acesso anômalo: 1 detectada.",
-    "[CORE] Banco de memória 7: setor corrompido (isolado).",
-    "",
-  ];
-
-  // ORDER
-  const orderBlock = [
-    "",
-    ">>> COMUNICADOS DA ORDEM ESTELAR",
-    "",
-    "[ORDEM] Piloto RS-07, sua conduta permanece sob observação.",
-    "[ORDEM] A missão Havoc permanece prioritária — nível ÔMEGA.",
-    "[ORDEM] Mantenha o terminal ativo para transmissões emergenciais.",
-    "",
-  ];
+  function getMessageBlock(key) {
+    const data = mensagens[key];
+    if (!data) return ["> Nenhum arquivo de mensagem encontrado."];
+    return data;
+  }
 
   // ECO
   const echoBlock = [
