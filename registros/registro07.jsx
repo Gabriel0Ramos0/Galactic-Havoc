@@ -1,5 +1,5 @@
 export const registro07 = {
-    titulo: "O Objetivo e a História Disfarçada",
+    titulo: "Objetivo e História - Entendendo os fatos",
     conteudo: [
         "Piloto:",
         "Eu não deveria expor minha missão, mas em 2 dias devo partir para as regiões de Havoc coletar informações sobre o evento e procurar algo chamado ‘núcleo de dobra’, aparentemente uma peça antiga.",
@@ -20,7 +20,7 @@ export const registro07 = {
         "Respostas... heh.",
         "Garoto, ninguém quer respostas. Querem controle.",
         "E o ‘núcleo de dobra’?",
-        "Ele não era só uma peça... era o coração do desastre.",
+        "Ele não era só uma peça... era uma raridade tanto quanto perigosa.",
         "",
         "(Ele se inclina, voz mais baixa.)",
         "Você realmente procurou informações nos registros da Ordem?",

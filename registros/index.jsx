@@ -14,4 +14,7 @@ export * from "./registro12";
 export * from "./registro13";
 export * from "./registro14";
 export * from "./registro15";
+export * from "./registro16";
+export * from "./registro17";
+export * from "./registro18";
 // ...
