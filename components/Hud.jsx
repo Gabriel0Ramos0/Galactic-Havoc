@@ -1,6 +1,7 @@
 // app/components/Hud.jsx
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import Tutorial from "@/components/Tutorial";
 
 export default function Hud({ shipHP = 100, score = 0, coords = { x: 0, y: 0, z: 0 }, onMenuPress }) {
 
@@ -17,6 +18,7 @@ export default function Hud({ shipHP = 100, score = 0, coords = { x: 0, y: 0, z:
         <Text style={styles.coords}>
           X: {coords.x.toFixed(0)} Y: {coords.y.toFixed(0)} Z: {coords.z.toFixed(0)}
         </Text>
+        <Tutorial />
       </View>
 
       {/* Coluna central: Pontuação */}
@@ -31,7 +33,7 @@ export default function Hud({ shipHP = 100, score = 0, coords = { x: 0, y: 0, z:
           <Text style={styles.menuText}>Menu</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </View >
   );
 }
 

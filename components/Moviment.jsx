@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function useMovement(shipRef) {
     const velocity = useRef(new THREE.Vector3(0, 0, 0));
@@ -22,11 +22,31 @@ export default function useMovement(shipRef) {
     const friction = 0.995;
     const rotationSmoothness = 0.1;
 
-    // controle de velocidade
     const baseMaxSpeed = 2.5;
     const warpMaxSpeed = 10;
     const currentMaxSpeed = useRef(baseMaxSpeed);
     const speedLerpFactor = 0.02;
+
+    const paused = useRef(false);
+    const setPaused = (v) => { paused.current = v; };
+
+    const resetMovementState = () => {
+        velocity.current.set(0, 0, 0);
+        acceleration.current.set(0, 0, 0);
+        currentMaxSpeed.current = baseMaxSpeed;
+
+        keys.current = {
+            w: false,
+            a: false,
+            s: false,
+            d: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            Shift: false,
+        };
+
+        joystickDelta.current = { x: 0, y: 0, yUpDown: 0 };
+    };
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -52,18 +72,21 @@ export default function useMovement(shipRef) {
     const updateShip = () => {
         if (!shipRef.current) return;
 
+        if (paused.current) return;
+
         acceleration.current.set(0, 0, 0);
 
         const isWarp = keys.current.Shift;
         const currentSpeed = isWarp ? speed * warpMultiplier : speed;
         const targetMaxSpeed = isWarp ? warpMaxSpeed : baseMaxSpeed;
 
-        currentMaxSpeed.current += (targetMaxSpeed - currentMaxSpeed.current) * speedLerpFactor;
+        currentMaxSpeed.current +=
+            (targetMaxSpeed - currentMaxSpeed.current) * speedLerpFactor;
 
         const forward = new THREE.Vector3(0, 1, 0).applyQuaternion(shipRef.current.quaternion);
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipRef.current.quaternion);
 
-        // Controles WASD + setas
+        // ======= CONTROLES =======
         if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(currentSpeed));
         if (keys.current.s) {
             velocity.current.multiplyScalar(0.97);
@@ -73,35 +96,41 @@ export default function useMovement(shipRef) {
         if (keys.current.ArrowUp) acceleration.current.y += currentSpeed;
         if (keys.current.ArrowDown) acceleration.current.y -= currentSpeed;
 
-        // Joystick mobile
+        // MOBILE (joystick)
         acceleration.current.add(forward.clone().multiplyScalar(joystickDelta.current.y * currentSpeed));
         acceleration.current.add(right.clone().multiplyScalar(joystickDelta.current.x * currentSpeed));
         acceleration.current.y += joystickDelta.current.yUpDown * currentSpeed;
 
+        // Atualiza velocidade
         velocity.current.add(acceleration.current);
 
+        // Limite de velocidade
         if (velocity.current.length() > currentMaxSpeed.current) {
             velocity.current.setLength(currentMaxSpeed.current);
         }
 
+        // Atrito
         velocity.current.multiplyScalar(friction);
 
+        // Movimento da nave
         shipRef.current.position.add(velocity.current);
 
+        // Ajuste de rotação baseado na direção atual
         if (velocity.current.lengthSq() > 0.0001) {
             const target = new THREE.Vector3().copy(shipRef.current.position).add(velocity.current);
-            const targetQuaternion = new THREE.Quaternion();
             const dummy = new THREE.Object3D();
             dummy.position.copy(shipRef.current.position);
             dummy.lookAt(target);
             dummy.rotateX(Math.PI / 2);
             dummy.rotateY(Math.PI);
-            targetQuaternion.copy(dummy.quaternion);
-            shipRef.current.quaternion.slerp(targetQuaternion, rotationSmoothness);
+            shipRef.current.quaternion.slerp(dummy.quaternion, rotationSmoothness);
         }
     };
+
     return {
         updateShip,
         joystickDelta,
+        resetMovementState,
+        setPaused,
     };
 }

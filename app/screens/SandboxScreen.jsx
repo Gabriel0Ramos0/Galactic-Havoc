@@ -34,7 +34,7 @@ export default function SandboxScreen() {
   const shipRef = useRef();
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
-  const { updateShip, joystickDelta } = useMovement(shipRef);
+  const { updateShip, joystickDelta, resetMovementState, setPaused } = useMovement(shipRef);
 
   const [currentHP] = useState(100);
   const [currentScore] = useState(0);
@@ -145,6 +145,8 @@ export default function SandboxScreen() {
       {!cutsceneVisible && menuVisible && (
         <Menu
           onStart={async () => {
+            resetMovementState();
+            setPaused(false);
             await stopMenuMusic();
             await startGameMusic();
             setMenuVisible(false);
@@ -167,6 +169,8 @@ export default function SandboxScreen() {
             score={currentScore}
             coords={coords}
             onMenuPress={async () => {
+              setPaused(true);
+              resetMovementState();
               setMenuVisible(true);
               setInGame(false);
               await stopGameMusic();
