@@ -6,7 +6,6 @@ import MessageBox from "@/components/MessageBox";
 export default function Tutorial({ onComplete }) {
     const [step, setStep] = useState(0);
 
-    // teclas gerais (W A S D, setas, SHIFT)
     const [keysPressed, setKeysPressed] = useState({
         w: false,
         a: false,
@@ -15,9 +14,11 @@ export default function Tutorial({ onComplete }) {
         up: false,
         down: false,
         shift: false,
+        i: false,
+        tab: false,
+        space: false,
     });
 
-    // sequência DWAS
     const [sequenceIndex, setSequenceIndex] = useState(0);
     const sequence = ["d", "w", "a", "s"];
 
@@ -25,123 +26,144 @@ export default function Tutorial({ onComplete }) {
         "Piloto… detectamos instabilidade severa nos giroscópios. O campo gravitacional local distorceu os eixos da nave.",
         "A queda durante o salto dimensional desalinhou o núcleo de navegação. Precisamos recalibrar manualmente.",
         "Prepare-se. Vamos executar o protocolo de Estabilização Primária.",
-        "Ajuste os propulsores na seguinte ordem para restaurar o eixo da câmera: D → W → A → S.",
-        "Bom trabalho. Os vetores laterais foram restaurados. Agora mova a nave com W, A, S e D para sincronizar o escopo.",
-        "Excelente. Ajuste a altitude com ↑ e ↓ para completar a calibração do eixo vertical.",
-        "Ótimo! Para desbloquear o canal de impulso, mantenha W pressionado e acione o BOOST com SHIFT.",
-        "Sistemas estabilizados. Um sinal desconhecido foi detectado. Siga o brilho azul para identificá-lo.",
-        "Calibração finalizada. Boa sorte, piloto… e cuidado com o que pode estar te observando.",
+        "Ajuste os propulsores na seguinte ordem: D → W → A → S.",
+        "Bom trabalho. Vetores laterais restaurados. Agora mova-se com W, A, S e D.",
+        "Excelente. Ajuste a altitude com ↑ e ↓.",
+        "Perfeito. Ative o BOOST mantendo W pressionado e acionando SHIFT.",
+        "Um sinal desconhecido foi detectado… analisando origem.",
+        "Aproximando-se do ponto de energia. Vá até o brilho azul para identificá-lo.",
+        "É uma nave abandonada… use I para inspecionar.",
+        "Suprimentos encontrados. Abra a Interface da Nave com TAB para equipar os módulos.",
+        "Atenção… duas naves piratas estão se aproximando!",
+        "Prepare o sistema de armas. Pressione ESPAÇO para disparar.",
+        "Boa sorte, piloto… e cuidado com o que pode estar te observando.",
     ];
 
-    // --- 1) Cinematic messages (0..2) auto-advance every 10s ---
     useEffect(() => {
         if (step >= 0 && step <= 2) {
-            const t = setTimeout(() => {
-                setStep((s) => s + 1);
-            }, 5000);
+            const t = setTimeout(() => setStep(s => s + 1), 5000);
             return () => clearTimeout(t);
         }
     }, [step]);
 
-    // --- 2) Keyboard listener ---
+    //                   KEYBOARD LISTENER
+    // ---------------------------------------------------
     useEffect(() => {
         const handleKeyDown = (e) => {
             const key = (e.key || "").toLowerCase();
 
-            // Ignore keys during cinematic
             if (step <= 2) return;
 
-            // --- DWAS SEQUENCE (step 3) ---
+            // DWAS sequence
             if (step === 3) {
-                setSequenceIndex((prevIndex) => {
-                    const expected = sequence[prevIndex];
-                    if (key === expected) {
-                        const next = prevIndex + 1;
-
+                setSequenceIndex((prev) => {
+                    if (key === sequence[prev]) {
+                        const next = prev + 1;
                         if (next >= sequence.length) {
-                            // Complete sequence → go to WASD free movement
                             setTimeout(() => {
                                 setSequenceIndex(0);
-                                setKeysPressed({
-                                    w: false, a: false, s: false, d: false,
-                                    up: false, down: false, shift: false
-                                });
                                 setStep(4);
-                            }, 120);
+                            }, 150);
                             return 0;
                         }
                         return next;
-                    } else {
-                        return 0; // wrong → reset
                     }
+                    return 0;
                 });
                 return;
             }
 
-            // --- GENERAL KEYS ---
+            // General keys
             if (["w", "a", "s", "d"].includes(key)) {
-                setKeysPressed((prev) => ({ ...prev, [key]: true }));
+                setKeysPressed((p) => ({ ...p, [key]: true }));
             }
             if (key === "arrowup") {
-                setKeysPressed((prev) => ({ ...prev, up: true }));
+                setKeysPressed((p) => ({ ...p, up: true }));
             }
             if (key === "arrowdown") {
-                setKeysPressed((prev) => ({ ...prev, down: true }));
+                setKeysPressed((p) => ({ ...p, down: true }));
             }
-
-            // BOOST (SHIFT)
             if (key === "shift") {
-                setKeysPressed((prev) => ({ ...prev, shift: true }));
+                setKeysPressed((p) => ({ ...p, shift: true }));
+            }
+            if (key === "i") {
+                setKeysPressed((p) => ({ ...p, i: true }));
+            }
+            if (key === "tab") {
+                e.preventDefault();
+                setKeysPressed((p) => ({ ...p, tab: true }));
+            }
+            if (key === " ") {
+                setKeysPressed((p) => ({ ...p, space: true }));
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [step, sequence]);
+    }, [step]);
 
-    // --- 3) Step progression ---
+    // ---------------------------------------------------
+    //                STEP PROGRESSION
+    // ---------------------------------------------------
     useEffect(() => {
-        // Step 4 → require W A S D
+        // Step 4 → require WASD
         if (step === 4) {
             const { w, a, s, d } = keysPressed;
-            if (w && a && s && d) {
-                setKeysPressed((prev) => ({
-                    ...prev,
-                    up: false,
-                    down: false,
-                }));
-                setStep(5);
-            }
+            if (w && a && s && d) setStep(5);
         }
 
-        // Step 5 → require ArrowUp + ArrowDown
+        // Step 5 → ArrowUp + ArrowDown
         if (step === 5) {
-            if (keysPressed.up && keysPressed.down) {
-                setStep(6);
-            }
+            if (keysPressed.up && keysPressed.down) setStep(6);
         }
 
-        // Step 6 → BOOST (SHIFT)
+        // Step 6 → Boost
         if (step === 6) {
-            if (keysPressed.shift) {
-                setStep(7);
-            }
+            if (keysPressed.shift) setStep(7);
         }
 
-        // Step 7 → message about marker → auto advance
+        // Step 7 → auto advance
         if (step === 7) {
             const t = setTimeout(() => setStep(8), 4000);
             return () => clearTimeout(t);
         }
 
-        // Step 8 → finished
+        // Step 8 → waiting for in-game event (go to marker)
         if (step === 8) {
+            const t = setTimeout(() => setStep(9), 3000);
+            return () => clearTimeout(t);
+        }
+
+        // Step 9 → Inspect with I
+        if (step === 9) {
+            if (keysPressed.i) setStep(10);
+        }
+
+        // Step 10 → Open Ship Interface (TAB)
+        if (step === 10) {
+            if (keysPressed.tab) setStep(11);
+        }
+
+        // Step 11 → auto advance to combat
+        if (step === 11) {
+            const t = setTimeout(() => setStep(12), 3000);
+            return () => clearTimeout(t);
+        }
+
+        // Step 12 → Fire with SPACE
+        if (step === 12) {
+            if (keysPressed.space) setStep(13);
+        }
+
+        // Step 13 → finish tutorial
+        if (step === 13) {
             const t = setTimeout(() => onComplete && onComplete(), 2500);
             return () => clearTimeout(t);
         }
-    }, [step, keysPressed, onComplete]);
 
-    // Ensure sequence reset if step changes
+    }, [step, keysPressed]);
+
+    // Reset sequence if not in sequence step
     useEffect(() => {
         if (step !== 3) setSequenceIndex(0);
     }, [step]);
@@ -153,7 +175,7 @@ export default function Tutorial({ onComplete }) {
             <MessageBox
                 message={steps[step]}
                 position="bottom-left"
-                duration={step <= 2 ? 10000 : 10000}
+                duration={10000}
             />
         </View>
     );
