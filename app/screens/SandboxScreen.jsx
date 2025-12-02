@@ -44,6 +44,7 @@ export default function SandboxScreen() {
   const [cutsceneVisible, setCutsceneVisible] = useState(true);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [inGame, setInGame] = useState(false);
+  const rafRef = useRef(null);
 
   // Controla a música do menu
   useEffect(() => {
@@ -54,6 +55,17 @@ export default function SandboxScreen() {
     }
   }, [menuVisible]);
 
+  useEffect(() => {
+    return () => {
+      if (glRef.current && typeof glRef.current._stopAnimation === "function") {
+        glRef.current._stopAnimation();
+      }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, []);
 
   const view = 2000; // tamanho do cubo de visão
 
@@ -98,8 +110,11 @@ export default function SandboxScreen() {
     setupShipLighting(scene, ship);
 
     // Loop de animação
+    let running = true;
+
     const animate = () => {
-      requestAnimationFrame(animate);
+      if (!running) return;
+      rafRef.current = requestAnimationFrame(animate);
 
       updateShip();
       updateCamera();
@@ -121,6 +136,15 @@ export default function SandboxScreen() {
       gl.endFrameEXP();
     };
     animate();
+
+    glRef.current = glRef.current || {};
+    glRef.current._stopAnimation = () => {
+      running = false;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
   };
 
   // Handlers para cutscene fim / pular
@@ -171,6 +195,12 @@ export default function SandboxScreen() {
             onMenuPress={async () => {
               setPaused(true);
               resetMovementState();
+              if (glRef.current && typeof glRef.current._stopAnimation === "function") {
+                glRef.current._stopAnimation();
+              } else if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current);
+                rafRef.current = null;
+              }
               setMenuVisible(true);
               setInGame(false);
               await stopGameMusic();
