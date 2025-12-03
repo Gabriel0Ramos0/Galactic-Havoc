@@ -100,6 +100,7 @@ export default function History({ visible, onClose }) {
 
       const keys = Object.keys(registros);
       const fileKey = keys[index];
+      setLines([]);
 
       try {
         const data = registros[fileKey];

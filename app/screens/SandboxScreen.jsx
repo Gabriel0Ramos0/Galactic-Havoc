@@ -27,6 +27,7 @@ import Config from "@/components/Config";
 import { setupShipLighting } from "@/components/lighting";
 import CutsceneScreen from "@/components/CutsceneScreen";
 import History from "@/components/History";
+import createBlueMarker from "@/components/BlueMarker";
 
 export default function SandboxScreen() {
   const glRef = useRef();
@@ -39,12 +40,14 @@ export default function SandboxScreen() {
   const [currentHP] = useState(100);
   const [currentScore] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
+  const [markerCoords, setMarkerCoords] = useState(null);
   const [menuVisible, setMenuVisible] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [cutsceneVisible, setCutsceneVisible] = useState(true);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [inGame, setInGame] = useState(false);
   const rafRef = useRef(null);
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   // Controla a música do menu
   useEffect(() => {
@@ -67,7 +70,25 @@ export default function SandboxScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    if (tutorialStep === 8 && sceneRef.current && universeRef.current && !blueMarkerRef.current) {
+      createBlueMarker({
+        group: universeRef.current,
+        spread: 10000,
+        minDistance: 5000,
+      }).then(marker => {
+        blueMarkerRef.current = marker;
+
+        console.log("Marker criado em:", marker.basePosition);
+      });
+    }
+  }, [tutorialStep]);
+
   const view = 2000; // tamanho do cubo de visão
+
+  const sceneRef = useRef(null);
+  const universeRef = useRef(null);
+  const blueMarkerRef = useRef(null);
 
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
@@ -106,11 +127,16 @@ export default function SandboxScreen() {
     const asteroids = await createAsteroids({ count: 300, spread: 8000 });
     universeGroup.add(asteroids);
 
+    // Marcador Azul (Tutorial)
+    sceneRef.current = scene;
+    universeRef.current = universeGroup;
+
     // Iluminação Nave
     setupShipLighting(scene, ship);
 
     // Loop de animação
     let running = true;
+    const clock = new THREE.Clock();
 
     const animate = () => {
       if (!running) return;
@@ -132,6 +158,22 @@ export default function SandboxScreen() {
       stars.recycle(ship.position, universeGroup.position, 900);
       suns.recycle(ship.position, universeGroup.position, 1500);
       asteroids.recycle(ship.position, universeGroup.position, 3000, 1200);
+      if (blueMarkerRef.current && blueMarkerRef.current.update) {
+        blueMarkerRef.current.update(clock.getDelta(), universeGroup.position);
+
+        try {
+          const world = blueMarkerRef.current.basePosition;
+
+          setMarkerCoords({
+            x: world.x * 0.01,
+            y: world.y * 0.01,
+            z: world.z * 0.01,
+          });
+
+        } catch (err) {
+          // apenas debug — não quebra o loop
+        }
+      }
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };
@@ -205,6 +247,8 @@ export default function SandboxScreen() {
               setInGame(false);
               await stopGameMusic();
             }}
+            setTutorialStep={setTutorialStep}
+            markerCoords={markerCoords}
           />
           {Platform.OS !== "web" && (
             <Joystick

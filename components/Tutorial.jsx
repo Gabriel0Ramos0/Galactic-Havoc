@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { View } from "react-native";
 import MessageBox from "@/components/MessageBox";
 
-export default function Tutorial({ onComplete }) {
+export default function Tutorial({ onComplete, onStepChange }) {
     const [step, setStep] = useState(0);
 
     const [keysPressed, setKeysPressed] = useState({
@@ -43,6 +43,13 @@ export default function Tutorial({ onComplete }) {
         if (step >= 0 && step <= 2) {
             const t = setTimeout(() => setStep(s => s + 1), 5000);
             return () => clearTimeout(t);
+        }
+    }, [step]);
+
+    // Notifica o Sandbox quando o step muda
+    useEffect(() => {
+        if (typeof onStepChange === "function") {
+            onStepChange(step);
         }
     }, [step]);
 
@@ -130,8 +137,15 @@ export default function Tutorial({ onComplete }) {
 
         // Step 8 → waiting for in-game event (go to marker)
         if (step === 8) {
-            const t = setTimeout(() => setStep(9), 3000);
-            return () => clearTimeout(t);
+            const onReached = (ev) => {
+                setStep((currentStep) => {
+                    if (currentStep === 8) return 9;
+                    return currentStep;
+                });
+            };
+
+            window.addEventListener("blueMarkerReached", onReached);
+            return () => window.removeEventListener("blueMarkerReached", onReached);
         }
 
         // Step 9 → Inspect with I

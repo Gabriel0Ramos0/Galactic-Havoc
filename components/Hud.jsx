@@ -3,7 +3,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Tutorial from "@/components/Tutorial";
 
-export default function Hud({ shipHP = 100, score = 0, coords = { x: 0, y: 0, z: 0 }, onMenuPress }) {
+export default function Hud({ shipHP = 100, score = 0, coords = { x: 0, y: 0, z: 0 }, onMenuPress, setTutorialStep, markerCoords = null }) {
 
   return (
     <View style={styles.container}>
@@ -18,7 +18,15 @@ export default function Hud({ shipHP = 100, score = 0, coords = { x: 0, y: 0, z:
         <Text style={styles.coords}>
           X: {coords.x.toFixed(0)} Y: {coords.y.toFixed(0)} Z: {coords.z.toFixed(0)}
         </Text>
-        <Tutorial />
+        {markerCoords && (
+          <Text style={[styles.coords, { color: "#66ddff", marginTop: 6 }]}>
+            Alvo → X: {markerCoords.x.toFixed(0)} Y: {markerCoords.y.toFixed(0)} Z: {markerCoords.z.toFixed(0)}
+          </Text>
+        )}
+        <Tutorial
+          onComplete={() => console.log("Tutorial finalizado")}
+          onStepChange={(s) => setTutorialStep(s)}
+        />
       </View>
 
       {/* Coluna central: Pontuação */}
