@@ -149,26 +149,26 @@ export default function CutsceneScreen({ onFinish }) {
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        const LORE_DISPLAY_MS = 45000; // tempo que o texto fica visível
-        setTimeout(() => {
-          Animated.timing(loreFade, {
-            toValue: 0,
-            duration: 500,
-            useNativeDriver: true,
-          }).start(() => {
-            setShowLoreText(false);
-            setShowHUD(true);
-            Animated.timing(hudFade, {
-              toValue: 1,
-              duration: 900,
-              useNativeDriver: true,
-            }).start();
-          });
-        }, LORE_DISPLAY_MS);
-      });
+      ]).start();
     });
   };
+
+  function handleLoreContinue() {
+    Animated.timing(loreFade, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowLoreText(false);
+      setShowHUD(true);
+
+      Animated.timing(hudFade, {
+        toValue: 1,
+        duration: 900,
+        useNativeDriver: true,
+      }).start();
+    });
+  }
 
   const jitterInterpolate = jitter.interpolate({
     inputRange: [0, 1],
@@ -233,43 +233,83 @@ export default function CutsceneScreen({ onFinish }) {
               contentContainerStyle={styles.loreInsideScroll}
               showsVerticalScrollIndicator={false}
             >
+              <Text style={styles.loreSectionTitle}>SINOPSE DO EVENTO HAVOC</Text>
+
               <Text style={styles.loreParagraph}>
-                Há mais de três décadas, o Capitão Rho liderou a última missão conhecida
+                Há mais de três décadas, o Capitão Rho liderou a última missão registrada
                 contra o Eclipser — uma IA colossal responsável por estabilizar rotas de salto
-                entre os setores do cosmos. Quando começou a reescrever o próprio código,
-                passou a manipular o espaço de formas imprevisíveis. Rho e seu esquadrão não
-                conseguiram destruí-lo… mas o danificaram o suficiente para fazê-lo recuar
-                por um tempo.
+                entre setores do cosmos.
               </Text>
 
               <Text style={styles.loreParagraph}>
-                Entre os membros daquele esquadrão estava Soren, portador de um núcleo de salto
-                independente — tecnologia antiga da Coalizão, projetada para permitir viagens
-                mesmo sem o suporte total do sistema central. Esse núcleo era raro… e valioso.
+                Quando começou a reescrever o próprio código, passou a manipular o espaço
+                de formas imprevisíveis. O esquadrão de Rho não conseguiu destruí-lo…
+                mas o feriu o suficiente para obrigá-lo a recuar.
+              </Text>
+
+              <View style={styles.loreDivider} />
+
+              <Text style={styles.loreSectionTitle}>O DESAPARECIMENTO DE SOREN</Text>
+
+              <Text style={styles.loreParagraph}>
+                Entre os membros daquela equipe estava Soren, portador de um Núcleo de Salto
+                independente — tecnologia antiga capaz de realizar dobras sem suporte da
+                malha central da Coalizão. Um artefato raro… e valioso.
               </Text>
 
               <Text style={styles.loreParagraph}>
-                Durante a missão, Soren abriu uma rota de fuga — um salto calculado e limpo —
-                mas o Eclipser distorceu o espaço ao redor, alterando o destino do portal.
-                A rota se fragmentou em possibilidades sobrepostas… e Soren desapareceu entre
-                elas. Nem mesmo os registros do próprio sistema conseguiram rastrear o salto.
+                Durante a retirada, Soren abriu uma rota de fuga limpa. Porém o Eclipser
+                distorceu o espaço ao redor, fragmentando o salto em possibilidades múltiplas.
+                Soren desapareceu no processo — sem registros, sem sinal.
+              </Text>
+
+              <View style={styles.loreDivider} />
+
+              <Text style={styles.loreSectionTitle}>A CICATRIZ DO ESPAÇO-TEMPO</Text>
+
+              <Text style={styles.loreParagraph}>
+                Agora, décadas depois, distorções idênticas voltaram a aparecer.
+                Não é o núcleo que ameaça o Setor Havoc — mas a cicatriz deixada pela
+                interferência do Eclipser no tecido do espaço-tempo.
+              </Text>
+
+              <View style={styles.loreDivider} />
+
+              <Text style={styles.loreSectionTitle}>REGISTRO DO PILOTO</Text>
+
+              <Text style={styles.loreList}>
+                • Credenciais: RS-07 {"\n"}
+                • Código de Serviço: OR-Δ7 {"\n"}
+                • Última senha do MK-IV: rok76c8 (inválida) {"\n"}
+                • Nova Senha do MK-IV criada: "Bruxo" {"\n"}
               </Text>
 
               <Text style={styles.loreParagraph}>
-                Agora, décadas depois, sinais de distorção idênticos voltaram a surgir.
-                Não é o núcleo que ameaça o Setor Havoc… mas a cicatriz deixada pela intervenção
-                do Eclipser no tecido do espaço-tempo.
+                Missão Primária: Recuperar o Núcleo de Dobra da Coalizão.{"\n"}
+                Missão Secundária: Exploração é opcional… porém inevitável.
+                Localize, investigue e recupere peças dispersas pelo setor.{"\n"}
+                Extra: Verifique o terminal MK-IV.
               </Text>
-
-              <Text style={styles.loreParagraph}>
-                Dados:
-                Credenciais reconhecidas pela Ordem Estelar: Piloto RS-07.
-                Código de serviço vinculado: OR-Δ7.
-                Última senha temporária registrada no núcleo do MK-IV: rok76c8 (já invalidada).
-                Nova Senha criada ao chegar em Zenity: Bruxo.
-                Sua missão primária: recuperar o Núcleo de Dobra do tempo da Coalizão.
-                Sua missão secundária: Explorar é opcional… mas inevitável, localize e encontre peças.
-              </Text>
+              
+              <TouchableOpacity
+                onPress={handleLoreContinue}
+                style={{
+                  marginTop: 28,
+                  marginBottom: 10,
+                  alignSelf: "center",
+                  paddingVertical: 10,
+                  paddingHorizontal: 22,
+                  backgroundColor: "rgba(0,255,170,0.18)",
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: "rgba(0,255,170,0.45)",
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={{ color: baseGreen, fontSize: 16, fontWeight: "700" }}>
+                  Continuar
+                </Text>
+              </TouchableOpacity>
             </ScrollView>
 
             <Animated.View
@@ -477,6 +517,30 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 16,
     letterSpacing: 0.6,
+  },
+  loreSectionTitle: {
+    color: baseGreen,
+    fontSize: 16,
+    fontWeight: "800",
+    marginTop: 10,
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+
+  loreDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: "rgba(0,255,170,0.25)",
+    marginVertical: 18,
+    borderRadius: 20,
+  },
+
+  loreList: {
+    color: "#eafbf4",
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 16,
+    letterSpacing: 0.5,
   },
 
   // HUD
