@@ -113,6 +113,9 @@ export default function SandboxScreen() {
         break;
 
       case 11: // piratas
+        blueMarkerRef.current?.remove();
+        blueMarkerRef.current = null;
+        setMarkerCoords(null);
         playSfx("tutorial_combat");
         stopGameMusic();
         break;

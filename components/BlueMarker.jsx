@@ -75,6 +75,8 @@ export default async function createBlueMarker({
         explodeTime: 0,
     };
 
+    let disposed = false;
+
     // 6. Som
     let sound = null;
     try {
@@ -82,13 +84,14 @@ export default async function createBlueMarker({
         await s.loadAsync(require("@/assets/sounds/marker_ping.mp3"));
         await s.setIsLoopingAsync(false);
         sound = s;
-    } catch (_) {}
+    } catch (_) { }
 
     // 7. Adicionar ao universo
     group.add(markerGroup);
 
     // 8. UPDATE — mantém TODAS animações
-    function update(dt, universeOffset = new THREE.Vector3(0,0,0)) {
+    function update(dt, universeOffset = new THREE.Vector3(0, 0, 0)) {
+        if (disposed) return;
         markerGroup.userData.time += dt;
 
         const t = markerGroup.userData.time * markerGroup.userData.pulseSpeed;
@@ -124,7 +127,7 @@ export default async function createBlueMarker({
             sphere.material.emissiveIntensity = 3;
 
             if (sound) {
-                try { sound.replayAsync(); } catch (_) {}
+                try { sound.replayAsync(); } catch (_) { }
             }
 
             // evento
@@ -134,7 +137,7 @@ export default async function createBlueMarker({
                         detail: { worldPos: worldPos.toArray(), distance }
                     })
                 );
-            } catch (_) {}
+            } catch (_) { }
         }
 
         // ANIMAÇÃO DA EXPLOSÃO
@@ -147,16 +150,27 @@ export default async function createBlueMarker({
         }
     }
 
+    async function remove() {
+        if (disposed) return;
+        disposed = true;
+
+        try {
+            group.remove(markerGroup);
+        } catch (_) { }
+
+        try {
+            if (sound) {
+                await sound.stopAsync();
+                await sound.unloadAsync();
+            }
+        } catch (_) { }
+    }
+
     // 9. Retorno final
     return {
-        markerGroup,
+        group: markerGroup,
         basePosition: pos.clone(),
         update,
-        dispose: async () => {
-            try {
-                group.remove(markerGroup);
-                if (sound) await sound.unloadAsync();
-            } catch (_) {}
-        },
+        remove,
     };
 }
