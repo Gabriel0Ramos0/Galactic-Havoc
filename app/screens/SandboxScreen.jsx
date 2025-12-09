@@ -14,8 +14,12 @@ import {
   startGameMusic,
   stopGameMusic,
   setMusicVolume,
-  getMusicVolume
+  getMusicVolume,
+  stopTutorialCombat,
+  playSfx,
+  loadSfx
 } from "@/components/AudioController";
+import { Audio } from "expo-av";
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";
@@ -78,11 +82,50 @@ export default function SandboxScreen() {
         minDistance: 5000,
       }).then(marker => {
         blueMarkerRef.current = marker;
-
-        console.log("Marker criado em:", marker.basePosition);
       });
     }
   }, [tutorialStep]);
+
+  useEffect(() => {
+    loadSfx();
+  }, []);
+
+  useEffect(() => {
+    if (!inGame) return;
+
+    switch (tutorialStep) {
+      case 1:
+        playSfx("tutorial_intro");
+        break;
+
+      case 3:
+      case 4: // sequência DWAS
+        playSfx("tutorial_alert");
+        break;
+
+      case 5:
+      case 6:
+        playSfx("tutorial_ok");
+        break;
+
+      case 8: // marcador aparece
+        playSfx("tutorial_marker");
+        break;
+
+      case 11: // piratas
+        playSfx("tutorial_combat");
+        stopGameMusic();
+        break;
+
+      case 13:
+        stopTutorialCombat();
+        startGameMusic();
+        break;
+
+      default:
+        break;
+    }
+  }, [tutorialStep, inGame]);
 
   const view = 2000; // tamanho do cubo de visão
 
@@ -213,6 +256,13 @@ export default function SandboxScreen() {
           onStart={async () => {
             resetMovementState();
             setPaused(false);
+            if (blueMarkerRef.current) {
+              try {
+                universeRef.current.remove(blueMarkerRef.current.group);
+              } catch (err) { }
+              blueMarkerRef.current = null;
+              setMarkerCoords(null);
+            }
             await stopMenuMusic();
             await startGameMusic();
             setMenuVisible(false);
@@ -242,6 +292,13 @@ export default function SandboxScreen() {
               } else if (rafRef.current) {
                 cancelAnimationFrame(rafRef.current);
                 rafRef.current = null;
+              }
+              if (blueMarkerRef.current) {
+                try {
+                  universeRef.current.remove(blueMarkerRef.current.group);
+                } catch (err) { }
+                blueMarkerRef.current = null;
+                setMarkerCoords(null);
               }
               setMenuVisible(true);
               setInGame(false);

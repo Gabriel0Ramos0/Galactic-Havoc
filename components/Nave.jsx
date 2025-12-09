@@ -21,13 +21,9 @@ export function createShip(scene) {
           object.rotation.x = Math.PI / 2;
           ship.add(object);
           ship.userData.loaded = true;
-        },
-        (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% carregado"),
-        (error) => console.error("Erro ao carregar OBJ:", error)
+        }
       );
-    },
-    (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% carregado MTL"),
-    (error) => console.error("Erro ao carregar MTL:", error)
+    }
   );
 
   ship.userData.loaded = false;
