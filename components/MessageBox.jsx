@@ -19,7 +19,7 @@ export default function MessageBox({
     // POSIÇÃO
     const getPositionStyle = () => {
         const pos = {
-            "bottom-left": { top: 25, left: -50 },
+            "bottom-left": { top: 25, left: -110 },
             "bottom-right": { bottom: 25, right: 25 },
             "top-left": { top: 25, left: 25 },
             "top-right": { top: 25, right: 25 },

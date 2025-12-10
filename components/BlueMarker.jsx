@@ -1,172 +1,231 @@
-// app/components/BlueMarker.js
 import * as THREE from "three";
 import { Audio } from "expo-av";
+import { OBJLoader, MTLLoader } from "three-stdlib";
 
 export default async function createBlueMarker({
-    group,              // universeGroup
-    spread = 10000,      // mesma lógica dos sóis
-    minDistance = 5000,  // distância mínima da nave
+    group,
+    spread = 10000,
+    minDistance = 5000,
     activateDistance = 180
 }) {
 
+    // ===============================
     // 1. Spawn
+    // ===============================
     function randomCoordinate() {
         return (Math.random() - 0.5) * spread;
     }
 
-    let pos = new THREE.Vector3(
-        randomCoordinate(),
-        randomCoordinate(),
-        randomCoordinate()
-    );
+    const pos = new THREE.Vector3();
+    do {
+        pos.set(
+            randomCoordinate(),
+            randomCoordinate(),
+            randomCoordinate()
+        );
+    } while (pos.length() < minDistance);
 
-    while (pos.length() < minDistance) {
-        pos.set(randomCoordinate(), randomCoordinate(), randomCoordinate());
-    }
-
-    // 2. Criar grupo do marcador
+    // ===============================
+    // 2. Grupo principal
+    // ===============================
     const markerGroup = new THREE.Group();
     markerGroup.position.copy(pos);
+    group.add(markerGroup);
 
-    // 3. ESFERA com pulso
-    const geom = new THREE.SphereGeometry(12, 24, 18);
-    const mat = new THREE.MeshStandardMaterial({
-        color: 0x66ccff,
-        emissive: 0x00aaff,
-        emissiveIntensity: 1.2,
-        metalness: 0.1,
-        roughness: 0.3,
-        transparent: true,
-        opacity: 0.95,
-    });
-    const sphere = new THREE.Mesh(geom, mat);
-    markerGroup.add(sphere);
-
-    // 4. LABEL
+    // ===============================
+    // 3. LABEL
+    // ===============================
     const canvas = document.createElement("canvas");
     canvas.width = 256;
     canvas.height = 64;
     const ctx = canvas.getContext("2d");
 
-    ctx.fillStyle = "rgba(10,10,20,0.0)";
-    ctx.fillRect(0, 0, 256, 64);
     ctx.fillStyle = "#bfeeff";
     ctx.font = "22px monospace";
-    ctx.fillText("Nave Zefira", 12, 36);
+    ctx.fillText("Nave Zefira", 16, 36);
 
-    const tex = new THREE.CanvasTexture(canvas);
-    const spriteMat = new THREE.SpriteMaterial({
-        map: tex,
-        transparent: true,
-        opacity: 0.9,
-    });
+    const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+            map: new THREE.CanvasTexture(canvas),
+            transparent: true,
+            opacity: 0.85,
+            depthWrite: false,
+        })
+    );
 
-    const sprite = new THREE.Sprite(spriteMat);
     sprite.scale.set(160, 40, 1);
-    sprite.position.set(0, 35, 0);
+    sprite.position.set(0, 60, 0);
     markerGroup.add(sprite);
 
-    // 5. Estado interno de animação
+    // ===============================
+    // 4. GLOW FAKE (AURA)
+    // ===============================
+    const glowGeom = new THREE.SphereGeometry(40, 32, 32);
+    const glowMat = new THREE.MeshBasicMaterial({
+        color: 0x3388ff,
+        transparent: true,
+        opacity: 0.22,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+    });
+
+    const glowSphere = new THREE.Mesh(glowGeom, glowMat);
+    markerGroup.add(glowSphere);
+
+    // ===============================
+    // 5. Nave-Mãe (OBJ)
+    // ===============================
+    let motherShip = null;
+
+    new MTLLoader().load(
+        require("../assets/models/marker/estacao_espacial.mtl"),
+        (materials) => {
+            materials.preload();
+
+            new OBJLoader()
+                .setMaterials(materials)
+                .load(
+                    require("../assets/models/marker/estacao_espacial.obj"),
+                    (object) => {
+
+                        // === 1. Centralização REAL ===
+                        const box = new THREE.Box3().setFromObject(object);
+                        const center = new THREE.Vector3();
+                        box.getCenter(center);
+                        object.position.sub(center);
+
+                        // === 2. Ajuste de base (deixa "deitado no centro") ===
+                        const size = new THREE.Vector3();
+                        box.getSize(size);
+
+                        // sobe metade da altura pra não "afundar" na esfera
+                        object.position.y += size.y * 0.15;
+
+                        // === 3. Escala elegante (uniforme) ===
+                        const targetSize = 90; // sensação visual boa pro marker
+                        const maxAxis = Math.max(size.x, size.y, size.z);
+                        const scale = targetSize / maxAxis;
+                        object.scale.setScalar(scale);
+
+                        // === 4. Orientação correta ===
+                        object.rotation.x = Math.PI / 2;
+
+                        // === 5. Material limpo (sem glow, sem emissivo) ===
+                        object.traverse((child) => {
+                            if (child.isMesh && child.material) {
+                                child.material.emissive?.set?.(0x000000);
+                                child.material.emissiveIntensity = 0;
+                                child.material.transparent = false;
+                                child.material.opacity = 1;
+                                child.material.depthWrite = true;
+                            }
+                        });
+
+                        motherShip = object;
+                        markerGroup.add(object);
+                    }
+                );
+        }
+    );
+
+    // ===============================
+    // 6. Estado
+    // ===============================
     markerGroup.userData = {
-        activated: false,
-        activateDistance,
-        pulseSpeed: 2.0,
         time: 0,
-        explodeTime: 0,
+        activated: false,
+        glowLife: 0,      // controla expansão do glow
+        activateDistance
     };
 
-    let disposed = false;
-
-    // 6. Som
+    // ===============================
+    // 7. Som
+    // ===============================
     let sound = null;
     try {
-        const s = new Audio.Sound();
-        await s.loadAsync(require("@/assets/sounds/marker_ping.mp3"));
-        await s.setIsLoopingAsync(false);
-        sound = s;
+        sound = new Audio.Sound();
+        await sound.loadAsync(
+            require("@/assets/sounds/marker_ping.mp3")
+        );
     } catch (_) { }
 
-    // 7. Adicionar ao universo
-    group.add(markerGroup);
-
-    // 8. UPDATE — mantém TODAS animações
-    function update(dt, universeOffset = new THREE.Vector3(0, 0, 0)) {
-        if (disposed) return;
+    // ===============================
+    // 8. UPDATE
+    // ===============================
+    function update(dt, universeOffset = new THREE.Vector3()) {
         markerGroup.userData.time += dt;
+        const t = markerGroup.userData.time;
 
-        const t = markerGroup.userData.time * markerGroup.userData.pulseSpeed;
-
-        // posição absoluta
         const worldPos = new THREE.Vector3()
             .copy(markerGroup.position)
             .add(universeOffset);
 
         const distance = worldPos.length();
 
-        // ESCALA dinâmica baseada na distância
-        const maxScale = 2.5;
-        const minScale = 0.8;
-        const distanceScale = THREE.MathUtils.clamp(distance / 1000, minScale, maxScale);
+        // label
+        const scale = THREE.MathUtils.clamp(distance / 1000, 0.8, 2.5);
+        sprite.scale.set(160 * scale, 40 * scale, 1);
 
-        // PULSO normal
-        if (markerGroup.userData.explodeTime <= 0) {
-            const pulseScale = (1 + Math.sin(t) * 0.12) * distanceScale;
-            sphere.scale.set(pulseScale, pulseScale, pulseScale);
-            sphere.material.emissiveIntensity =
-                0.9 + Math.max(0, Math.cos(t)) * 0.8;
+        // nave
+        if (motherShip) {
+            motherShip.rotation.z += dt * 0.02;
+            motherShip.rotation.y = Math.sin(t * 0.2) * 0.1;
+            motherShip.position.y = Math.sin(t * 0.35) * 4;
         }
 
-        // sprite escala conforme distância
-        sprite.scale.set(160 * distanceScale, 40 * distanceScale, 1);
+        // ===============================
+        // GLOW BASE
+        // ===============================
+        glowSphere.scale.setScalar(
+            1 + Math.sin(t * 2.5) * 0.15
+        );
 
-        // ATIVAÇÃO
-        if (!markerGroup.userData.activated && distance <= activateDistance) {
+        // ===============================
+        // ATIVAÇÃO → GLOW SE EXPANDE E MORRE
+        // ===============================
+        if (
+            !markerGroup.userData.activated &&
+            distance <= activateDistance
+        ) {
             markerGroup.userData.activated = true;
-            markerGroup.userData.explodeTime = 0.3;
-            sphere.scale.set(1.6, 1.6, 1.6);
-            sphere.material.emissiveIntensity = 3;
+            markerGroup.userData.glowLife = 1;
 
-            if (sound) {
-                try { sound.replayAsync(); } catch (_) { }
-            }
+            try { sound?.replayAsync(); } catch (_) { }
 
-            // evento
-            try {
-                window.dispatchEvent(
-                    new CustomEvent("blueMarkerReached", {
-                        detail: { worldPos: worldPos.toArray(), distance }
-                    })
-                );
-            } catch (_) { }
+            window.dispatchEvent(
+                new CustomEvent("blueMarkerReached", {
+                    detail: {
+                        worldPos: worldPos.toArray(),
+                        type: "MOTHER_SHIP_SIGNAL_FAILURE",
+                    },
+                })
+            );
         }
 
-        // ANIMAÇÃO DA EXPLOSÃO
-        if (markerGroup.userData.explodeTime > 0) {
-            markerGroup.userData.explodeTime -= dt;
-            const lerp = Math.max(markerGroup.userData.explodeTime / 0.3, 0);
-            const s = 1 + lerp * 0.6;
-            sphere.scale.set(s, s, s);
-            sphere.material.emissiveIntensity = 0.9 + lerp * 2.1;
+        // glow reativo
+        if (markerGroup.userData.glowLife > 0) {
+            markerGroup.userData.glowLife -= dt * 0.8;
+
+            const k = markerGroup.userData.glowLife;
+
+            glowSphere.scale.setScalar(
+                1.2 + (1 - k) * 6
+            );
+
+            glowMat.opacity = 0.4 * k;
         }
     }
 
+    // ===============================
+    // 9. REMOVE
+    // ===============================
     async function remove() {
-        if (disposed) return;
-        disposed = true;
-
+        group.remove(markerGroup);
         try {
-            group.remove(markerGroup);
-        } catch (_) { }
-
-        try {
-            if (sound) {
-                await sound.stopAsync();
-                await sound.unloadAsync();
-            }
+            await sound?.unloadAsync();
         } catch (_) { }
     }
 
-    // 9. Retorno final
     return {
         group: markerGroup,
         basePosition: pos.clone(),
