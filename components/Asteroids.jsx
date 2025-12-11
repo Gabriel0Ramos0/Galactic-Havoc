@@ -1,3 +1,4 @@
+// app/components/Asteroids.js
 import { OBJLoader, MTLLoader } from "three-stdlib";
 import * as THREE from "three";
 
@@ -24,12 +25,31 @@ export default async function createAsteroids({
       child.material.side = THREE.DoubleSide;
       child.material.roughness = 1.0;
       child.material.metalness = 0.2;
+      child.frustumCulled = false;
     }
   });
+
+  function randomPositionInShell(center, minR, maxR) {
+    const u = Math.random();
+    const v = Math.random();
+    const theta = 2 * Math.PI * u;
+    const phi = Math.acos(2 * v - 1);
+    const r = Math.sqrt(Math.random()) * (maxR - minR) + minR;
+    const sinPhi = Math.sin(phi);
+    return new THREE.Vector3(
+      center.x + r * Math.cos(theta) * sinPhi,
+      center.y + r * Math.sin(theta) * sinPhi,
+      center.z + r * Math.cos(phi)
+    );
+  }
 
   // --- gerar instâncias ---
   for (let i = 0; i < count; i++) {
     const asteroid = baseAsteroid.clone(true);
+    asteroid.traverse(c => {
+      if (c.isMesh) c.frustumCulled = false;
+    });
+
     const scale = minScale + Math.random() * (maxScale - minScale);
     asteroid.scale.setScalar(scale);
 
@@ -52,10 +72,17 @@ export default async function createAsteroids({
     });
   }
 
-  // --- atualizar por frame ---
+  const tmpGlobal = new THREE.Vector3();
+  const tmpNew = new THREE.Vector3();
+
   group.update = (shipPosition, universePos, dt = 1) => {
-    for (const info of infos) {
-      info.pos.add(info.vel.clone().multiplyScalar(dt));
+    for (let i = 0; i < infos.length; i++) {
+      const info = infos[i];
+
+      // atualização física simples
+      info.pos.addScaledVector(info.vel, dt);
+
+      // rotação
       info.mesh.rotation.x += info.rotVel.x * dt;
       info.mesh.rotation.y += info.rotVel.y * dt;
       info.mesh.rotation.z += info.rotVel.z * dt;
@@ -63,22 +90,31 @@ export default async function createAsteroids({
     }
   };
 
-  // --- reciclagem: reposiciona se longe ---
-  group.recycle = (shipPosition, universePos, maxDistance = spread / 2, minDistanceFromShip = 800) => {
-    for (const info of infos) {
-      const global = new THREE.Vector3().copy(info.pos).add(universePos);
-      const d = global.distanceTo(shipPosition);
+  group.recycle = (
+    shipPosition,
+    universePos,
+    maxDistance = spread / 2,
+    minDistanceFromShip = 800
+  ) => {
+    for (let i = 0; i < infos.length; i++) {
+      const info = infos[i];
+
+      tmpGlobal.copy(info.pos).add(universePos);
+      const d = tmpGlobal.distanceTo(shipPosition);
+
       if (d > maxDistance || d < 50) {
-        let newPos;
+        let attempts = 0;
         do {
-          newPos = new THREE.Vector3(
-            shipPosition.x + (Math.random() - 0.5) * spread,
-            shipPosition.y + (Math.random() - 0.5) * spread,
-            shipPosition.z + (Math.random() - 0.5) * spread
-          );
-        } while (newPos.distanceTo(shipPosition) < minDistanceFromShip);
-        info.pos.copy(newPos.sub(universePos));
+          tmpNew.copy(randomPositionInShell(shipPosition, minDistanceFromShip, Math.max(minDistanceFromShip + 500, maxDistance)));
+          attempts++;
+          if (attempts > 12) break;
+        } while (tmpNew.distanceTo(shipPosition) < minDistanceFromShip);
+
+        // convert to local universe coords
+        info.pos.copy(tmpNew.sub(universePos));
         info.vel.set((Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6);
+        info.rotVel.set((Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.03);
+        info.mesh.position.copy(info.pos);
       }
     }
   };
@@ -88,13 +124,12 @@ export default async function createAsteroids({
     const hits = [];
     for (let i = 0; i < infos.length; i++) {
       const info = infos[i];
-      const global = new THREE.Vector3().copy(info.pos).add(universePos);
-      const dist = global.distanceTo(shipPosition);
-      const radius = info.scale * 0.8; // aproxima o raio ao tamanho
+      tmpGlobal.copy(info.pos).add(universePos);
+      const dist = tmpGlobal.distanceTo(shipPosition);
+      const radius = info.scale * 0.8;
       if (dist < shipRadius + radius) hits.push(i);
     }
     return hits;
   };
-
   return group;
 }

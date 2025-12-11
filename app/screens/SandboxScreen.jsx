@@ -187,6 +187,7 @@ export default function SandboxScreen() {
     const animate = () => {
       if (!running) return;
       rafRef.current = requestAnimationFrame(animate);
+      const dt = clock.getDelta();
 
       updateShip();
       updateCamera();
@@ -203,22 +204,20 @@ export default function SandboxScreen() {
 
       stars.recycle(ship.position, universeGroup.position, 900);
       suns.recycle(ship.position, universeGroup.position, 1500);
-      asteroids.recycle(ship.position, universeGroup.position, 3000, 1200);
-      if (blueMarkerRef.current && blueMarkerRef.current.update) {
-        blueMarkerRef.current.update(clock.getDelta(), universeGroup.position);
 
+      asteroids.update(ship.position, universeGroup.position, dt);
+      asteroids.recycle(ship.position, universeGroup.position, 3000, 1200);
+
+      if (blueMarkerRef.current && blueMarkerRef.current.update) {
+        blueMarkerRef.current.update(dt, universeGroup.position);
         try {
           const world = blueMarkerRef.current.basePosition;
-
           setMarkerCoords({
             x: world.x * 0.01,
             y: world.y * 0.01,
             z: world.z * 0.01,
           });
-
-        } catch (err) {
-          // apenas debug — não quebra o loop
-        }
+        } catch { }
       }
       renderer.render(scene, camera);
       gl.endFrameEXP();
