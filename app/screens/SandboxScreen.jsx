@@ -130,7 +130,7 @@ export default function SandboxScreen() {
     }
   }, [tutorialStep, inGame]);
 
-  const view = 2000; // tamanho do cubo de visão
+  const view = 3000; // tamanho do cubo de visão
 
   const sceneRef = useRef(null);
   const universeRef = useRef(null);
@@ -203,7 +203,7 @@ export default function SandboxScreen() {
       });
 
       stars.recycle(ship.position, universeGroup.position, 900);
-      suns.recycle(ship.position, universeGroup.position, 1500);
+      suns.recycle(ship.position, universeGroup.position, 2500);
 
       asteroids.update(ship.position, universeGroup.position, dt);
       asteroids.recycle(ship.position, universeGroup.position, 3000, 1200);
@@ -219,6 +219,21 @@ export default function SandboxScreen() {
           });
         } catch { }
       }
+      suns.children.forEach(sun => {
+        if (sun.userData.growing) {
+          const target = 1;
+          const speed = 0.004;
+
+          sun.scale.x = THREE.MathUtils.lerp(sun.scale.x, target, speed);
+          sun.scale.y = THREE.MathUtils.lerp(sun.scale.y, target, speed);
+          sun.scale.z = THREE.MathUtils.lerp(sun.scale.z, target, speed);
+
+          if (Math.abs(sun.scale.x - target) < 0.01) {
+            sun.scale.set(1, 1, 1);
+            sun.userData.growing = false;
+          }
+        }
+      });
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };

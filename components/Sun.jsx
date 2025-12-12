@@ -20,7 +20,7 @@ export default async function createSuns(sunCount = 10, spread = 2000) {
     );
 
     for (let i = 0; i < sunCount; i++) {
-        const size = Math.random() * (100 - 10) + 10;
+        const size = Math.random() * (200 - 60) + 60;
         const sunGeometry = new THREE.SphereGeometry(size, 32, 32);
 
         const randomTexture = loadedTextures[Math.floor(Math.random() * loadedTextures.length)];
@@ -42,6 +42,8 @@ export default async function createSuns(sunCount = 10, spread = 2000) {
         sunMesh.frustumCulled = false;
 
         createSunLight(sunMesh, 1000, 1000);
+        sunMesh.userData.targetScale = 1;
+        sunMesh.scale.set(1, 1, 1);
 
         sunsGroup.add(sunMesh);
     }
@@ -58,11 +60,26 @@ export default async function createSuns(sunCount = 10, spread = 2000) {
             const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
             if (distance > maxDistance) {
-                sunMesh.position.set(
-                    shipPosition.x + (Math.random() - 0.5) * spread - universePos.x,
-                    shipPosition.y + (Math.random() - 0.5) * spread - universePos.y,
-                    shipPosition.z + (Math.random() - 0.5) * spread - universePos.z
-                );
+                const minDistance = spread * 1.5;
+
+                let newX, newY, newZ, newDist;
+
+                do {
+                    newX = shipPosition.x + (Math.random() - 0.5) * spread * 2 - universePos.x;
+                    newY = shipPosition.y + (Math.random() - 0.5) * spread * 2 - universePos.y;
+                    newZ = shipPosition.z + (Math.random() - 0.5) * spread * 2 - universePos.z;
+
+                    const dx2 = newX - shipPosition.x;
+                    const dy2 = newY - shipPosition.y;
+                    const dz2 = newZ - shipPosition.z;
+                    newDist = Math.sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+
+                } while (newDist < minDistance);
+
+                sunMesh.position.set(newX, newY, newZ);
+
+                sunMesh.scale.set(0.001, 0.001, 0.001);
+                sunMesh.userData.growing = true;
             }
         });
     };

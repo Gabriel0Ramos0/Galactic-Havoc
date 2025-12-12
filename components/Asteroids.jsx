@@ -46,9 +46,7 @@ export default async function createAsteroids({
   // --- gerar instâncias ---
   for (let i = 0; i < count; i++) {
     const asteroid = baseAsteroid.clone(true);
-    asteroid.traverse(c => {
-      if (c.isMesh) c.frustumCulled = false;
-    });
+    asteroid.traverse(c => { if (c.isMesh) c.frustumCulled = false; });
 
     const scale = minScale + Math.random() * (maxScale - minScale);
     asteroid.scale.setScalar(scale);
@@ -58,7 +56,6 @@ export default async function createAsteroids({
       (Math.random() - 0.5) * spread,
       (Math.random() - 0.5) * spread
     );
-
     asteroid.position.copy(pos);
     asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
     group.add(asteroid);
@@ -66,8 +63,11 @@ export default async function createAsteroids({
     infos.push({
       mesh: asteroid,
       pos,
-      vel: new THREE.Vector3((Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.5),
-      rotVel: new THREE.Vector3((Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02),
+      rotVel: new THREE.Vector3(
+        (Math.random() - 0.5) * 0.05,
+        (Math.random() - 0.5) * 0.05,
+        (Math.random() - 0.5) * 0.05
+      ),
       scale,
     });
   }
@@ -76,13 +76,7 @@ export default async function createAsteroids({
   const tmpNew = new THREE.Vector3();
 
   group.update = (shipPosition, universePos, dt = 1) => {
-    for (let i = 0; i < infos.length; i++) {
-      const info = infos[i];
-
-      // atualização física simples
-      info.pos.addScaledVector(info.vel, dt);
-
-      // rotação
+    for (let info of infos) {
       info.mesh.rotation.x += info.rotVel.x * dt;
       info.mesh.rotation.y += info.rotVel.y * dt;
       info.mesh.rotation.z += info.rotVel.z * dt;
@@ -90,15 +84,9 @@ export default async function createAsteroids({
     }
   };
 
-  group.recycle = (
-    shipPosition,
-    universePos,
-    maxDistance = spread / 2,
-    minDistanceFromShip = 800
-  ) => {
-    for (let i = 0; i < infos.length; i++) {
-      const info = infos[i];
-
+  // --- reciclagem (mantém posição, sem velocidade) ---
+  group.recycle = (shipPosition, universePos, maxDistance = spread / 2, minDistanceFromShip = 800) => {
+    for (let info of infos) {
       tmpGlobal.copy(info.pos).add(universePos);
       const d = tmpGlobal.distanceTo(shipPosition);
 
@@ -110,10 +98,7 @@ export default async function createAsteroids({
           if (attempts > 12) break;
         } while (tmpNew.distanceTo(shipPosition) < minDistanceFromShip);
 
-        // convert to local universe coords
         info.pos.copy(tmpNew.sub(universePos));
-        info.vel.set((Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6);
-        info.rotVel.set((Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.03);
         info.mesh.position.copy(info.pos);
       }
     }
