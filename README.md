@@ -28,7 +28,8 @@ Em desenvolvimento – lógica do jogo e componentes base estão sendo construí
 
 ## Screenshots
 
-![Espaço](assets/images/Espaço.jpeg)  
+![Espaço](assets/images/Espaço.jpeg) 
+![Tutorial](assets/images/Tutorial.png)   
 ![Iluminação](assets/images/terminal.jpeg)
 
 ## 📜 Licença
