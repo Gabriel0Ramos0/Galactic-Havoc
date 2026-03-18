@@ -34,9 +34,9 @@ export default function Tutorial({ onComplete, onStepChange }) {
         "Aproximando-se do ponto de energia. Vá até o brilho azul para identificá-lo.",
         "É uma nave abandonada… use I para inspecionar.",
         "Suprimentos encontrados. Abra a Interface da Nave com TAB para equipar os módulos.",
-        "Atenção… duas naves piratas estão se aproximando!",
+        "Atenção… três naves piratas estão se aproximando!",
         "Prepare o sistema de armas. Pressione ESPAÇO para disparar.",
-        "Boa sorte, piloto… e cuidado com o que pode estar te observando.",
+        "Boa sorte, piloto RS-07... o universo é um lugar perigoso. Siga para a missão de resgate mais próxima para obter mais suprimentos e informações sobre o que está acontecendo.",
     ];
 
     useEffect(() => {

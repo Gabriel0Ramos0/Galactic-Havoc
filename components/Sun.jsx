@@ -39,8 +39,6 @@ export default async function createSuns(sunCount = 10, spread = 2000) {
             (Math.random() - 0.5) * spread
         );
 
-        sunMesh.frustumCulled = false;
-
         createSunLight(sunMesh, 1000, 1000);
         sunMesh.userData.targetScale = 1;
         sunMesh.scale.set(1, 1, 1);

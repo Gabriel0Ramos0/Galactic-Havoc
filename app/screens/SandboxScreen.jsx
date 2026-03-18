@@ -161,12 +161,10 @@ export default function SandboxScreen() {
 
     // Estrelas
     const stars = await createStars();
-    stars.children.forEach(s => s.frustumCulled = false);
     universeGroup.add(stars);
 
     // Sóis
     const suns = await createSuns(3, view);
-    suns.children.forEach(s => s.frustumCulled = false);
     universeGroup.add(suns);
 
     // Asteroides
@@ -219,7 +217,17 @@ export default function SandboxScreen() {
           });
         } catch { }
       }
+      const VIEW_DISTANCE = 3000 * 3000;
+
       suns.children.forEach(sun => {
+        const dx = sun.position.x + universeGroup.position.x - ship.position.x;
+        const dy = sun.position.y + universeGroup.position.y - ship.position.y;
+        const dz = sun.position.z + universeGroup.position.z - ship.position.z;
+
+        const distSq = dx * dx + dy * dy + dz * dz;
+
+        if (distSq > VIEW_DISTANCE) return;
+
         if (sun.userData.growing) {
           const target = 1;
           const speed = 0.004;
