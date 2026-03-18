@@ -162,15 +162,15 @@ export default function SandboxScreen() {
     scene.add(universeGroup);
 
     // Estrelas
-    const stars = await createStars();
+    const stars = await createStars(7000, 2000);
     universeGroup.add(stars);
 
     // Sóis
-    const suns = await createSuns(3, view);
+    const suns = await createSuns(3, 6000);
     universeGroup.add(suns);
 
     // Asteroides
-    const asteroids = await createAsteroids({ count: 300, spread: 8000 });
+    const asteroids = await createAsteroids(200, 8000, 2, 20);
     universeGroup.add(asteroids);
 
     // Marcador Azul (Tutorial)

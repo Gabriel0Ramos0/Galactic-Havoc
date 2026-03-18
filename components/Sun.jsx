@@ -7,7 +7,7 @@ const textures = [
     require('@/assets/textures/sol-azul.png')
 ];
 
-export default async function createSuns(sunCount = 10, spread = 2000) {
+export default async function createSuns(sunCount, spread) {
     const sunsGroup = new THREE.Group();
 
     // Carregar todas as texturas primeiro

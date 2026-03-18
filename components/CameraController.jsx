@@ -7,6 +7,9 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
   const isDragging = useRef(false);
   const lastTouch = useRef({ x: 0, y: 0 });
   const pinchDistance = useRef(null);
+  const tempVec1 = useRef(new THREE.Vector3());
+  const tempVec2 = useRef(new THREE.Vector3());
+  const tempVec3 = useRef(new THREE.Vector3());
 
   const applyZoom = (delta) => {
     orbit.current.radius = Math.max(2, Math.min(50, orbit.current.radius + delta));
@@ -23,7 +26,8 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
           const [a, b] = evt.nativeEvent.touches;
           const dx = a.pageX - b.pageX;
           const dy = a.pageY - b.pageY;
-          pinchDistance.current = Math.sqrt(dx * dx + dy * dy);
+          const distSq = dx * dx + dy * dy;
+          pinchDistance.current = distSq;
         } else {
           isDragging.current = true;
           lastTouch.current = { x: evt.nativeEvent.locationX, y: evt.nativeEvent.locationY };
@@ -34,9 +38,9 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
           const [a, b] = evt.nativeEvent.touches;
           const dx = a.pageX - b.pageX;
           const dy = a.pageY - b.pageY;
-          const newDistance = Math.sqrt(dx * dx + dy * dy);
-          if (pinchDistance.current) applyZoom((pinchDistance.current - newDistance) * 0.01);
-          pinchDistance.current = newDistance;
+          const distSq = dx * dx + dy * dy;
+          if (pinchDistance.current) applyZoom((pinchDistance.current - distSq) * 0.01);
+          pinchDistance.current = distSq;
           return;
         }
 
@@ -65,7 +69,7 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
   const updateCamera = () => {
     if (!cameraRef.current || !shipRef.current) return;
 
-    const target = shipRef.current.position.clone();
+    const target = tempVec1.current.copy(shipRef.current.position);
 
     let desiredPos;
 
@@ -73,28 +77,26 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
       const x = orbit.current.radius * Math.sin(orbit.current.phi) * Math.sin(orbit.current.theta);
       const y = orbit.current.radius * Math.cos(orbit.current.phi);
       const z = orbit.current.radius * Math.sin(orbit.current.phi) * Math.cos(orbit.current.theta);
-      desiredPos = target.clone().add(new THREE.Vector3(x, y, z));
+
+      desiredPos = tempVec2.current.set(x, y, z).add(target);
+
     } else {
-      const desiredDirection = new THREE.Vector3(0, 1, 0)
+      const desiredDirection = tempVec2.current
+        .set(0, 1, 0)
         .applyQuaternion(shipRef.current.quaternion)
         .normalize();
 
       currentDirection.current.lerp(desiredDirection, 0.05);
 
-      const offsetDistance = orbit.current.radius;
-      const offsetHeight = orbit.current.radius * 0.3;
+      const offset = tempVec3.current
+        .copy(currentDirection.current)
+        .multiplyScalar(orbit.current.radius);
 
-      desiredPos = target.clone()
-        .sub(currentDirection.current.clone().multiplyScalar(offsetDistance));
-      desiredPos.y += offsetHeight;
+      desiredPos = tempVec2.current.copy(target).sub(offset);
+      desiredPos.y += orbit.current.radius * 0.3;
     }
     cameraRef.current.position.lerp(desiredPos, 0.05);
-
-    // Rotação sempre olhando para a nave
-    const desiredQuat = new THREE.Quaternion();
     cameraRef.current.lookAt(target);
-    desiredQuat.copy(cameraRef.current.quaternion);
-    cameraRef.current.quaternion.slerp(desiredQuat, 0.05);
   };
 
   return { panHandlers: panResponder.panHandlers, onWheel, updateCamera };

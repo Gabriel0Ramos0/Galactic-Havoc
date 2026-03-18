@@ -2,12 +2,7 @@
 import { OBJLoader, MTLLoader } from "three-stdlib";
 import * as THREE from "three";
 
-export default async function createAsteroids({
-  count = 120,
-  spread = 6000,
-  minScale = 2,
-  maxScale = 20,
-} = {}) {
+export default async function createAsteroids( count, spread, minScale, maxScale ) {
   const group = new THREE.Group();
   const infos = [];
 
@@ -93,7 +88,7 @@ export default async function createAsteroids({
   };
 
   // --- reciclagem (mantém posição, sem velocidade) ---
-  group.recycle = (shipPosition, universePos, maxDistance = spread / 2, minDistanceFromShip = 800) => {
+  group.recycle = (shipPosition, universePos, maxDistance = spread / 2, minDistanceFromShip) => {
     for (let info of infos) {
       tmpGlobal.copy(info.pos).add(universePos);
       const dSq = tmpGlobal.distanceToSquared(shipPosition);
