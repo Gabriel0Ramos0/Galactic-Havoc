@@ -3,7 +3,7 @@ import { OBJLoader, MTLLoader } from "three-stdlib";
 import * as THREE from "three";
 
 export default async function createAsteroids({
-  count = 300,
+  count = 120,
   spread = 6000,
   minScale = 2,
   maxScale = 20,
@@ -25,7 +25,6 @@ export default async function createAsteroids({
       child.material.side = THREE.DoubleSide;
       child.material.roughness = 1.0;
       child.material.metalness = 0.2;
-      child.frustumCulled = false;
     }
   });
 
@@ -45,8 +44,8 @@ export default async function createAsteroids({
 
   // --- gerar instâncias ---
   for (let i = 0; i < count; i++) {
-    const asteroid = baseAsteroid.clone(true);
-    asteroid.traverse(c => { if (c.isMesh) c.frustumCulled = false; });
+    const asteroid = baseAsteroid.clone();
+    asteroid.traverse(c => { c.isMesh });
 
     const scale = minScale + Math.random() * (maxScale - minScale);
     asteroid.scale.setScalar(scale);
@@ -63,11 +62,11 @@ export default async function createAsteroids({
     infos.push({
       mesh: asteroid,
       pos,
-      rotVel: new THREE.Vector3(
-        (Math.random() - 0.5) * 0.05,
-        (Math.random() - 0.5) * 0.05,
-        (Math.random() - 0.5) * 0.05
-      ),
+      rotVel: {
+        x: (Math.random() - 0.5) * 0.05,
+        y: (Math.random() - 0.5) * 0.05,
+        z: (Math.random() - 0.5) * 0.05
+      },
       scale,
     });
   }
@@ -76,10 +75,19 @@ export default async function createAsteroids({
   const tmpNew = new THREE.Vector3();
 
   group.update = (shipPosition, universePos, dt = 1) => {
+    const VIEW_DISTANCE = 2000;
+
     for (let info of infos) {
+      tmpGlobal.copy(info.pos).add(universePos);
+
+      const distSq = tmpGlobal.distanceToSquared(shipPosition);
+
+      if (distSq > VIEW_DISTANCE * VIEW_DISTANCE) continue;
+
       info.mesh.rotation.x += info.rotVel.x * dt;
       info.mesh.rotation.y += info.rotVel.y * dt;
       info.mesh.rotation.z += info.rotVel.z * dt;
+
       info.mesh.position.copy(info.pos);
     }
   };
@@ -88,9 +96,10 @@ export default async function createAsteroids({
   group.recycle = (shipPosition, universePos, maxDistance = spread / 2, minDistanceFromShip = 800) => {
     for (let info of infos) {
       tmpGlobal.copy(info.pos).add(universePos);
-      const d = tmpGlobal.distanceTo(shipPosition);
+      const dSq = tmpGlobal.distanceToSquared(shipPosition);
+      const maxSq = maxDistance * maxDistance;
 
-      if (d > maxDistance || d < 50) {
+      if (dSq > maxSq || dSq < 50 * 50) {
         let attempts = 0;
         do {
           tmpNew.copy(randomPositionInShell(shipPosition, minDistanceFromShip, Math.max(minDistanceFromShip + 500, maxDistance)));
