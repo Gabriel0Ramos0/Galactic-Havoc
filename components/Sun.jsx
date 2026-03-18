@@ -47,39 +47,50 @@ export default async function createSuns(sunCount = 10, spread = 2000) {
     }
 
     sunsGroup.recycle = (shipPosition, universePos, maxDistance = spread) => {
-        sunsGroup.children.forEach((sunMesh) => {
-            const x = sunMesh.position.x + universePos.x;
-            const y = sunMesh.position.y + universePos.y;
-            const z = sunMesh.position.z + universePos.z;
+        const children = sunsGroup.children;
 
-            const dx = x - shipPosition.x;
-            const dy = y - shipPosition.y;
-            const dz = z - shipPosition.z;
-            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const maxSq = maxDistance * maxDistance;
+        const minDistance = spread * 1.5;
+        const minSq = minDistance * minDistance;
 
-            if (distance > maxDistance) {
-                const minDistance = spread * 1.5;
+        for (let i = 0; i < children.length; i++) {
+            const sunMesh = children[i];
 
-                let newX, newY, newZ, newDist;
+            const dx = sunMesh.position.x + universePos.x - shipPosition.x;
+            const dy = sunMesh.position.y + universePos.y - shipPosition.y;
+            const dz = sunMesh.position.z + universePos.z - shipPosition.z;
+
+            const distSq = dx * dx + dy * dy + dz * dz;
+
+            if (distSq > maxSq) {
+
+                let newX, newY, newZ;
+                let dx2, dy2, dz2, newDistSq;
+
+                let attempts = 0;
 
                 do {
                     newX = shipPosition.x + (Math.random() - 0.5) * spread * 2 - universePos.x;
                     newY = shipPosition.y + (Math.random() - 0.5) * spread * 2 - universePos.y;
                     newZ = shipPosition.z + (Math.random() - 0.5) * spread * 2 - universePos.z;
 
-                    const dx2 = newX - shipPosition.x;
-                    const dy2 = newY - shipPosition.y;
-                    const dz2 = newZ - shipPosition.z;
-                    newDist = Math.sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+                    dx2 = newX - shipPosition.x;
+                    dy2 = newY - shipPosition.y;
+                    dz2 = newZ - shipPosition.z;
 
-                } while (newDist < minDistance);
+                    newDistSq = dx2 * dx2 + dy2 * dy2 + dz2 * dz2;
+
+                    attempts++;
+                    if (attempts > 10) break;
+
+                } while (newDistSq < minSq);
 
                 sunMesh.position.set(newX, newY, newZ);
 
                 sunMesh.scale.set(0.001, 0.001, 0.001);
                 sunMesh.userData.growing = true;
             }
-        });
+        }
     };
 
     return sunsGroup;

@@ -45,6 +45,8 @@ export default function SandboxScreen() {
   const [currentScore] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
   const [markerCoords, setMarkerCoords] = useState(null);
+  const hudTimerRef = useRef(0);
+  const markerTimerRef = useRef(0);
   const [menuVisible, setMenuVisible] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
   const [cutsceneVisible, setCutsceneVisible] = useState(true);
@@ -193,12 +195,18 @@ export default function SandboxScreen() {
       ship.position.set(0, 0, 0);
       universeGroup.position.sub(shipDelta);
 
-      const scale = 0.01; // 100 unidades espaciais = 1 no HUD
-      setCoords({
-        x: (-universeGroup.position.x * scale),
-        y: (-universeGroup.position.y * scale),
-        z: (-universeGroup.position.z * scale),
-      });
+      const scale = 0.01;
+      hudTimerRef.current += dt;
+
+      if (hudTimerRef.current > 0.2) {
+        hudTimerRef.current = 0;
+
+        setCoords({
+          x: (-universeGroup.position.x * scale),
+          y: (-universeGroup.position.y * scale),
+          z: (-universeGroup.position.z * scale),
+        });
+      }
 
       stars.recycle(ship.position, universeGroup.position, 900);
       suns.recycle(ship.position, universeGroup.position, 2500);
@@ -210,11 +218,17 @@ export default function SandboxScreen() {
         blueMarkerRef.current.update(dt, universeGroup.position);
         try {
           const world = blueMarkerRef.current.basePosition;
-          setMarkerCoords({
-            x: world.x * 0.01,
-            y: world.y * 0.01,
-            z: world.z * 0.01,
-          });
+          markerTimerRef.current += dt;
+
+          if (markerTimerRef.current > 0.2) {
+            markerTimerRef.current = 0;
+
+            setMarkerCoords({
+              x: world.x * 0.01,
+              y: world.y * 0.01,
+              z: world.z * 0.01,
+            });
+          }
         } catch { }
       }
       const VIEW_DISTANCE = 3000 * 3000;
