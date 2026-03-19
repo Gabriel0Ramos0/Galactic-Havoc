@@ -155,7 +155,6 @@ export default function SandboxScreen() {
     // Nave
     const ship = createShip(scene);
     shipRef.current = ship;
-    ship.position.set(0, 0, 0);
 
     // Universo
     const universeGroup = new THREE.Group();

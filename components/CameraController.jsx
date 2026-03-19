@@ -93,7 +93,7 @@ export default function useCameraController(cameraRef, shipRef, velocityRef) {
         .multiplyScalar(orbit.current.radius);
 
       desiredPos = tempVec2.current.copy(target).sub(offset);
-      desiredPos.y += orbit.current.radius * 0.3;
+      desiredPos.y += orbit.current.radius * 0.25;
     }
     cameraRef.current.position.lerp(desiredPos, 0.05);
     cameraRef.current.lookAt(target);

@@ -19,6 +19,7 @@ export function createShip(scene) {
         (object) => {
           object.scale.set(1, 1, 1);
           object.rotation.x = Math.PI / 2;
+          object.position.set(0, 4, 0);
           ship.add(object);
           ship.userData.loaded = true;
         }
