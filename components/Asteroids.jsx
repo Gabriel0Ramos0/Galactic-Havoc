@@ -88,7 +88,7 @@ export default async function createAsteroids( count, spread, minScale, maxScale
   };
 
   // --- reciclagem (mantém posição, sem velocidade) ---
-  group.recycle = (shipPosition, universePos, maxDistance = spread / 2, minDistanceFromShip) => {
+  group.recycle = (shipPosition, universePos, maxDistance, minDistanceFromShip) => {
     for (let info of infos) {
       tmpGlobal.copy(info.pos).add(universePos);
       const dSq = tmpGlobal.distanceToSquared(shipPosition);

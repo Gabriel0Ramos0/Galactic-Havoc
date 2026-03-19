@@ -51,7 +51,7 @@ export default async function createStars(starCount, spread) {
   const BATCH_SIZE = 500;
   let updated = false;
 
-  stars.recycle = (shipPosition, universePos, maxDistance = spread / 2) => {
+  stars.recycle = (shipPosition, universePos, maxDistance) => {
     const positions = starGeometry.getAttribute("position");
     const maxSq = maxDistance * maxDistance;
 

@@ -46,7 +46,7 @@ export default async function createSuns(sunCount, spread) {
         sunsGroup.add(sunMesh);
     }
 
-    sunsGroup.recycle = (shipPosition, universePos, maxDistance = spread) => {
+    sunsGroup.recycle = (shipPosition, universePos, maxDistance) => {
         const children = sunsGroup.children;
 
         const maxSq = maxDistance * maxDistance;
