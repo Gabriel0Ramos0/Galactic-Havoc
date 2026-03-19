@@ -20,6 +20,10 @@ const panelBg = Platform.select({
   android: "rgba(8,8,10,0.64)",
 });
 
+const scanlineLoop = useRef(null);
+const glowLoop = useRef(null);
+const jitterLoop = useRef(null);
+
 export default function CutsceneScreen({ onFinish }) {
   const [started, setStarted] = useState(false);
   const [showBeforeText, setShowBeforeText] = useState(true);
@@ -78,46 +82,46 @@ export default function CutsceneScreen({ onFinish }) {
   // HUD ambient loops
   useEffect(() => {
     if (showHUD) {
-      Animated.loop(
-        Animated.timing(scanlineY, {
-          toValue: height,
-          duration: 1800,
-          easing: Easing.linear,
+      scanlineLoop.current = Animated.loop(Animated.timing(scanlineY, {
+        toValue: height,
+        duration: 1800,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }));
+      scanlineLoop.current.start();
+
+      scanlineLoop.current = Animated.loop(Animated.sequence([
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 1200,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0,
+            duration: 1200,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]));
+      scanlineLoop.current.start();
+
+      scanlineLoop.current = Animated.loop(Animated.sequence([
+        Animated.timing(jitter, {
+          toValue: 1,
+          duration: 300,
           useNativeDriver: true,
-        })
-      ).start();
+        }),
+        Animated.timing(jitter, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]));
+      scanlineLoop.current.start();
 
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 1200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 1200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(jitter, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(jitter, {
-            toValue: 0,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
     } else {
       scanlineY.setValue(-height);
       glowAnim.setValue(0);
@@ -174,6 +178,24 @@ export default function CutsceneScreen({ onFinish }) {
     inputRange: [0, 1],
     outputRange: [0, 1.5],
   });
+
+  useEffect(() => {
+    return () => {
+      scanlineLoop.current?.stop();
+      glowLoop.current?.stop();
+      jitterLoop.current?.stop();
+
+      scanlineY.stopAnimation();
+      glowAnim.stopAnimation();
+      jitter.stopAnimation();
+
+      if (videoRef.current) {
+        videoRef.current.stopAsync?.();
+        videoRef.current.unloadAsync?.();
+        videoRef.current = null;
+      }
+    };
+  }, []);
 
   const hudTranslate = {
     transform: [
