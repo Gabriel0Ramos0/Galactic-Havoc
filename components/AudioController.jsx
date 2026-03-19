@@ -96,6 +96,11 @@ export async function loadSfx() {
     require("@/assets/sounds/tutorial_combat.mp3")
   );
 
+  sfx.fire = new Audio.Sound();
+  await sfx.fire.loadAsync(
+    require("@/assets/sounds/fire.mp3")
+  );
+
   sfxLoaded = true;
 }
 

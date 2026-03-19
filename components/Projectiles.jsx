@@ -5,6 +5,12 @@ export default function useProjectiles(shipRef, scene, options = {}) {
     const projectiles = useRef([]);
     const speed = options.speed || 2;
     const maxDistance = options.maxDistance || 500;
+    const energy = useRef(options.energy ?? 100);
+    useEffect(() => {
+        energy.current = options.energy ?? 100;
+    }, [options.energy]);
+    const onConsumeEnergy = options.onConsumeEnergy ?? (() => { });
+    const onShoot = options.onShoot ?? (() => { });
     const sceneRefInternal = useRef(scene);
     const keys = useRef({
         space: false,
@@ -87,8 +93,15 @@ export default function useProjectiles(shipRef, scene, options = {}) {
 
         if (keys.current.space) {
             if (now - lastShotTime.current >= fireRate) {
-                fireProjectile();
-                lastShotTime.current = now;
+
+                if (energy.current >= 5) {
+                    fireProjectile();
+
+                    onConsumeEnergy(2);
+                    onShoot();
+
+                    lastShotTime.current = now;
+                }
             }
         }
 

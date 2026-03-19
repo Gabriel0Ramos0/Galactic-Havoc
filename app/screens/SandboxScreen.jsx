@@ -44,6 +44,7 @@ export default function SandboxScreen() {
 
   const [currentHP] = useState(100);
   const [energy, setEnergy] = useState(25);
+  const lastShotTimeRef = useRef(0);
   const [currentScore] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
   const [markerCoords, setMarkerCoords] = useState(null);
@@ -82,6 +83,10 @@ export default function SandboxScreen() {
     if (!inGame) return;
 
     const interval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastShot = now - lastShotTimeRef.current;
+
+      if (timeSinceLastShot < 3000) return;
       setEnergy((prev) => {
         if (prev >= 100) return 100;
         return prev + 1;
@@ -154,7 +159,16 @@ export default function SandboxScreen() {
   const universeRef = useRef(null);
   const blueMarkerRef = useRef(null);
   const shipLightsRef = useRef(null);
-  const { updateProjectiles } = useProjectiles(shipRef, sceneRef.current);
+  const { updateProjectiles } = useProjectiles(shipRef, sceneRef.current, {
+    energy,
+    onConsumeEnergy: (amount) => {
+      setEnergy(prev => Math.max(prev - amount, 0));
+    },
+    onShoot: () => {
+      lastShotTimeRef.current = Date.now();
+      playSfx("fire");
+    }
+  });
 
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
