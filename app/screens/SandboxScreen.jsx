@@ -28,7 +28,7 @@ import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
 import Menu from "@/components/Menu";
 import Config from "@/components/Config";
-import { setupShipLighting } from "@/components/lighting";
+import { setupShipLighting, animateShipStartup } from "@/components/lighting";
 import CutsceneScreen from "@/components/CutsceneScreen";
 import History from "@/components/History";
 import createBlueMarker from "@/components/BlueMarker";
@@ -98,6 +98,7 @@ export default function SandboxScreen() {
     switch (tutorialStep) {
       case 1:
         playSfx("tutorial_intro");
+        animateShipStartup(shipLightsRef.current);
         break;
 
       case 3:
@@ -137,6 +138,7 @@ export default function SandboxScreen() {
   const sceneRef = useRef(null);
   const universeRef = useRef(null);
   const blueMarkerRef = useRef(null);
+  const shipLightsRef = useRef(null);
 
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
@@ -177,7 +179,8 @@ export default function SandboxScreen() {
     universeRef.current = universeGroup;
 
     // Iluminação Nave
-    setupShipLighting(scene, ship);
+    const shipLights = setupShipLighting(scene, ship);
+    shipLightsRef.current = shipLights;
 
     // Loop de animação
     let running = true;

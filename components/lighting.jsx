@@ -8,39 +8,69 @@ import * as THREE from "three";
  */
 
 export function setupShipLighting(scene, ship, isWarpSpeed = false) {
-    // 🔹 Luz ambiente
+    const lights = {};
+
     const ambientLight = new THREE.DirectionalLight(0xffffff, 0.4);
     scene.add(ambientLight);
+    lights.ambient = ambientLight;
 
     if (ship) {
-        const shipLight = new THREE.PointLight(0x00ffff, 1, 50);
+        const shipLight = new THREE.PointLight(0x00ffff, 0, 50); // começa desligada
         shipLight.position.set(0, -5, 0);
         ship.add(shipLight);
+        lights.ship = shipLight;
 
-        // Luzes dos motores
-        const normalEngineOffsets = [
+        const engineOffsets = [
             { x: -1.6, y: -7, z: -0.1 },
             { x: 1.6, y: -7, z: -0.1 },
         ];
 
-        const warpEngineOffsets = [
-            { x: -2, y: -7, z: -0.1 },
-            { x: 2, y: -7, z: -0.1 },
-        ];
-
-        const engineOffsets = isWarpSpeed ? warpEngineOffsets : normalEngineOffsets;
+        lights.engines = [];
 
         engineOffsets.forEach((o) => {
-            const engineLight = new THREE.PointLight(0x00fff, isWarpSpeed ? 2 : 0.5, isWarpSpeed ? 20 : 10);
+            const engineLight = new THREE.PointLight(0x00ffff, 0, 20); // começa desligada
             engineLight.position.set(o.x, o.y, o.z);
             ship.add(engineLight);
+            lights.engines.push(engineLight);
         });
     }
+    return lights;
+}
+
+export function animateShipStartup(lights) {
+    if (!lights) return;
+
+    let t = 0;
+
+    const interval = setInterval(() => {
+        t++;
+
+        const flicker = Math.random() * 2;
+
+        if (lights.ship) {
+            lights.ship.intensity = Math.min(1, flicker);
+        }
+
+        lights.engines?.forEach((l) => {
+            l.intensity = Math.min(2, flicker * 1.5);
+        });
+
+        // depois estabiliza
+        if (t > 80) {
+            clearInterval(interval);
+
+            if (lights.ship) lights.ship.intensity = 1;
+
+            lights.engines?.forEach((l) => {
+                l.intensity = 2;
+            });
+        }
+    }, 80);
 }
 
 /**
  * Cria luz de sol/planeta presa ao mesh
- * @param {THREE.Object3D} sun - mesh do sol/planeta (a luz será adicionada como child)
+ * @param {THREE.Object3D} sun
  * @param {Object} opts
  * @param {number} opts.color
  * @param {number} opts.intensity
