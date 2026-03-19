@@ -24,6 +24,7 @@ import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";
 import { createShip } from "@/components/Nave";
+import useProjectiles from "@/components/Projectiles";
 import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
 import Menu from "@/components/Menu";
@@ -139,6 +140,7 @@ export default function SandboxScreen() {
   const universeRef = useRef(null);
   const blueMarkerRef = useRef(null);
   const shipLightsRef = useRef(null);
+  const { updateProjectiles } = useProjectiles(shipRef, sceneRef.current);
 
   const onContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
@@ -193,6 +195,7 @@ export default function SandboxScreen() {
 
       updateShip();
       updateCamera();
+      updateProjectiles();
       const shipDelta = ship.position.clone();
       ship.position.set(0, 0, 0);
       universeGroup.position.sub(shipDelta);
