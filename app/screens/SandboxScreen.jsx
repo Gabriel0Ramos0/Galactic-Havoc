@@ -43,6 +43,7 @@ export default function SandboxScreen() {
   const { updateShip, joystickDelta, resetMovementState, setPaused } = useMovement(shipRef);
 
   const [currentHP] = useState(100);
+  const [energy, setEnergy] = useState(25);
   const [currentScore] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
   const [markerCoords, setMarkerCoords] = useState(null);
@@ -76,6 +77,19 @@ export default function SandboxScreen() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!inGame) return;
+
+    const interval = setInterval(() => {
+      setEnergy((prev) => {
+        if (prev >= 100) return 100;
+        return prev + 1;
+      });
+    }, 130);
+
+    return () => clearInterval(interval);
+  }, [inGame]);
 
   useEffect(() => {
     if (tutorialStep === 8 && sceneRef.current && universeRef.current && !blueMarkerRef.current) {
@@ -326,11 +340,13 @@ export default function SandboxScreen() {
           <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
           <Hud
             shipHP={currentHP}
+            energy={energy}
             score={currentScore}
             coords={coords}
             onMenuPress={async () => {
               setPaused(true);
               resetMovementState();
+              setEnergy(25);
               if (glRef.current && typeof glRef.current._stopAnimation === "function") {
                 glRef.current._stopAnimation();
               } else if (rafRef.current) {
