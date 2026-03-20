@@ -17,7 +17,7 @@ export default function useMovement(shipRef) {
 
     const joystickDelta = useRef({ x: 0, y: 0, yUpDown: 0 });
 
-    const speed = 0.05;
+    const speed = 0.06;
     const warpMultiplier = 5;
     const friction = 0.995;
     const rotationSmoothness = 0.1;
@@ -29,6 +29,7 @@ export default function useMovement(shipRef) {
 
     const paused = useRef(false);
     const setPaused = (v) => { paused.current = v; };
+    const canControl = useRef(true);
 
     const resetMovementState = () => {
         velocity.current.set(0, 0, 0);
@@ -86,15 +87,17 @@ export default function useMovement(shipRef) {
         const forward = new THREE.Vector3(0, 1, 0).applyQuaternion(shipRef.current.quaternion);
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipRef.current.quaternion);
 
-        // ======= CONTROLES =======
-        if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(currentSpeed));
-        if (keys.current.s) {
-            velocity.current.multiplyScalar(0.97);
+        if (canControl.current) {
+            // ======= CONTROLES =======
+            if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(currentSpeed));
+            if (keys.current.s) {
+                velocity.current.multiplyScalar(0.97);
+            }
+            if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-currentSpeed));
+            if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(currentSpeed));
+            if (keys.current.ArrowUp) acceleration.current.y += currentSpeed;
+            if (keys.current.ArrowDown) acceleration.current.y -= currentSpeed;
         }
-        if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-currentSpeed));
-        if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(currentSpeed));
-        if (keys.current.ArrowUp) acceleration.current.y += currentSpeed;
-        if (keys.current.ArrowDown) acceleration.current.y -= currentSpeed;
 
         // MOBILE (joystick)
         acceleration.current.add(forward.clone().multiplyScalar(joystickDelta.current.y * currentSpeed));
@@ -132,5 +135,6 @@ export default function useMovement(shipRef) {
         joystickDelta,
         resetMovementState,
         setPaused,
+        canControl,
     };
 }

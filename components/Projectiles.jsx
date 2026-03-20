@@ -10,6 +10,7 @@ export default function useProjectiles(shipRef, scene, options = {}) {
         energy.current = options.energy ?? 100;
     }, [options.energy]);
     const onConsumeEnergy = options.onConsumeEnergy ?? (() => { });
+    const canControlRef = options.canControlRef ?? { current: true };
     const onShoot = options.onShoot ?? (() => { });
     const sceneRefInternal = useRef(scene);
     const keys = useRef({
@@ -94,7 +95,7 @@ export default function useProjectiles(shipRef, scene, options = {}) {
         if (keys.current.space) {
             if (now - lastShotTime.current >= fireRate) {
 
-                if (energy.current >= 5) {
+                if (canControlRef.current && energy.current >= 2) {
                     fireProjectile();
 
                     onConsumeEnergy(2);

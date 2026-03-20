@@ -29,7 +29,7 @@ import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
 import Menu from "@/components/Menu";
 import Config from "@/components/Config";
-import { setupShipLighting, animateShipStartup } from "@/components/lighting";
+import { setupShipLighting, animateShipStartup, animateShipShutdown } from "@/components/lighting";
 import CutsceneScreen from "@/components/CutsceneScreen";
 import History from "@/components/History";
 import createBlueMarker from "@/components/BlueMarker";
@@ -40,12 +40,14 @@ export default function SandboxScreen() {
   const shipRef = useRef();
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
-  const { updateShip, joystickDelta, resetMovementState, setPaused } = useMovement(shipRef);
+  const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef } = useMovement(shipRef);
 
   const [currentHP] = useState(100);
-  const [energy, setEnergy] = useState(25);
+  const [energy, setEnergy] = useState(0);
   const lastShotTimeRef = useRef(0);
   const [isRecharging, setIsRecharging] = useState(false);
+  const [isCritical, setIsCritical] = useState(false);
+  const [canControl, setCanControl] = useState(true);
   const [currentScore] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
   const [markerCoords, setMarkerCoords] = useState(null);
@@ -80,6 +82,39 @@ export default function SandboxScreen() {
     };
   }, []);
 
+  const criticalRecoveryTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (!inGame) return;
+
+    // entrou em crítico
+    if (energy <= 0 && !isCritical) {
+      setIsCritical(true);
+      setCanControl(false);
+      animateShipShutdown(shipLightsRef.current);
+      criticalRecoveryTriggeredRef.current = false;
+    }
+
+    // começou a recarregar DURANTE crítico
+    if (isRecharging && isCritical && !criticalRecoveryTriggeredRef.current) {
+      criticalRecoveryTriggeredRef.current = true;
+
+      playSfx("tutorial_intro");
+      animateShipStartup(shipLightsRef.current);
+    }
+
+    // saiu do crítico
+    if (energy >= 100 && isCritical) {
+      setCanControl(true);
+      setIsCritical(false);
+    }
+
+  }, [energy, isRecharging, isCritical]);
+
+  useEffect(() => {
+    canControlRef.current = canControl;
+  }, [canControl]);
+
   useEffect(() => {
     if (!inGame) return;
 
@@ -99,7 +134,7 @@ export default function SandboxScreen() {
         };
         return prev + 1;
       });
-    }, 130);
+    }, 100);
 
     return () => clearInterval(interval);
   }, [inGame]);
@@ -125,8 +160,9 @@ export default function SandboxScreen() {
 
     switch (tutorialStep) {
       case 1:
-        playSfx("tutorial_intro");
-        animateShipStartup(shipLightsRef.current);
+        setIsCritical(true);
+        setCanControl(false);
+        criticalRecoveryTriggeredRef.current = false;
         break;
 
       case 3:
@@ -169,6 +205,7 @@ export default function SandboxScreen() {
   const shipLightsRef = useRef(null);
   const { updateProjectiles } = useProjectiles(shipRef, sceneRef.current, {
     energy,
+    canControlRef,
     onConsumeEnergy: (amount) => {
       setEnergy(prev => Math.max(prev - amount, 0));
     },
@@ -369,7 +406,7 @@ export default function SandboxScreen() {
             onMenuPress={async () => {
               setPaused(true);
               resetMovementState();
-              setEnergy(25);
+              setEnergy(0);
               if (glRef.current && typeof glRef.current._stopAnimation === "function") {
                 glRef.current._stopAnimation();
               } else if (rafRef.current) {

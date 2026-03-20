@@ -68,6 +68,39 @@ export function animateShipStartup(lights) {
     }, 80);
 }
 
+export function animateShipShutdown(lights) {
+    if (!lights) return;
+
+    let t = 0;
+
+    const interval = setInterval(() => {
+        t++;
+
+        const flicker = Math.random() * 1;
+
+        // luz principal piscando e diminuindo
+        if (lights.ship) {
+            lights.ship.intensity = Math.max(0, flicker * (1 - t / 20));
+        }
+
+        // motores apagando mais rápido
+        lights.engines?.forEach((l) => {
+            l.intensity = Math.max(0, flicker * (1 - t / 15));
+        });
+
+        // depois apaga tudo
+        if (t > 20) {
+            clearInterval(interval);
+
+            if (lights.ship) lights.ship.intensity = 0;
+
+            lights.engines?.forEach((l) => {
+                l.intensity = 0;
+            });
+        }
+    }, 80);
+}
+
 /**
  * Cria luz de sol/planeta presa ao mesh
  * @param {THREE.Object3D} sun
