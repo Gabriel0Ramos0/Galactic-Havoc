@@ -3,7 +3,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Tutorial from "@/components/Tutorial";
 
-export default function Hud({ shipHP = 100, energy = 100, score = 0, coords = { x: 0, y: 0, z: 0 }, onMenuPress, setTutorialStep, markerCoords = null }) {
+export default function Hud({ shipHP = 100, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, onMenuPress, setTutorialStep, markerCoords = null }) {
 
   return (
     <>
@@ -64,7 +64,7 @@ export default function Hud({ shipHP = 100, energy = 100, score = 0, coords = { 
       {/* Energia */}
       <View style={styles.energyModule}>
         <Text style={styles.label}>ENERGIA</Text>
-        {energy < 100 && (
+        {isRecharging  && (
           <Text style={styles.energyIcon}>⚡</Text>
         )}
         <View style={styles.energyFrame}>
