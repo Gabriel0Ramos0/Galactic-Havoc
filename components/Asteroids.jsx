@@ -2,7 +2,7 @@
 import { OBJLoader, MTLLoader } from "three-stdlib";
 import * as THREE from "three";
 
-export default async function createAsteroids( count, spread, minScale, maxScale ) {
+export default async function createAsteroids(count, spread, minScale, maxScale) {
   const group = new THREE.Group();
   const infos = [];
 
@@ -56,7 +56,6 @@ export default async function createAsteroids( count, spread, minScale, maxScale
 
     infos.push({
       mesh: asteroid,
-      pos,
       rotVel: {
         x: (Math.random() - 0.5) * 0.05,
         y: (Math.random() - 0.5) * 0.05,
@@ -69,52 +68,46 @@ export default async function createAsteroids( count, spread, minScale, maxScale
   const tmpGlobal = new THREE.Vector3();
   const tmpNew = new THREE.Vector3();
 
-  group.update = (shipPosition, universePos, dt = 1) => {
-    const VIEW_DISTANCE = 2000;
-
-    for (let info of infos) {
-      tmpGlobal.copy(info.pos).add(universePos);
-
-      const distSq = tmpGlobal.distanceToSquared(shipPosition);
-
-      if (distSq > VIEW_DISTANCE * VIEW_DISTANCE) continue;
-
-      info.mesh.rotation.x += info.rotVel.x * dt;
-      info.mesh.rotation.y += info.rotVel.y * dt;
-      info.mesh.rotation.z += info.rotVel.z * dt;
-
-      info.mesh.position.copy(info.pos);
-    }
-  };
-
   // --- reciclagem (mantém posição, sem velocidade) ---
-  group.recycle = (shipPosition, universePos, maxDistance, minDistanceFromShip) => {
-    for (let info of infos) {
-      tmpGlobal.copy(info.pos).add(universePos);
-      const dSq = tmpGlobal.distanceToSquared(shipPosition);
-      const maxSq = maxDistance * maxDistance;
+  group.recycle = (shipPosition, maxDistance, minDistanceFromShip) => {
+    const maxSq = maxDistance * maxDistance;
 
-      if (dSq > maxSq || dSq < 50 * 50) {
+    for (let info of infos) {
+      const mesh = info.mesh;
+
+      const distSq = mesh.position.distanceToSquared(shipPosition);
+
+      if (distSq > maxSq || distSq < 50 * 50) {
         let attempts = 0;
+        let newPos = new THREE.Vector3();
+
         do {
-          tmpNew.copy(randomPositionInShell(shipPosition, minDistanceFromShip, Math.max(minDistanceFromShip + 500, maxDistance)));
+          newPos.copy(
+            randomPositionInShell(
+              shipPosition,
+              minDistanceFromShip,
+              Math.max(minDistanceFromShip + 500, maxDistance)
+            )
+          );
+
           attempts++;
           if (attempts > 12) break;
-        } while (tmpNew.distanceTo(shipPosition) < minDistanceFromShip);
 
-        info.pos.copy(tmpNew.sub(universePos));
-        info.mesh.position.copy(info.pos);
+        } while (newPos.distanceTo(shipPosition) < minDistanceFromShip);
+
+        mesh.position.copy(newPos);
       }
     }
   };
 
   // --- colisões ---
-  group.checkCollisions = (shipPosition, universePos, shipRadius = 5) => {
+  group.checkCollisions = (shipPosition, shipRadius = 5) => {
     const hits = [];
     for (let i = 0; i < infos.length; i++) {
       const info = infos[i];
-      tmpGlobal.copy(info.pos).add(universePos);
-      const dist = tmpGlobal.distanceTo(shipPosition);
+      const mesh = info.mesh;
+
+      const dist = mesh.position.distanceTo(shipPosition);
       const radius = info.scale * 0.8;
       if (dist < shipRadius + radius) hits.push(i);
     }

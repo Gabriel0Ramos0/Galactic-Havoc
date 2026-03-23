@@ -51,30 +51,31 @@ export default async function createStars(starCount, spread) {
   const BATCH_SIZE = 500;
   let updated = false;
 
-  stars.recycle = (shipPosition, universePos, maxDistance) => {
+  stars.recycle = (shipPosition, maxDistance) => {
     const positions = starGeometry.getAttribute("position");
     const maxSq = maxDistance * maxDistance;
+    let updated = false;
 
     for (let i = 0; i < BATCH_SIZE; i++) {
       const idx = starIndex;
 
-      const x = positions.getX(idx) + universePos.x;
-      const y = positions.getY(idx) + universePos.y;
-      const z = positions.getZ(idx) + universePos.z;
+      const x = positions.getX(idx);
+      const y = positions.getY(idx);
+      const z = positions.getZ(idx);
 
       const dx = x - shipPosition.x;
       const dy = y - shipPosition.y;
       const dz = z - shipPosition.z;
 
-      const distSq = dx*dx + dy*dy + dz*dz;
+      const distSq = dx * dx + dy * dy + dz * dz;
 
       if (distSq > maxSq) {
         updated = true;
         positions.setXYZ(
           idx,
-          shipPosition.x + (Math.random() - 0.5) * spread - universePos.x,
-          shipPosition.y + (Math.random() - 0.5) * spread - universePos.y,
-          shipPosition.z + (Math.random() - 0.5) * spread - universePos.z
+          shipPosition.x + (Math.random() - 0.5) * spread,
+          shipPosition.y + (Math.random() - 0.5) * spread,
+          shipPosition.z + (Math.random() - 0.5) * spread
         );
       }
 

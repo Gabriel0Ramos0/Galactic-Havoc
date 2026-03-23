@@ -18,6 +18,7 @@ export default function useProjectiles(shipRef, scene, options = {}) {
     });
     const lastSide = useRef(1);
     const lastShotTime = useRef(0);
+    const damage = options.damage || 10;
     const fireRate = options.fireRate || 200;
 
     const fireProjectile = () => {
@@ -60,6 +61,7 @@ export default function useProjectiles(shipRef, scene, options = {}) {
 
         projectile.userData.direction = forward;
         projectile.userData.startPos = projectile.position.clone();
+        projectile.userData.damage = damage;
 
         sceneRefInternal.current.add(projectile);
         projectiles.current.push(projectile);
@@ -121,5 +123,6 @@ export default function useProjectiles(shipRef, scene, options = {}) {
 
     return {
         updateProjectiles,
+        projectiles,
     };
 }

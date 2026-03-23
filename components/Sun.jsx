@@ -46,7 +46,7 @@ export default async function createSuns(sunCount, spread) {
         sunsGroup.add(sunMesh);
     }
 
-    sunsGroup.recycle = (shipPosition, universePos, maxDistance) => {
+    sunsGroup.recycle = (shipPosition, maxDistance) => {
         const children = sunsGroup.children;
 
         const maxSq = maxDistance * maxDistance;
@@ -56,9 +56,9 @@ export default async function createSuns(sunCount, spread) {
         for (let i = 0; i < children.length; i++) {
             const sunMesh = children[i];
 
-            const dx = sunMesh.position.x + universePos.x - shipPosition.x;
-            const dy = sunMesh.position.y + universePos.y - shipPosition.y;
-            const dz = sunMesh.position.z + universePos.z - shipPosition.z;
+            const dx = sunMesh.position.x - shipPosition.x;
+            const dy = sunMesh.position.y - shipPosition.y;
+            const dz = sunMesh.position.z - shipPosition.z;
 
             const distSq = dx * dx + dy * dy + dz * dz;
 
@@ -70,9 +70,9 @@ export default async function createSuns(sunCount, spread) {
                 let attempts = 0;
 
                 do {
-                    newX = shipPosition.x + (Math.random() - 0.5) * spread * 2 - universePos.x;
-                    newY = shipPosition.y + (Math.random() - 0.5) * spread * 2 - universePos.y;
-                    newZ = shipPosition.z + (Math.random() - 0.5) * spread * 2 - universePos.z;
+                    newX = shipPosition.x + (Math.random() - 0.5) * spread * 2;
+                    newY = shipPosition.y + (Math.random() - 0.5) * spread * 2;
+                    newZ = shipPosition.z + (Math.random() - 0.5) * spread * 2;
 
                     dx2 = newX - shipPosition.x;
                     dy2 = newY - shipPosition.y;

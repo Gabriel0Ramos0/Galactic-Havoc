@@ -3,7 +3,7 @@ import { Audio } from "expo-av";
 import { OBJLoader, MTLLoader } from "three-stdlib";
 
 export default async function createBlueMarker({
-    group,
+    scene,
     spread = 10000,
     minDistance = 5000,
     activateDistance = 180
@@ -30,7 +30,7 @@ export default async function createBlueMarker({
     // ===============================
     const markerGroup = new THREE.Group();
     markerGroup.position.copy(pos);
-    group.add(markerGroup);
+    scene.add(markerGroup);
 
     // ===============================
     // 3. LABEL
@@ -152,15 +152,11 @@ export default async function createBlueMarker({
     // ===============================
     // 8. UPDATE
     // ===============================
-    function update(dt, universeOffset = new THREE.Vector3()) {
+    function update(dt, shipPosition) {
         markerGroup.userData.time += dt;
         const t = markerGroup.userData.time;
 
-        const worldPos = new THREE.Vector3()
-            .copy(markerGroup.position)
-            .add(universeOffset);
-
-        const distance = worldPos.length();
+        const distance = markerGroup.position.distanceTo(shipPosition);
 
         // label
         const scale = THREE.MathUtils.clamp(distance / 1000, 0.8, 2.5);
@@ -195,7 +191,7 @@ export default async function createBlueMarker({
             window.dispatchEvent(
                 new CustomEvent("blueMarkerReached", {
                     detail: {
-                        worldPos: worldPos.toArray(),
+                        worldPos: markerGroup.position.toArray(),
                         type: "MOTHER_SHIP_SIGNAL_FAILURE",
                     },
                 })
@@ -220,7 +216,7 @@ export default async function createBlueMarker({
     // 9. REMOVE
     // ===============================
     async function remove() {
-        group.remove(markerGroup);
+        scene.remove(markerGroup);
         try {
             await sound?.unloadAsync();
         } catch (_) { }

@@ -140,9 +140,9 @@ export default function SandboxScreen() {
   }, [inGame]);
 
   useEffect(() => {
-    if (tutorialStep === 8 && sceneRef.current && universeRef.current && !blueMarkerRef.current) {
+    if (tutorialStep === 8 && sceneRef.current && !blueMarkerRef.current) {
       createBlueMarker({
-        group: universeRef.current,
+        scene: sceneRef.current,
         spread: 10000,
         minDistance: 5000,
       }).then(marker => {
@@ -197,10 +197,7 @@ export default function SandboxScreen() {
     }
   }, [tutorialStep, inGame]);
 
-  const view = 3000; // tamanho do cubo de visão
-
   const sceneRef = useRef(null);
-  const universeRef = useRef(null);
   const blueMarkerRef = useRef(null);
   const shipLightsRef = useRef(null);
   const { updateProjectiles } = useProjectiles(shipRef, sceneRef.current, {
@@ -233,25 +230,21 @@ export default function SandboxScreen() {
     const ship = createShip(scene);
     shipRef.current = ship;
 
+    // Eixos para referência
+    // const axesHelper = new THREE.AxesHelper(10);
+    // ship.add(axesHelper);
+
     // Universo
-    const universeGroup = new THREE.Group();
-    scene.add(universeGroup);
-
-    // Estrelas
     const stars = await createStars(7000, 2000);
-    universeGroup.add(stars);
-
-    // Sóis
     const suns = await createSuns(3, 6000);
-    universeGroup.add(suns);
-
-    // Asteroides
     const asteroids = await createAsteroids(200, 8000, 2, 20);
-    universeGroup.add(asteroids);
+
+    scene.add(stars);
+    scene.add(suns);
+    scene.add(asteroids);
 
     // Marcador Azul (Tutorial)
     sceneRef.current = scene;
-    universeRef.current = universeGroup;
 
     // Iluminação Nave
     const shipLights = setupShipLighting(scene, ship);
@@ -269,9 +262,6 @@ export default function SandboxScreen() {
       updateShip();
       updateCamera();
       updateProjectiles();
-      const shipDelta = ship.position.clone();
-      ship.position.set(0, 0, 0);
-      universeGroup.position.sub(shipDelta);
 
       const scale = 0.01;
       hudTimerRef.current += dt;
@@ -280,22 +270,20 @@ export default function SandboxScreen() {
         hudTimerRef.current = 0;
 
         setCoords({
-          x: (-universeGroup.position.x * scale),
-          y: (-universeGroup.position.y * scale),
-          z: (-universeGroup.position.z * scale),
+          x: (-ship.position.x * scale),
+          y: (-ship.position.y * scale),
+          z: (-ship.position.z * scale),
         });
       }
 
-      stars.recycle(ship.position, universeGroup.position, 900);
-      suns.recycle(ship.position, universeGroup.position, 2500);
-
-      asteroids.update(ship.position, universeGroup.position, dt);
-      asteroids.recycle(ship.position, universeGroup.position, 3000, 1200);
+      stars.recycle(ship.position, 900);
+      suns.recycle(ship.position, 2500);
+      asteroids.recycle(ship.position, 3000, 1200);
 
       if (blueMarkerRef.current && blueMarkerRef.current.update) {
-        blueMarkerRef.current.update(dt, universeGroup.position);
+        blueMarkerRef.current.update(dt, ship.position);
         try {
-          const world = blueMarkerRef.current.basePosition;
+          const world = blueMarkerRef.current.group.position;
           markerTimerRef.current += dt;
 
           if (markerTimerRef.current > 0.2) {
@@ -312,9 +300,9 @@ export default function SandboxScreen() {
       const VIEW_DISTANCE = 3000 * 3000;
 
       suns.children.forEach(sun => {
-        const dx = sun.position.x + universeGroup.position.x - ship.position.x;
-        const dy = sun.position.y + universeGroup.position.y - ship.position.y;
-        const dz = sun.position.z + universeGroup.position.z - ship.position.z;
+        const dx = sun.position.x - ship.position.x;
+        const dy = sun.position.y - ship.position.y;
+        const dz = sun.position.z - ship.position.z;
 
         const distSq = dx * dx + dy * dy + dz * dz;
 
@@ -375,7 +363,7 @@ export default function SandboxScreen() {
             setPaused(false);
             if (blueMarkerRef.current) {
               try {
-                universeRef.current.remove(blueMarkerRef.current.group);
+                blueMarkerRef.current?.remove();
               } catch (err) { }
               blueMarkerRef.current = null;
               setMarkerCoords(null);
@@ -415,7 +403,7 @@ export default function SandboxScreen() {
               }
               if (blueMarkerRef.current) {
                 try {
-                  universeRef.current.remove(blueMarkerRef.current.group);
+                  blueMarkerRef.current?.remove();
                 } catch (err) { }
                 blueMarkerRef.current = null;
                 setMarkerCoords(null);
