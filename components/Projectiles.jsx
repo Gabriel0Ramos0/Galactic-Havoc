@@ -3,7 +3,7 @@ import { useRef, useEffect } from "react";
 
 export default function useProjectiles(shipRef, scene, options = {}) {
     const projectiles = useRef([]);
-    const speed = options.speed || 2;
+    const speed = options.speed || 5;
     const maxDistance = options.maxDistance || 500;
     const energy = useRef(options.energy ?? 100);
     useEffect(() => {

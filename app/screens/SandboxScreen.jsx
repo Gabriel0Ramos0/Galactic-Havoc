@@ -270,9 +270,9 @@ export default function SandboxScreen() {
         hudTimerRef.current = 0;
 
         setCoords({
-          x: (-ship.position.x * scale),
-          y: (-ship.position.y * scale),
-          z: (-ship.position.z * scale),
+          x: (ship.position.x * scale),
+          y: (ship.position.y * scale),
+          z: (ship.position.z * scale),
         });
       }
 

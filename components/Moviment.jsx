@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 export default function useMovement(shipRef) {
     const velocity = useRef(new THREE.Vector3(0, 0, 0));
     const acceleration = useRef(new THREE.Vector3(0, 0, 0));
+    const targetQuaternion = useRef(new THREE.Quaternion());
 
     const keys = useRef({
         w: false,
@@ -17,8 +18,8 @@ export default function useMovement(shipRef) {
 
     const joystickDelta = useRef({ x: 0, y: 0, yUpDown: 0 });
 
-    const speed = 0.06;
-    const warpMultiplier = 5;
+    const speed = 0.006;
+    const warpMultiplier = 3;
     const friction = 0.995;
     const rotationSmoothness = 0.1;
 
@@ -78,7 +79,9 @@ export default function useMovement(shipRef) {
         acceleration.current.set(0, 0, 0);
 
         const isWarp = keys.current.Shift;
-        const currentSpeed = isWarp ? speed * warpMultiplier : speed;
+        const thrust = isWarp ? speed * warpMultiplier : speed;
+        const strafe = thrust * 4;
+        const vertical = thrust * 4;
         const targetMaxSpeed = isWarp ? warpMaxSpeed : baseMaxSpeed;
 
         currentMaxSpeed.current +=
@@ -89,20 +92,18 @@ export default function useMovement(shipRef) {
 
         if (canControl.current) {
             // ======= CONTROLES =======
-            if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(currentSpeed));
-            if (keys.current.s) {
-                velocity.current.multiplyScalar(0.97);
-            }
-            if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-currentSpeed));
-            if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(currentSpeed));
-            if (keys.current.ArrowUp) acceleration.current.y += currentSpeed;
-            if (keys.current.ArrowDown) acceleration.current.y -= currentSpeed;
+            if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(thrust));
+            if (keys.current.s) { velocity.current.multiplyScalar(0.98) };
+            if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-strafe));
+            if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(strafe));
+            if (keys.current.ArrowUp) acceleration.current.y += vertical;
+            if (keys.current.ArrowDown) acceleration.current.y -= vertical;
         }
 
         // MOBILE (joystick)
-        acceleration.current.add(forward.clone().multiplyScalar(joystickDelta.current.y * currentSpeed));
-        acceleration.current.add(right.clone().multiplyScalar(joystickDelta.current.x * currentSpeed));
-        acceleration.current.y += joystickDelta.current.yUpDown * currentSpeed;
+        acceleration.current.add(forward.clone().multiplyScalar(joystickDelta.current.y * thrust));
+        acceleration.current.add(right.clone().multiplyScalar(joystickDelta.current.x * strafe));
+        acceleration.current.y += joystickDelta.current.yUpDown * vertical;
 
         // Atualiza velocidade
         velocity.current.add(acceleration.current);
@@ -120,13 +121,21 @@ export default function useMovement(shipRef) {
 
         // Ajuste de rotação baseado na direção atual
         if (velocity.current.lengthSq() > 0.0001) {
-            const target = new THREE.Vector3().copy(shipRef.current.position).add(velocity.current);
+            const dir = velocity.current.clone().normalize();
+
             const dummy = new THREE.Object3D();
             dummy.position.copy(shipRef.current.position);
+            const target = new THREE.Vector3().copy(shipRef.current.position).add(dir);
             dummy.lookAt(target);
             dummy.rotateX(Math.PI / 2);
             dummy.rotateY(Math.PI);
-            shipRef.current.quaternion.slerp(dummy.quaternion, rotationSmoothness);
+
+            targetQuaternion.current.copy(dummy.quaternion);
+
+            shipRef.current.quaternion.slerp(
+                targetQuaternion.current,
+                0.05
+            );
         }
     };
 
