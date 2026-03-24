@@ -40,7 +40,7 @@ export default function SandboxScreen() {
   const shipRef = useRef();
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
-  const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef } = useMovement(shipRef);
+  const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef, speedship } = useMovement(shipRef);
 
   const [currentHP] = useState(100);
   const [energy, setEnergy] = useState(0);
@@ -391,6 +391,7 @@ export default function SandboxScreen() {
             isRecharging={isRecharging}
             score={currentScore}
             coords={coords}
+            speed={speedship}
             onMenuPress={async () => {
               setPaused(true);
               resetMovementState();

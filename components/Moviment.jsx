@@ -192,6 +192,7 @@ export default function useMovement(shipRef) {
             );
         }
     };
+    const speedship = velocity.current.length();
 
     return {
         updateShip,
@@ -199,5 +200,6 @@ export default function useMovement(shipRef) {
         resetMovementState,
         setPaused,
         canControl,
+        speedship,
     };
 }

@@ -3,7 +3,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Tutorial from "@/components/Tutorial";
 
-export default function Hud({ shipHP = 100, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, onMenuPress, setTutorialStep, markerCoords = null }) {
+export default function Hud({ shipHP = 100, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, markerCoords = null }) {
 
   return (
     <>
@@ -64,7 +64,7 @@ export default function Hud({ shipHP = 100, energy = 100, isRecharging, score = 
       {/* Energia */}
       <View style={styles.energyModule}>
         <Text style={styles.label}>ENERGIA</Text>
-        {isRecharging  && (
+        {isRecharging && (
           <Text style={styles.energyIcon}>⚡</Text>
         )}
         <View style={styles.energyFrame}>
@@ -81,8 +81,30 @@ export default function Hud({ shipHP = 100, energy = 100, isRecharging, score = 
             ]}
           />
         </View>
-
         <Text style={styles.energyValue}>{energy}%</Text>
+      </View>
+      {/* Velocidade */}
+      <View style={styles.speedModule}>
+        <Text style={styles.speedLabel}>VELOCIDADE</Text>
+        <View style={styles.speedContainer}>
+          <Text style={styles.speedBig}>
+            {speed.toFixed(2)}
+          </Text>
+          <View style={styles.speedFrame}>
+            <View
+              style={[
+                styles.speedFill,
+                {
+                  width: `${Math.min((speed / 5) * 100, 100)}%`,
+                  backgroundColor:
+                    speed > 4.5 ? "#ff3b3b" :
+                      speed > 2.4 ? "#ffd54a" :
+                        "#3cfaff",
+                },
+              ]}
+            />
+          </View>
+        </View>
       </View>
     </>
   );
@@ -99,21 +121,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 10,
   },
+
   column: {
     alignItems: "center",
   },
+
   label: {
     fontSize: 14,
     color: "#fff",
     marginBottom: 4,
     fontWeight: "bold",
   },
+
   centerPanelAbsolute: {
     position: "absolute",
     top: 0,
     left: "50%",
     alignItems: "center",
   },
+
   panelTitle: {
     fontSize: 11,
     color: "#7fcaff",
@@ -121,23 +147,28 @@ const styles = StyleSheet.create({
     fontFamily: "monospace",
     letterSpacing: 1,
   },
+
   coordsBox: {
     marginTop: 6,
     minWidth: 210,
     alignItems: "flex-start",
   },
+
   coords: {
     fontSize: 12,
     color: "#aaa",
     fontFamily: "monospace",
   },
+
   markerCoords: {
     color: "#66ddff",
     marginTop: 2,
   },
+
   hpModule: {
     width: 210,
   },
+
   hpFrame: {
     height: 14,
     borderRadius: 3,
@@ -146,12 +177,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(10,20,30,0.8)",
     overflow: "hidden",
   },
+
   hpFill: {
     height: "100%",
     shadowColor: "#00ffff",
     shadowOpacity: 0.6,
     shadowRadius: 8,
   },
+
   hpValue: {
     marginTop: 2,
     fontSize: 11,
@@ -159,22 +192,26 @@ const styles = StyleSheet.create({
     fontFamily: "monospace",
     textAlign: "right",
   },
+
   score: {
     fontSize: 20,
     color: "#fff",
     fontWeight: "bold",
     fontFamily: "monospace",
   },
+
   menuButton: {
     backgroundColor: "#222",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
   },
+
   menuText: {
     color: "#fff",
     fontWeight: "bold",
   },
+
   energyModule: {
     position: "absolute",
     left: 10,
@@ -182,6 +219,7 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -60 }],
     alignItems: "center",
   },
+
   energyFrame: {
     width: 14,
     height: 120,
@@ -192,18 +230,21 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "flex-end",
   },
+
   energyFill: {
     width: "100%",
     shadowColor: "#00ffff",
     shadowOpacity: 0.7,
     shadowRadius: 10,
   },
+
   energyValue: {
     marginTop: 4,
     fontSize: 11,
     color: "#dfefff",
     fontFamily: "monospace",
   },
+
   energyIcon: {
     position: "absolute",
     top: "50%",
@@ -215,5 +256,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#00ffff",
     zIndex: 2,
+  },
+
+  speedModule: {
+    position: "absolute",
+    left: 10,
+    bottom: 20,
+  },
+
+  speedLabel: {
+    fontSize: 10,
+    color: "#7fcaff",
+    fontFamily: "monospace",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+
+  speedContainer: {
+    backgroundColor: "rgba(5,10,20,0.85)",
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(100,180,255,0.25)",
+    width: 180,
+  },
+
+  speedBig: {
+    fontSize: 22,
+    color: "#ffffff",
+    fontFamily: "monospace",
+    marginBottom: 6,
+  },
+
+  speedFrame: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    overflow: "hidden",
+  },
+
+  speedFill: {
+    height: "100%",
+    shadowColor: "#00ffff",
+    shadowOpacity: 0.9,
+    shadowRadius: 12,
   },
 });
