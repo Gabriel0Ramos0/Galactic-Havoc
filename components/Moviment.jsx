@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export default function useMovement(shipRef) {
     const velocity = useRef(new THREE.Vector3(0, 0, 0));
@@ -18,13 +18,12 @@ export default function useMovement(shipRef) {
 
     const joystickDelta = useRef({ x: 0, y: 0, yUpDown: 0 });
 
-    const speed = 0.006;
+    const speed = 0.02;
     const warpMultiplier = 3;
     const friction = 0.995;
-    const rotationSmoothness = 0.1;
 
     const baseMaxSpeed = 2.5;
-    const warpMaxSpeed = 10;
+    const warpMaxSpeed = 5;
     const currentMaxSpeed = useRef(baseMaxSpeed);
     const speedLerpFactor = 0.02;
 
@@ -73,15 +72,12 @@ export default function useMovement(shipRef) {
 
     const updateShip = () => {
         if (!shipRef.current) return;
-
         if (paused.current) return;
 
         acceleration.current.set(0, 0, 0);
 
         const isWarp = keys.current.Shift;
         const thrust = isWarp ? speed * warpMultiplier : speed;
-        const strafe = thrust * 4;
-        const vertical = thrust * 4;
         const targetMaxSpeed = isWarp ? warpMaxSpeed : baseMaxSpeed;
 
         currentMaxSpeed.current +=
@@ -89,24 +85,68 @@ export default function useMovement(shipRef) {
 
         const forward = new THREE.Vector3(0, 1, 0).applyQuaternion(shipRef.current.quaternion);
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(shipRef.current.quaternion);
+        const inputDir = new THREE.Vector3();
+
+        let isTurning = false;
 
         if (canControl.current) {
-            // ======= CONTROLES =======
-            if (keys.current.w) acceleration.current.add(forward.clone().multiplyScalar(thrust));
-            if (keys.current.s) { velocity.current.multiplyScalar(0.98) };
-            if (keys.current.a) acceleration.current.add(right.clone().multiplyScalar(-strafe));
-            if (keys.current.d) acceleration.current.add(right.clone().multiplyScalar(strafe));
-            if (keys.current.ArrowUp) acceleration.current.y += vertical;
-            if (keys.current.ArrowDown) acceleration.current.y -= vertical;
+            if (keys.current.w) inputDir.add(forward);
+
+            if (keys.current.s) {
+                velocity.current.multiplyScalar(0.98);
+            }
+
+            if (keys.current.a) {
+                inputDir.add(right.clone().negate());
+                isTurning = true;
+            }
+
+            if (keys.current.d) {
+                inputDir.add(right);
+                isTurning = true;
+            }
+
+            if (keys.current.ArrowUp) {
+                inputDir.y += 1;
+                isTurning = true;
+            }
+
+            if (keys.current.ArrowDown) {
+                inputDir.y -= 1;
+                isTurning = true;
+            }
         }
 
-        // MOBILE (joystick)
-        acceleration.current.add(forward.clone().multiplyScalar(joystickDelta.current.y * thrust));
-        acceleration.current.add(right.clone().multiplyScalar(joystickDelta.current.x * strafe));
-        acceleration.current.y += joystickDelta.current.yUpDown * vertical;
+        // joystick
+        if (joystickDelta.current.x !== 0 || joystickDelta.current.y !== 0 || joystickDelta.current.yUpDown !== 0) {
+            isTurning = true;
+        }
+
+        inputDir.add(forward.clone().multiplyScalar(joystickDelta.current.y));
+        inputDir.add(right.clone().multiplyScalar(joystickDelta.current.x));
+        inputDir.y += joystickDelta.current.yUpDown;
+
+        if (inputDir.lengthSq() > 0) {
+            inputDir.normalize();
+            acceleration.current.add(inputDir.multiplyScalar(thrust));
+        }
 
         // Atualiza velocidade
         velocity.current.add(acceleration.current);
+
+        // curva da nave
+        const turnAssist = 0.05;
+        const forwardDir = new THREE.Vector3(0, 1, 0)
+            .applyQuaternion(shipRef.current.quaternion);
+
+        const desiredVelocity = forwardDir.clone().multiplyScalar(velocity.current.length());
+
+        velocity.current.lerp(desiredVelocity, turnAssist);
+
+        // Leve desaceleração ao virar
+        if (isTurning) {
+            velocity.current.multiplyScalar(0.990);
+        }
 
         // Limite de velocidade
         if (velocity.current.length() > currentMaxSpeed.current) {
@@ -130,11 +170,25 @@ export default function useMovement(shipRef) {
             dummy.rotateX(Math.PI / 2);
             dummy.rotateY(Math.PI);
 
+            // bank bonito
+            const velDir = velocity.current.clone().normalize();
+            const forwardDir2 = new THREE.Vector3(0, 1, 0).applyQuaternion(shipRef.current.quaternion);
+            const cross = new THREE.Vector3().crossVectors(forwardDir2, velDir);
+            const sideForce = cross.z;
+
+            const maxBankAngle = Math.PI / 6;
+            const bank = -sideForce * maxBankAngle;
+
+            dummy.rotateZ(bank);
+
             targetQuaternion.current.copy(dummy.quaternion);
+
+            const speedFactor = velocity.current.length() / currentMaxSpeed.current;
+            const rotationSpeed = 0.05 + (speedFactor * 0.45);
 
             shipRef.current.quaternion.slerp(
                 targetQuaternion.current,
-                0.05
+                rotationSpeed
             );
         }
     };

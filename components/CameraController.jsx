@@ -10,13 +10,15 @@ export default function useCameraController(cameraRef, shipRef) {
   const tempVec1 = useRef(new THREE.Vector3());
   const tempVec2 = useRef(new THREE.Vector3());
   const tempVec3 = useRef(new THREE.Vector3());
+  const currentDirection = useRef(new THREE.Vector3(0, 1, 0));
 
   const applyZoom = (delta) => {
-    orbit.current.radius = Math.max(2, Math.min(50, orbit.current.radius + delta));
+    orbit.current.radius = THREE.MathUtils.clamp(
+      orbit.current.radius + delta,
+      2,
+      50
+    );
   };
-
-  // Vetor de direção atual da câmera, suavizado
-  const currentDirection = useRef(new THREE.Vector3(0, 1, 0));
 
   const panResponder = useRef(
     PanResponder.create({
@@ -26,11 +28,13 @@ export default function useCameraController(cameraRef, shipRef) {
           const [a, b] = evt.nativeEvent.touches;
           const dx = a.pageX - b.pageX;
           const dy = a.pageY - b.pageY;
-          const distSq = dx * dx + dy * dy;
-          pinchDistance.current = distSq;
+          pinchDistance.current = dx * dx + dy * dy;
         } else {
           isDragging.current = true;
-          lastTouch.current = { x: evt.nativeEvent.locationX, y: evt.nativeEvent.locationY };
+          lastTouch.current = {
+            x: evt.nativeEvent.locationX,
+            y: evt.nativeEvent.locationY,
+          };
         }
       },
       onPanResponderMove: (evt) => {
@@ -39,7 +43,11 @@ export default function useCameraController(cameraRef, shipRef) {
           const dx = a.pageX - b.pageX;
           const dy = a.pageY - b.pageY;
           const distSq = dx * dx + dy * dy;
-          if (pinchDistance.current) applyZoom((pinchDistance.current - distSq) * 0.01);
+
+          if (pinchDistance.current) {
+            applyZoom((pinchDistance.current - distSq) * 0.01);
+          }
+
           pinchDistance.current = distSq;
           return;
         }
@@ -48,10 +56,17 @@ export default function useCameraController(cameraRef, shipRef) {
         const dx = evt.nativeEvent.locationX - lastTouch.current.x;
         const dy = evt.nativeEvent.locationY - lastTouch.current.y;
 
-        orbit.current.theta += dx * 0.005;
-        orbit.current.phi = Math.max(0.05, Math.min(Math.PI - 0.01, orbit.current.phi - dy * 0.005));
+        orbit.current.theta += dx * 0.01;
+        orbit.current.phi = THREE.MathUtils.clamp(
+          orbit.current.phi - dy * 0.01,
+          0.05,
+          Math.PI - 0.01
+        );
 
-        lastTouch.current = { x: evt.nativeEvent.locationX, y: evt.nativeEvent.locationY };
+        lastTouch.current = {
+          x: evt.nativeEvent.locationX,
+          y: evt.nativeEvent.locationY,
+        };
       },
       onPanResponderRelease: () => {
         isDragging.current = false;
@@ -69,24 +84,34 @@ export default function useCameraController(cameraRef, shipRef) {
   const updateCamera = () => {
     if (!cameraRef.current || !shipRef.current) return;
 
-    const target = tempVec1.current.copy(shipRef.current.position);
+    const velocity =
+      shipRef.current.userData.velocity || tempVec3.current.set(0, 0, 0);
+
+    // Previsão de movimento
+    const target = tempVec1.current
+      .copy(shipRef.current.position)
+      .addScaledVector(velocity, 0.5);
 
     let desiredPos;
 
     if (isDragging.current) {
-      const x = orbit.current.radius * Math.sin(orbit.current.phi) * Math.sin(orbit.current.theta);
-      const y = orbit.current.radius * Math.cos(orbit.current.phi);
-      const z = orbit.current.radius * Math.sin(orbit.current.phi) * Math.cos(orbit.current.theta);
+      // ORBITAL — SEM SUAVIDADE
+      const { radius, theta, phi } = orbit.current;
 
-      desiredPos = tempVec2.current.set(x, y, z).add(target);
+      desiredPos = tempVec2.current.set(
+        radius * Math.sin(phi) * Math.sin(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.cos(theta)
+      ).add(target);
 
+      cameraRef.current.position.copy(desiredPos);
     } else {
       const desiredDirection = tempVec2.current
         .set(0, 1, 0)
         .applyQuaternion(shipRef.current.quaternion)
         .normalize();
 
-      currentDirection.current.lerp(desiredDirection, 0.05);
+      currentDirection.current.lerp(desiredDirection, 0.08);
 
       const offset = tempVec3.current
         .copy(currentDirection.current)
@@ -94,8 +119,13 @@ export default function useCameraController(cameraRef, shipRef) {
 
       desiredPos = tempVec2.current.copy(target).sub(offset);
       desiredPos.y += orbit.current.radius * 0.25;
+
+      const dist = cameraRef.current.position.distanceTo(desiredPos);
+      const smooth = THREE.MathUtils.clamp(dist * 0.05, 0.05, 0.2);
+
+      cameraRef.current.position.lerp(desiredPos, smooth);
     }
-    cameraRef.current.position.lerp(desiredPos, 0.05);
+
     cameraRef.current.lookAt(target);
   };
 
