@@ -4,6 +4,7 @@ import * as THREE from "three";
 
 export default function useCameraController(cameraRef, shipRef) {
   const orbit = useRef({ theta: Math.PI, phi: Math.PI / 8, radius: 15 });
+  const targetOrbit = useRef({ theta: Math.PI, phi: Math.PI / 8 });
   const isDragging = useRef(false);
   const lastTouch = useRef({ x: 0, y: 0 });
   const pinchDistance = useRef(null);
@@ -56,9 +57,9 @@ export default function useCameraController(cameraRef, shipRef) {
         const dx = evt.nativeEvent.locationX - lastTouch.current.x;
         const dy = evt.nativeEvent.locationY - lastTouch.current.y;
 
-        orbit.current.theta += dx * 0.01;
-        orbit.current.phi = THREE.MathUtils.clamp(
-          orbit.current.phi - dy * 0.01,
+        targetOrbit.current.theta += dx * 0.01;
+        targetOrbit.current.phi = THREE.MathUtils.clamp(
+          targetOrbit.current.phi - dy * 0.01,
           0.05,
           Math.PI - 0.01
         );
@@ -87,7 +88,6 @@ export default function useCameraController(cameraRef, shipRef) {
     const velocity =
       shipRef.current.userData.velocity || tempVec3.current.set(0, 0, 0);
 
-    // Previsão de movimento
     const target = tempVec1.current
       .copy(shipRef.current.position)
       .addScaledVector(velocity, 0.5);
@@ -95,16 +95,32 @@ export default function useCameraController(cameraRef, shipRef) {
     let desiredPos;
 
     if (isDragging.current) {
-      // ORBITAL — SEM SUAVIDADE
+      const smoothOrbit = 0.1;
+
+      orbit.current.theta = THREE.MathUtils.lerp(
+        orbit.current.theta,
+        targetOrbit.current.theta,
+        smoothOrbit
+      );
+
+      orbit.current.phi = THREE.MathUtils.lerp(
+        orbit.current.phi,
+        targetOrbit.current.phi,
+        smoothOrbit
+      );
+
       const { radius, theta, phi } = orbit.current;
 
-      desiredPos = tempVec2.current.set(
-        radius * Math.sin(phi) * Math.sin(theta),
-        radius * Math.cos(phi),
-        radius * Math.sin(phi) * Math.cos(theta)
-      ).add(target);
+      desiredPos = tempVec2.current
+        .set(
+          radius * Math.sin(phi) * Math.sin(theta),
+          radius * Math.cos(phi),
+          radius * Math.sin(phi) * Math.cos(theta)
+        )
+        .add(target);
 
-      cameraRef.current.position.copy(desiredPos);
+      cameraRef.current.position.lerp(desiredPos, 0.15);
+
     } else {
       const desiredDirection = tempVec2.current
         .set(0, 1, 0)
@@ -129,5 +145,9 @@ export default function useCameraController(cameraRef, shipRef) {
     cameraRef.current.lookAt(target);
   };
 
-  return { panHandlers: panResponder.panHandlers, onWheel, updateCamera };
+  return {
+    panHandlers: panResponder.panHandlers,
+    onWheel,
+    updateCamera,
+  };
 }
