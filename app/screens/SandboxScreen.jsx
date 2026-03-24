@@ -38,6 +38,8 @@ export default function SandboxScreen() {
   const glRef = useRef();
   const cameraRef = useRef();
   const shipRef = useRef();
+  const debugMode = useRef(false);
+  const debugObjects = useRef([]);
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
   const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef, speedship } = useMovement(shipRef);
@@ -69,6 +71,24 @@ export default function SandboxScreen() {
       stopMenuMusic();
     }
   }, [menuVisible]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "-") {
+        debugMode.current = !debugMode.current;
+
+        debugObjects.current.forEach(obj => {
+          obj.visible = debugMode.current;
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -231,13 +251,24 @@ export default function SandboxScreen() {
     shipRef.current = ship;
 
     // Eixos para referência
-    // const axesHelper = new THREE.AxesHelper(10);
-    // ship.add(axesHelper);
+    const axesHelper = new THREE.AxesHelper(10);
+    axesHelper.visible = false;
+    ship.add(axesHelper);
+
+    debugObjects.current.push(axesHelper);
 
     // Universo
     const stars = await createStars(7000, 2000);
     const suns = await createSuns(3, 6000);
     const asteroids = await createAsteroids(200, 8000, 2, 20);
+
+    asteroids.children.forEach(ast => {
+      const box = new THREE.BoxHelper(ast, 0x00ffff);
+      box.visible = false;
+
+      scene.add(box);
+      debugObjects.current.push(box);
+    });
 
     scene.add(stars);
     scene.add(suns);
@@ -279,6 +310,9 @@ export default function SandboxScreen() {
       stars.recycle(ship.position, 900);
       suns.recycle(ship.position, 2500);
       asteroids.recycle(ship.position, 3000, 1200);
+      debugObjects.current.forEach(obj => {
+        if (obj.update) obj.update();
+      });
 
       if (blueMarkerRef.current && blueMarkerRef.current.update) {
         blueMarkerRef.current.update(dt, ship.position);
