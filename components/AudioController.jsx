@@ -1,68 +1,164 @@
 import { Audio } from "expo-av";
 
-let menuSound = null;
-let gameSound = null;
-let useNostalgia = false;
+let soundInstance = null;
+let currentTrackIndex = 0;
 let currentVolume = 0.5;
 
-export async function startMenuMusic() {
-  if (menuSound) return;
+const playlist = [
+  {
+    id: 1,
+    name: "Science",
+    file: require("../assets/sounds/science.mp3"),
+  },
+  {
+    id: 2,
+    name: "Lost",
+    file: require("../assets/sounds/Background.mp3"),
+  },
+  {
+    id: 3,
+    name: "Space Intro",
+    file: require("../assets/sounds/SpaceIntro.mp3"),
+  },
+  {
+    id: 4,
+    name: "Stellar",
+    file: require("../assets/sounds/stellar.mp3"),
+  },
+  {
+    id: 5,
+    name: "Rizzlas C18",
+    file: require("../assets/sounds/rizzlas-c18.mp3"),
+  },
+  {
+    id: 6,
+    name: "Introfy",
+    file: require("../assets/sounds/emocao.mp3"),
+  },
+  {
+    id: 7,
+    name: "Journey",
+    file: require("../assets/sounds/journey.mp3"),
+  },
+];
 
-  const file = useNostalgia
-    ? require("../assets/sounds/Background.mp3")
-    : require("../assets/sounds/science-documentary-169621.mp3");
-
-  const { sound } = await Audio.Sound.createAsync(file, {
-    volume: currentVolume,
-    isLooping: true,
-  });
-
-  menuSound = sound;
-  await menuSound.playAsync();
+export function getPlaylist() {
+  return playlist;
 }
 
-export async function stopMenuMusic() {
-  if (menuSound) {
-    await menuSound.stopAsync();
-    await menuSound.unloadAsync();
-    menuSound = null;
+export function getCurrentTrackIndex() {
+  return currentTrackIndex;
+}
+
+export function getCurrentTrack() {
+  return playlist[currentTrackIndex];
+}
+
+export async function playTrack(index) {
+  try {
+    if (soundInstance) {
+      await soundInstance.stopAsync();
+      await soundInstance.unloadAsync();
+    }
+
+    const track = playlist[index];
+    if (!track) return;
+
+    currentTrackIndex = index;
+
+    const { sound } = await Audio.Sound.createAsync(track.file, {
+      volume: currentVolume,
+      isLooping: false,
+    });
+
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.didJustFinish && !status.isLooping) {
+        const next = getRandomTrackIndex();
+        transitionToTrack(next);
+      }
+    });
+
+    soundInstance = sound;
+    await soundInstance.playAsync();
+  } catch (e) {
+    console.warn("Erro ao tocar música:", e);
   }
 }
 
-export async function startGameMusic() {
-  if (gameSound) return;
-  const { sound } = await Audio.Sound.createAsync(
-    require("../assets/sounds/SpaceIntro.mp3"),
-    { volume: currentVolume, isLooping: true }
-  );
-  gameSound = sound;
-  await gameSound.playAsync();
+export async function stopMusic() {
+  if (soundInstance) {
+    await soundInstance.stopAsync();
+    await soundInstance.unloadAsync();
+    soundInstance = null;
+  }
 }
 
-export async function stopGameMusic() {
-  if (gameSound) {
-    await gameSound.stopAsync();
-    await gameSound.unloadAsync();
-    gameSound = null;
-  }
+export async function nextTrack() {
+  const next = (currentTrackIndex + 1) % playlist.length;
+  await playTrack(next);
+}
+
+export async function prevTrack() {
+  const prev =
+    (currentTrackIndex - 1 + playlist.length) % playlist.length;
+  await playTrack(prev);
 }
 
 export async function setMusicVolume(value) {
   currentVolume = value;
-  if (menuSound) await menuSound.setVolumeAsync(value);
-  if (gameSound) await gameSound.setVolumeAsync(value);
-}
-
-export function setUseNostalgia(value) {
-  useNostalgia = value;
-}
-
-export function getUseNostalgia() {
-  return useNostalgia;
+  if (soundInstance) {
+    await soundInstance.setVolumeAsync(value);
+  }
 }
 
 export function getMusicVolume() {
   return currentVolume;
+}
+
+let isTransitioning = false;
+
+export async function transitionToTrack(index, fadeDuration = 1000) {
+  if (isTransitioning) return;
+  isTransitioning = true;
+
+  try {
+    // fade out atual
+    if (soundInstance) {
+      await fadeOutSound(soundInstance, fadeDuration);
+      await soundInstance.unloadAsync();
+      soundInstance = null;
+    }
+
+    // toca nova
+    await playTrack(index);
+
+    // fade in
+    if (soundInstance) {
+      await soundInstance.setVolumeAsync(0);
+
+      const steps = 20;
+      const stepTime = fadeDuration / steps;
+
+      for (let i = 0; i < steps; i++) {
+        await new Promise(r => setTimeout(r, stepTime));
+        await soundInstance.setVolumeAsync((i + 1) / steps);
+      }
+    }
+
+  } catch (e) {
+    console.warn("Erro na transição:", e);
+  }
+
+  isTransitioning = false;
+}
+
+export function getRandomTrackIndex(excludeCurrent = true) {
+  let index;
+  do {
+    index = Math.floor(Math.random() * playlist.length);
+  } while (excludeCurrent && index === currentTrackIndex);
+
+  return index;
 }
 
 let sfxLoaded = false;

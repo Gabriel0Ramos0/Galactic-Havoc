@@ -8,18 +8,7 @@ import styles from "./style";
 
 import Hud from "@/components/Hud";
 import useCameraController from "@/components/CameraController";
-import {
-  startMenuMusic,
-  stopMenuMusic,
-  startGameMusic,
-  stopGameMusic,
-  setMusicVolume,
-  getMusicVolume,
-  stopTutorialCombat,
-  playSfx,
-  loadSfx
-} from "@/components/AudioController";
-import { Audio } from "expo-av";
+import { playTrack, stopMusic, transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/components/AudioController";
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";
@@ -66,9 +55,7 @@ export default function SandboxScreen() {
   // Controla a música do menu
   useEffect(() => {
     if (menuVisible) {
-      startMenuMusic();
-    } else {
-      stopMenuMusic();
+      playTrack(0);
     }
   }, [menuVisible]);
 
@@ -204,12 +191,12 @@ export default function SandboxScreen() {
         blueMarkerRef.current = null;
         setMarkerCoords(null);
         playSfx("tutorial_combat");
-        stopGameMusic();
+        stopMusic();
         break;
 
       case 13:
         stopTutorialCombat();
-        startGameMusic();
+        transitionToTrack(4);
         break;
 
       default:
@@ -402,8 +389,7 @@ export default function SandboxScreen() {
               blueMarkerRef.current = null;
               setMarkerCoords(null);
             }
-            await stopMenuMusic();
-            await startGameMusic();
+            await transitionToTrack(2);
             setMenuVisible(false);
             setInGame(true);
           }}
@@ -445,7 +431,7 @@ export default function SandboxScreen() {
               }
               setMenuVisible(true);
               setInGame(false);
-              await stopGameMusic();
+              await transitionToTrack(0);
             }}
             setTutorialStep={setTutorialStep}
             markerCoords={markerCoords}
