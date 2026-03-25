@@ -1,5 +1,5 @@
 // app/screens/SandboxScreen.jsx
-import React, { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { View, Platform } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
@@ -18,6 +18,7 @@ import useMovement from "@/components/Moviment";
 import Joystick from "@/components/Joystick";
 import Menu from "@/components/Menu";
 import Config from "@/components/Config";
+import TransitionController from "@/components/TransitionController";
 import { setupShipLighting, animateShipStartup, animateShipShutdown } from "@/components/lighting";
 import CutsceneScreen from "@/components/CutsceneScreen";
 import History from "@/components/History";
@@ -29,6 +30,8 @@ export default function SandboxScreen() {
   const shipRef = useRef();
   const debugMode = useRef(false);
   const debugObjects = useRef([]);
+  const transitionRef = useRef();
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
   const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef, speedship } = useMovement(shipRef);
@@ -92,7 +95,7 @@ export default function SandboxScreen() {
   const criticalRecoveryTriggeredRef = useRef(false);
 
   useEffect(() => {
-    if (!inGame) return;
+    if (!inGame || isTransitioning) return;
 
     // entrou em crítico
     if (energy <= 0 && !isCritical) {
@@ -360,13 +363,16 @@ export default function SandboxScreen() {
 
   // Handlers para cutscene fim / pular
   const handleCutsceneFinish = async () => {
-    setCutsceneVisible(false);
-    setMenuVisible(true);
-    setInGame(false);
+    transitionRef.current.start(async () => {
+      setCutsceneVisible(false);
+      setMenuVisible(true);
+      setInGame(false);
+    });
   };
 
   return (
     <View style={styles.container} {...panHandlers} onWheel={onWheel}>
+      <TransitionController ref={transitionRef} />
       {/* CUTSCENE */}
       {cutsceneVisible && (
         <CutsceneScreen
@@ -389,9 +395,11 @@ export default function SandboxScreen() {
               blueMarkerRef.current = null;
               setMarkerCoords(null);
             }
-            await transitionToTrack(2);
-            setMenuVisible(false);
-            setInGame(true);
+            await transitionRef.current.start(async () => {
+              setMenuVisible(false);
+              setInGame(true);
+              await transitionToTrack(2);
+            });
           }}
           onConfig={() => setConfigVisible(true)}
           onHistory={() => setHistoryVisible(true)}
@@ -416,6 +424,10 @@ export default function SandboxScreen() {
               setPaused(true);
               resetMovementState();
               setEnergy(0);
+              setIsCritical(false);
+              setIsRecharging(false);
+              criticalRecoveryTriggeredRef.current = false;
+              setTutorialStep(0);
               if (glRef.current && typeof glRef.current._stopAnimation === "function") {
                 glRef.current._stopAnimation();
               } else if (rafRef.current) {
@@ -429,9 +441,14 @@ export default function SandboxScreen() {
                 blueMarkerRef.current = null;
                 setMarkerCoords(null);
               }
-              setMenuVisible(true);
-              setInGame(false);
-              await transitionToTrack(0);
+              setIsTransitioning(true);
+
+              transitionRef.current.start(async () => {
+                setInGame(false);
+                setMenuVisible(true);
+                await transitionToTrack(0);
+                setIsTransitioning(false);
+              });
             }}
             setTutorialStep={setTutorialStep}
             markerCoords={markerCoords}
