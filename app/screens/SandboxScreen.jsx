@@ -34,7 +34,7 @@ export default function SandboxScreen() {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
-  const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef, speedship } = useMovement(shipRef);
+  const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef, speedship, velocity } = useMovement(shipRef);
 
   const [currentHP] = useState(100);
   const [energy, setEnergy] = useState(0);
@@ -219,7 +219,8 @@ export default function SandboxScreen() {
     onShoot: () => {
       lastShotTimeRef.current = Date.now();
       playSfx("fire");
-    }
+    },
+    shipVelocityRef: velocity
   });
 
   const onContextCreate = async (gl) => {

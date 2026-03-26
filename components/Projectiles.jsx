@@ -12,6 +12,7 @@ export default function useProjectiles(shipRef, scene, options = {}) {
     const onConsumeEnergy = options.onConsumeEnergy ?? (() => { });
     const canControlRef = options.canControlRef ?? { current: true };
     const onShoot = options.onShoot ?? (() => { });
+    const shipVelocityRef = options.shipVelocityRef;
     const sceneRefInternal = useRef(scene);
     const keys = useRef({
         space: false,
@@ -63,6 +64,9 @@ export default function useProjectiles(shipRef, scene, options = {}) {
         projectile.userData.startPos = projectile.position.clone();
         projectile.userData.damage = damage;
 
+        projectile.userData.shipVelocity =
+            shipVelocityRef?.current?.clone() || new THREE.Vector3();
+
         sceneRefInternal.current.add(projectile);
         projectiles.current.push(projectile);
     };
@@ -110,9 +114,10 @@ export default function useProjectiles(shipRef, scene, options = {}) {
 
         for (let i = projectiles.current.length - 1; i >= 0; i--) {
             const p = projectiles.current[i];
-            p.position.add(
-                p.userData.direction.clone().multiplyScalar(speed)
-            );
+            const baseVelocity = p.userData.direction.clone().multiplyScalar(speed);
+            const inheritedVelocity = p.userData.shipVelocity.clone();
+
+            p.position.add(baseVelocity.add(inheritedVelocity));
 
             if (p.position.distanceTo(p.userData.startPos) > maxDistance) {
                 sceneRefInternal.current?.remove(p);

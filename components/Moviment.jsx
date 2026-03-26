@@ -201,5 +201,6 @@ export default function useMovement(shipRef) {
         setPaused,
         canControl,
         speedship,
+        velocity,
     };
 }
