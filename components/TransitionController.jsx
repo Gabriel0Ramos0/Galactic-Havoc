@@ -48,7 +48,7 @@ const TransitionController = forwardRef((props, ref) => {
 
             setVisible(true);
 
-            // FECHAR CORTINA
+            // Fechar
             await new Promise((resolve) => {
                 Animated.timing(anim, {
                     toValue: 1,
@@ -58,26 +58,30 @@ const TransitionController = forwardRef((props, ref) => {
                 }).start(resolve);
             });
 
-            // 🔥 MOSTRA LOADER
-            setShowLoader(true);
+            let showLoaderTimeout;
 
-            // deixa renderizar antes do peso
-            await new Promise(requestAnimationFrame);
-            await new Promise(res => setTimeout(res, 50));
-
-            // EXECUTA CÓDIGO PESADO
             try {
                 if (callback) {
-                    await callback();
+                    const callbackPromise = callback();
+
+                    // só mostra loader se demorar
+                    showLoaderTimeout = setTimeout(() => {
+                        setShowLoader(true);
+                    }, 150);
+
+                    await callbackPromise;
                 }
             } catch (err) {
                 console.warn("Erro na transição:", err);
             }
 
-            // ESCONDE LOADER
+            if (showLoaderTimeout) {
+                clearTimeout(showLoaderTimeout);
+            }
+
             setShowLoader(false);
 
-            // ABRIR CORTINA
+            // Abrir
             await new Promise((resolve) => {
                 Animated.timing(anim, {
                     toValue: 0,
