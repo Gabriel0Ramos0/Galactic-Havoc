@@ -1,17 +1,45 @@
-import React, {
+import {
     useRef,
     useState,
     forwardRef,
     useImperativeHandle,
+    useEffect,
 } from "react";
-import { View, Animated, StyleSheet, Dimensions, Easing } from "react-native";
+import { View, Animated, StyleSheet, Dimensions, Text, Easing } from "react-native";
 
 const { height } = Dimensions.get("window");
 
 const TransitionController = forwardRef((props, ref) => {
     const anim = useRef(new Animated.Value(0)).current;
     const [visible, setVisible] = useState(false);
+    const [showLoader, setShowLoader] = useState(false);
     const isRunningRef = useRef(false);
+
+    // Animação das letras
+    const letters = "LOADING".split("");
+    const letterAnims = useRef(letters.map(() => new Animated.Value(0))).current;
+
+    useEffect(() => {
+        const loops = letterAnims.map((anim, i) =>
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(anim, {
+                        toValue: -10,
+                        duration: 400,
+                        delay: i * 120,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(anim, {
+                        toValue: 0,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                ])
+            )
+        );
+
+        loops.forEach(l => l.start());
+    }, []);
 
     useImperativeHandle(ref, () => ({
         async start(callback) {
@@ -20,7 +48,7 @@ const TransitionController = forwardRef((props, ref) => {
 
             setVisible(true);
 
-            // Fechar
+            // FECHAR CORTINA
             await new Promise((resolve) => {
                 Animated.timing(anim, {
                     toValue: 1,
@@ -30,7 +58,14 @@ const TransitionController = forwardRef((props, ref) => {
                 }).start(resolve);
             });
 
-            // Executa ação no meio da transição
+            // 🔥 MOSTRA LOADER
+            setShowLoader(true);
+
+            // deixa renderizar antes do peso
+            await new Promise(requestAnimationFrame);
+            await new Promise(res => setTimeout(res, 50));
+
+            // EXECUTA CÓDIGO PESADO
             try {
                 if (callback) {
                     await callback();
@@ -39,7 +74,10 @@ const TransitionController = forwardRef((props, ref) => {
                 console.warn("Erro na transição:", err);
             }
 
-            // Abrir
+            // ESCONDE LOADER
+            setShowLoader(false);
+
+            // ABRIR CORTINA
             await new Promise((resolve) => {
                 Animated.timing(anim, {
                     toValue: 0,
@@ -58,6 +96,26 @@ const TransitionController = forwardRef((props, ref) => {
 
     return (
         <View style={styles.container} pointerEvents="auto">
+
+            {/* LOADER */}
+            {showLoader && (
+                <View style={styles.loaderContainer}>
+                    {letters.map((l, i) => (
+                        <Animated.Text
+                            key={i}
+                            style={[
+                                styles.letter,
+                                {
+                                    transform: [{ translateY: letterAnims[i] }],
+                                },
+                            ]}
+                        >
+                            {l}
+                        </Animated.Text>
+                    ))}
+                </View>
+            )}
+
             {/* CORTINA SUPERIOR */}
             <Animated.View
                 style={[
@@ -112,5 +170,19 @@ const styles = StyleSheet.create({
         width: "100%",
         height: height / 2,
         backgroundColor: "#000",
+    },
+
+    loaderContainer: {
+        flexDirection: "row",
+        gap: 8,
+        zIndex: 10,
+    },
+
+    letter: {
+        color: "#f5f5f5",
+        fontSize: 18,
+        fontWeight: "600",
+        fontFamily: "monospace",
+        letterSpacing: 4,
     },
 });

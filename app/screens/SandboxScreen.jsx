@@ -234,7 +234,7 @@ export default function SandboxScreen() {
     const scene = new THREE.Scene();
 
     // Câmera
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 2000);
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 3000);
     cameraRef.current = camera;
 
     // Nave
@@ -249,8 +249,14 @@ export default function SandboxScreen() {
     debugObjects.current.push(axesHelper);
 
     // Universo
-    const stars = await createStars(7000, 2000);
+
+    const delay = () => new Promise(res => setTimeout(res, 0));
+
+    await delay();
+    const stars = await createStars(3000, 2000);
+    await delay();
     const suns = await createSuns(3, 6000);
+    await delay();
     const asteroids = await createAsteroids(200, 8000, 2, 20);
 
     asteroids.children.forEach(ast => {
