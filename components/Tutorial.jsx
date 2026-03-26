@@ -23,8 +23,8 @@ export default function Tutorial({ onComplete, onStepChange }) {
     const sequence = ["d", "w", "a", "s"];
 
     const steps = [
-        "Piloto… detectamos instabilidade severa nos giroscópios. O campo gravitacional local distorceu os eixos da nave.",
-        "A queda durante o salto dimensional desalinhou o núcleo de navegação. Precisamos recalibrar manualmente.",
+        "", // step 0, vazio para pular
+        "Piloto… o campo gravitacional local distorceu os eixos da nave! Precisamos recalibrar manualmente.",
         "Prepare-se. Vamos executar o protocolo de Estabilização Primária.",
         "Ajuste os propulsores na seguinte ordem: D → W → A → S.",
         "Bom trabalho. Vetores laterais restaurados. Agora mova-se com W, A, S e D.",
