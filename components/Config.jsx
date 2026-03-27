@@ -20,6 +20,17 @@ export default function Config({ visible, onClose }) {
     }
   }, [visible]);
 
+  useEffect(() => {
+    if (!visible) return;
+
+    const interval = setInterval(() => {
+      const index = getCurrentTrackIndex();
+      setCurrent((prev) => (prev !== index ? index : prev));
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [visible]);
+
   const handleVolumeChange = async (value) => {
     setVolume(value);
     setVolumeInput(String(Math.round(value * 100)));

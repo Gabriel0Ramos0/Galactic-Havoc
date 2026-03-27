@@ -141,7 +141,7 @@ export async function transitionToTrack(index, fadeDuration = 1000) {
 
       for (let i = 0; i < steps; i++) {
         await new Promise(r => setTimeout(r, stepTime));
-        await soundInstance.setVolumeAsync((i + 1) / steps);
+        await soundInstance.setVolumeAsync(((i + 1) / steps) * currentVolume);
       }
     }
 
@@ -243,6 +243,6 @@ async function fadeOutSound(sound, duration = 800) {
 
     await sound.stopAsync();
     await sound.setPositionAsync(0);
-    await sound.setVolumeAsync(1); // reset
+    await sound.setVolumeAsync(currentVolume);
   } catch (e) { }
 }
