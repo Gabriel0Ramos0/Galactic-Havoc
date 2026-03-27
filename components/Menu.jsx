@@ -54,32 +54,29 @@ export default function Menu({ onStart, onConfig, onCredits, onHistory, onExit, 
 
       {/* Botões centrais */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={onStart}>
-          <Text style={styles.buttonText}>Iniciar</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.button} onPress={onStart}>
+            <Text style={styles.buttonText}>Iniciar</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={onConfig}>
-          <Text style={styles.buttonText}>Configurações</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={onConfig}>
+            <Text style={styles.buttonText}>Configurações</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={onHistory}>
-          <Text style={styles.buttonText}>Terminal MK-IV</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={onHistory}>
+            <Text style={styles.buttonText}>Terminal MK-IV</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.button} onPress={onCredits}>
-          <Text style={styles.buttonText}>Créditos</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.button} onPress={onCredits}>
+            <Text style={styles.buttonText}>Créditos</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, styles.exitButton]} onPress={onExit}>
-          <Text style={styles.buttonText}>Sair</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Botão de login inferior esquerda */}
-      <View style={styles.bottomLeft}>
-        <TouchableOpacity style={styles.button} onPress={onLogin}>
-          <Text style={styles.buttonText}>Login</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={onLogin}>
+            <Text style={styles.buttonText}>Login</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Placar animado com colunas */}
@@ -132,28 +129,29 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     alignItems: "center",
+    marginTop: 50,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 5,
   },
   button: {
     backgroundColor: "#111",
-    paddingVertical: 12,
-    paddingHorizontal: 40,
+    paddingVertical: 10,
+    paddingHorizontal: 25,
     borderRadius: 12,
-    marginVertical: 8,
+    marginHorizontal: 8,
     borderWidth: 1,
     borderColor: "#0ff",
   },
   buttonText: {
     color: "#0ff",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
   },
   exitButton: {
     borderColor: "#f00",
-  },
-  bottomLeft: {
-    position: "absolute",
-    left: 20,
-    bottom: 20,
   },
   topRight: {
     position: "absolute",
