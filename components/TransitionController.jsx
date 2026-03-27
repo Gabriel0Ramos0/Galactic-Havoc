@@ -20,25 +20,33 @@ const TransitionController = forwardRef((props, ref) => {
     const letterAnims = useRef(letters.map(() => new Animated.Value(0))).current;
 
     useEffect(() => {
-        const loops = letterAnims.map((anim, i) =>
-            Animated.loop(
-                Animated.sequence([
-                    Animated.timing(anim, {
-                        toValue: -10,
-                        duration: 400,
-                        delay: i * 120,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(anim, {
-                        toValue: 0,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }),
-                ])
-            )
-        );
+        let isMounted = true;
 
-        loops.forEach(l => l.start());
+        const animateSequence = async () => {
+            while (isMounted) {
+                for (let i = 0; i < letterAnims.length; i++) {
+                    Animated.sequence([
+                        Animated.timing(letterAnims[i], {
+                            toValue: -10,
+                            duration: 200,
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(letterAnims[i], {
+                            toValue: 0,
+                            duration: 200,
+                            useNativeDriver: true,
+                        }),
+                    ]).start();
+
+                    await new Promise(res => setTimeout(res, 100));
+                }
+            }
+        };
+        animateSequence();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useImperativeHandle(ref, () => ({
