@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { useRef, useEffect } from "react";
 
-export default function useProjectiles(shipRef, scene, options = {}) {
+export default function useProjectiles(shipRef, sceneRef, options = {}) {
     const projectiles = useRef([]);
     const speed = options.speed || 5;
     const maxDistance = options.maxDistance || 500;
@@ -13,7 +13,6 @@ export default function useProjectiles(shipRef, scene, options = {}) {
     const canControlRef = options.canControlRef ?? { current: true };
     const onShoot = options.onShoot ?? (() => { });
     const shipVelocityRef = options.shipVelocityRef;
-    const sceneRefInternal = useRef(scene);
     const keys = useRef({
         space: false,
     });
@@ -22,13 +21,12 @@ export default function useProjectiles(shipRef, scene, options = {}) {
     const damage = options.damage || 10;
     const fireRate = options.fireRate || 200;
 
-    const fireProjectile = () => {
-        if (!shipRef.current || !sceneRefInternal.current) return;
+    const geometryRef = useRef(null);
+    const materialRef = useRef(null);
 
-        lastSide.current *= -1;
-
-        const geometry = new THREE.CapsuleGeometry(0.15, 0.8, 8, 16);
-        const material = new THREE.MeshStandardMaterial({
+    useEffect(() => {
+        geometryRef.current = new THREE.CapsuleGeometry(0.15, 0.8, 8, 16);
+        materialRef.current = new THREE.MeshStandardMaterial({
             color: 0x00ffff,
             emissive: 0x00ffff,
             emissiveIntensity: 2,
@@ -36,7 +34,21 @@ export default function useProjectiles(shipRef, scene, options = {}) {
             metalness: 0.8,
         });
 
-        const projectile = new THREE.Mesh(geometry, material);
+        return () => {
+            geometryRef.current.dispose();
+            materialRef.current.dispose();
+        };
+    }, []);
+
+    const fireProjectile = () => {
+        if (!shipRef.current || !sceneRef.current) return;
+
+        lastSide.current *= -1;
+
+        const projectile = new THREE.Mesh(
+            geometryRef.current,
+            materialRef.current
+        );
 
         const ship = shipRef.current;
 
@@ -67,12 +79,11 @@ export default function useProjectiles(shipRef, scene, options = {}) {
         projectile.userData.shipVelocity =
             shipVelocityRef?.current?.clone() || new THREE.Vector3();
 
-        sceneRefInternal.current.add(projectile);
+        sceneRef.current.add(projectile);
         projectiles.current.push(projectile);
     };
 
     useEffect(() => {
-        sceneRefInternal.current = scene;
 
         const handleKeyDown = (e) => {
             if (e.code === "Space") {
@@ -93,7 +104,7 @@ export default function useProjectiles(shipRef, scene, options = {}) {
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
         };
-    }, [scene]);
+    }, []);
 
     const updateProjectiles = () => {
         const now = Date.now();
@@ -120,7 +131,7 @@ export default function useProjectiles(shipRef, scene, options = {}) {
             p.position.add(baseVelocity.add(inheritedVelocity));
 
             if (p.position.distanceTo(p.userData.startPos) > maxDistance) {
-                sceneRefInternal.current?.remove(p);
+                sceneRef.current?.remove(p);
                 projectiles.current.splice(i, 1);
             }
         }

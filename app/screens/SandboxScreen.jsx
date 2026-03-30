@@ -210,7 +210,7 @@ export default function SandboxScreen() {
   const sceneRef = useRef(null);
   const blueMarkerRef = useRef(null);
   const shipLightsRef = useRef(null);
-  const { updateProjectiles } = useProjectiles(shipRef, sceneRef.current, {
+  const { updateProjectiles } = useProjectiles(shipRef, sceneRef, {
     energy,
     canControlRef,
     onConsumeEnergy: (amount) => {
@@ -238,7 +238,7 @@ export default function SandboxScreen() {
     cameraRef.current = camera;
 
     // Nave
-    const ship = createShip(scene);
+    const ship = await createShip(scene);
     shipRef.current = ship;
 
     // Eixos para referência
