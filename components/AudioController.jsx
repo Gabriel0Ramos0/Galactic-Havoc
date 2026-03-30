@@ -54,9 +54,9 @@ export function getCurrentTrack() {
   return playlist[currentTrackIndex];
 }
 
-export async function playTrack(index) {
+export async function playTrack(index, { skipStop = false } = {}) {
   try {
-    if (soundInstance) {
+    if (soundInstance && !skipStop) {
       await soundInstance.stopAsync();
       await soundInstance.unloadAsync();
     }
@@ -72,7 +72,7 @@ export async function playTrack(index) {
     });
 
     sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.didJustFinish && !status.isLooping) {
+      if (status.didJustFinish && !status.isLooping && !isTransitioning) {
         const next = getRandomTrackIndex();
         transitionToTrack(next);
       }
@@ -130,7 +130,7 @@ export async function transitionToTrack(index, fadeDuration = 1000) {
     }
 
     // toca nova
-    await playTrack(index);
+    await playTrack(index, { skipStop: true });
 
     // fade in
     if (soundInstance) {
@@ -169,32 +169,27 @@ export async function loadSfx() {
 
   sfx.tutorial_intro = new Audio.Sound();
   await sfx.tutorial_intro.loadAsync(
-    require("@/assets/sounds/tutorial_intro.mp3")
+    require("../assets/sounds/tutorial_intro.mp3")
   );
 
   sfx.tutorial_alert = new Audio.Sound();
   await sfx.tutorial_alert.loadAsync(
-    require("@/assets/sounds/tutorial_alert.mp3")
-  );
-
-  sfx.tutorial_ok = new Audio.Sound();
-  await sfx.tutorial_ok.loadAsync(
-    require("@/assets/sounds/tutorial_alert.mp3")
+    require("../assets/sounds/tutorial_alert.mp3")
   );
 
   sfx.tutorial_marker = new Audio.Sound();
   await sfx.tutorial_marker.loadAsync(
-    require("@/assets/sounds/tutorial_marker.mp3")
+    require("../assets/sounds/tutorial_marker.mp3")
   );
 
   sfx.tutorial_combat = new Audio.Sound();
   await sfx.tutorial_combat.loadAsync(
-    require("@/assets/sounds/tutorial_combat.mp3")
+    require("../assets/sounds/tutorial_combat.mp3")
   );
 
   sfx.fire = new Audio.Sound();
   await sfx.fire.loadAsync(
-    require("@/assets/sounds/fire.mp3")
+    require("../assets/sounds/fire.mp3")
   );
 
   sfxLoaded = true;
@@ -222,7 +217,6 @@ export async function stopTutorialCombat() {
 
   await fadeOutSound(sfx.tutorial_combat, 1200);
 }
-
 
 async function fadeOutSound(sound, duration = 800) {
   try {

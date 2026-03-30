@@ -58,7 +58,7 @@ export default function SandboxScreen() {
   // Controla a música do menu
   useEffect(() => {
     if (menuVisible) {
-      playTrack(0);
+      transitionToTrack(0);
     }
   }, [menuVisible]);
 
@@ -162,7 +162,9 @@ export default function SandboxScreen() {
   }, [tutorialStep]);
 
   useEffect(() => {
-    loadSfx();
+    (async () => {
+      await loadSfx();
+    })();
   }, []);
 
   useEffect(() => {
@@ -181,8 +183,8 @@ export default function SandboxScreen() {
         break;
 
       case 5:
-      case 6:
-        playSfx("tutorial_ok");
+      case 6: // boost
+        playSfx("tutorial_alert");
         break;
 
       case 8: // marcador aparece
@@ -193,8 +195,8 @@ export default function SandboxScreen() {
         blueMarkerRef.current?.remove();
         blueMarkerRef.current = null;
         setMarkerCoords(null);
+        transitionToTrack(null);
         playSfx("tutorial_combat");
-        stopMusic();
         break;
 
       case 13:

@@ -20,10 +20,6 @@ const panelBg = Platform.select({
   android: "rgba(8,8,10,0.64)",
 });
 
-const scanlineLoop = useRef(null);
-const glowLoop = useRef(null);
-const jitterLoop = useRef(null);
-
 export default function CutsceneScreen({ onFinish }) {
   const [started, setStarted] = useState(false);
   const [showBeforeText, setShowBeforeText] = useState(true);
@@ -35,6 +31,7 @@ export default function CutsceneScreen({ onFinish }) {
   const [ready, setReady] = useState(false);
 
   const videoRef = useRef(null);
+  const hasStartedVideo = useRef(false);
 
   // animações
   const textFade = useRef(new Animated.Value(0)).current;
@@ -45,6 +42,9 @@ export default function CutsceneScreen({ onFinish }) {
   const glowAnim = useRef(new Animated.Value(0)).current;
   const scanlineY = useRef(new Animated.Value(-height)).current;
   const jitter = useRef(new Animated.Value(0)).current;
+  const scanlineLoop = useRef(null);
+  const glowLoop = useRef(null);
+  const jitterLoop = useRef(null);
 
   useEffect(() => {
     if (started && showBeforeText) {
@@ -68,7 +68,14 @@ export default function CutsceneScreen({ onFinish }) {
   }, [started]);
 
   useEffect(() => {
-    if (showVideo && ready && videoRef.current) {
+    if (
+      showVideo &&
+      ready &&
+      videoRef.current &&
+      !hasStartedVideo.current
+    ) {
+      hasStartedVideo.current = true;
+
       Animated.timing(videoFade, {
         toValue: 1,
         duration: 700,
@@ -90,7 +97,7 @@ export default function CutsceneScreen({ onFinish }) {
       }));
       scanlineLoop.current.start();
 
-      scanlineLoop.current = Animated.loop(Animated.sequence([
+      glowLoop.current = Animated.loop(Animated.sequence([
         Animated.sequence([
           Animated.timing(glowAnim, {
             toValue: 1,
@@ -106,9 +113,9 @@ export default function CutsceneScreen({ onFinish }) {
           }),
         ]),
       ]));
-      scanlineLoop.current.start();
+      glowLoop.current.start();
 
-      scanlineLoop.current = Animated.loop(Animated.sequence([
+      jitterLoop.current = Animated.loop(Animated.sequence([
         Animated.timing(jitter, {
           toValue: 1,
           duration: 300,
@@ -120,7 +127,7 @@ export default function CutsceneScreen({ onFinish }) {
           useNativeDriver: true,
         }),
       ]));
-      scanlineLoop.current.start();
+      jitterLoop.current.start();
 
     } else {
       scanlineY.setValue(-height);
