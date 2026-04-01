@@ -28,6 +28,7 @@ export default function SandboxScreen() {
   const glRef = useRef();
   const cameraRef = useRef();
   const shipRef = useRef();
+  const asteroidsRef = useRef(null);
   const debugMode = useRef(false);
   const debugObjects = useRef([]);
   const transitionRef = useRef();
@@ -260,6 +261,7 @@ export default function SandboxScreen() {
     const suns = await createSuns(3, 6000);
     await delay();
     const asteroids = await createAsteroids(200, 8000, 2, 20);
+    asteroidsRef.current = asteroids;
 
     asteroids.children.forEach(ast => {
       const box = new THREE.BoxHelper(ast, 0x00ffff);
@@ -432,6 +434,11 @@ export default function SandboxScreen() {
             onMenuPress={async () => {
               setPaused(true);
               resetMovementState();
+              if (asteroidsRef.current && sceneRef.current) {
+                sceneRef.current.remove(asteroidsRef.current);
+                asteroidsRef.current.dispose();
+                asteroidsRef.current = null;
+              }
               setEnergy(0);
               setIsCritical(false);
               setIsRecharging(false);

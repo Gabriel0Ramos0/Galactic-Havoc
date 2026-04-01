@@ -48,13 +48,17 @@ export default async function createStars(starCount, spread) {
   stars.frustumCulled = false;
 
   let starIndex = 0;
-  const BATCH_SIZE = 500;
-  let updated = false;
+  const BATCH_SIZE = 200;
+  let frameSkip = 0;
 
   stars.recycle = (shipPosition, maxDistance) => {
     const positions = starGeometry.getAttribute("position");
     const maxSq = maxDistance * maxDistance;
     let updated = false;
+    frameSkip++;
+
+    if (frameSkip < 2) return;
+    frameSkip = 0;
 
     for (let i = 0; i < BATCH_SIZE; i++) {
       const idx = starIndex;

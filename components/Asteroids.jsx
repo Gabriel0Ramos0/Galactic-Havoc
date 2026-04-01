@@ -2,26 +2,47 @@
 import { OBJLoader, MTLLoader } from "three-stdlib";
 import * as THREE from "three";
 
-export default async function createAsteroids(count, spread, minScale, maxScale) {
-  const group = new THREE.Group();
-  const infos = [];
+let cachedBaseAsteroid = null;
 
-  // --- carregar modelo ---
+// --- carregamento único do modelo ---
+async function loadAsteroidBase() {
+  if (cachedBaseAsteroid) return cachedBaseAsteroid;
+
   const mtlLoader = new MTLLoader();
   const materials = await mtlLoader.loadAsync(require("../assets/models/asteroide/ASTEROIDE.mtl"));
   materials.preload();
 
   const objLoader = new OBJLoader();
   objLoader.setMaterials(materials);
-  const baseAsteroid = await objLoader.loadAsync(require("../assets/models/asteroide/ASTEROIDE.obj"));
+  const base = await objLoader.loadAsync(require("../assets/models/asteroide/ASTEROIDE.obj"));
 
-  baseAsteroid.traverse(child => {
+  base.traverse((child) => {
     if (child.isMesh) {
       child.material.side = THREE.DoubleSide;
       child.material.roughness = 1.0;
       child.material.metalness = 0.2;
     }
   });
+
+  cachedBaseAsteroid = base;
+  return base;
+}
+
+// --- helper para limpar materiais ---
+function disposeMaterial(material) {
+  for (const key in material) {
+    const value = material[key];
+    if (value && typeof value === "object" && "minFilter" in value) {
+      value.dispose();
+    }
+  }
+  material.dispose();
+}
+
+export default async function createAsteroids(count, spread, minScale, maxScale) {
+  const group = new THREE.Group();
+  const infos = [];
+  const baseAsteroid = await loadAsteroidBase();
 
   function randomPositionInShell(center, minR, maxR) {
     const u = Math.random();
@@ -39,19 +60,23 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
 
   // --- gerar instâncias ---
   for (let i = 0; i < count; i++) {
-    const asteroid = baseAsteroid.clone();
-    asteroid.traverse(c => { c.isMesh });
+    const asteroid = baseAsteroid.clone(true);
 
     const scale = minScale + Math.random() * (maxScale - minScale);
     asteroid.scale.setScalar(scale);
 
-    const pos = new THREE.Vector3(
+    asteroid.position.set(
       (Math.random() - 0.5) * spread,
       (Math.random() - 0.5) * spread,
       (Math.random() - 0.5) * spread
     );
-    asteroid.position.copy(pos);
-    asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+    asteroid.rotation.set(
+      Math.random() * Math.PI,
+      Math.random() * Math.PI,
+      Math.random() * Math.PI
+    );
+
     group.add(asteroid);
 
     infos.push({
@@ -65,16 +90,12 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
     });
   }
 
-  const tmpGlobal = new THREE.Vector3();
-  const tmpNew = new THREE.Vector3();
-
-  // --- reciclagem (mantém posição, sem velocidade) ---
+  // --- reciclagem ---
   group.recycle = (shipPosition, maxDistance, minDistanceFromShip) => {
     const maxSq = maxDistance * maxDistance;
 
     for (let info of infos) {
       const mesh = info.mesh;
-
       const distSq = mesh.position.distanceToSquared(shipPosition);
 
       if (distSq > maxSq || distSq < 50 * 50) {
@@ -103,15 +124,40 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
   // --- colisões ---
   group.checkCollisions = (shipPosition, shipRadius = 5) => {
     const hits = [];
+
     for (let i = 0; i < infos.length; i++) {
       const info = infos[i];
       const mesh = info.mesh;
 
       const dist = mesh.position.distanceTo(shipPosition);
       const radius = info.scale * 0.8;
+
       if (dist < shipRadius + radius) hits.push(i);
     }
+
     return hits;
   };
+
+  // --- dispose completo ---
+  group.dispose = () => {
+    group.traverse((child) => {
+      if (child.isMesh) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(disposeMaterial);
+          } else {
+            disposeMaterial(child.material);
+          }
+        }
+      }
+    });
+
+    group.clear();
+  };
+
   return group;
 }
