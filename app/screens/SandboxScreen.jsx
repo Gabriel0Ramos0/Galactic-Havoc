@@ -81,18 +81,6 @@ export default function SandboxScreen() {
     };
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (glRef.current && typeof glRef.current._stopAnimation === "function") {
-        glRef.current._stopAnimation();
-      }
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, []);
-
   const criticalRecoveryTriggeredRef = useRef(false);
 
   useEffect(() => {
@@ -227,6 +215,8 @@ export default function SandboxScreen() {
   });
 
   const onContextCreate = async (gl) => {
+    if (sceneRef.current) return;
+
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
 
     // Renderer
@@ -283,93 +273,86 @@ export default function SandboxScreen() {
     shipLightsRef.current = shipLights;
 
     // Loop de animação
-    let running = true;
     const clock = new THREE.Clock();
 
     const animate = () => {
-      if (!running) return;
       rafRef.current = requestAnimationFrame(animate);
       const dt = clock.getDelta();
 
-      updateShip();
-      updateCamera();
-      updateProjectiles();
+      if (!inGame) {
+        updateShip();
+        updateCamera();
+        updateProjectiles();
 
-      const scale = 0.01;
-      hudTimerRef.current += dt;
+        const scale = 0.01;
+        hudTimerRef.current += dt;
 
-      if (hudTimerRef.current > 0.2) {
-        hudTimerRef.current = 0;
+        if (hudTimerRef.current > 0.2) {
+          hudTimerRef.current = 0;
 
-        setCoords({
-          x: (ship.position.x * scale),
-          y: (ship.position.y * scale),
-          z: (ship.position.z * scale),
+          setCoords({
+            x: (ship.position.x * scale),
+            y: (ship.position.y * scale),
+            z: (ship.position.z * scale),
+          });
+        }
+
+        stars.recycle(ship.position, 900);
+        suns.recycle(ship.position, 2500);
+        asteroids.recycle(ship.position, 3000, 1200);
+        debugObjects.current.forEach(obj => {
+          if (obj.update) obj.update();
+        });
+
+        if (blueMarkerRef.current && blueMarkerRef.current.update) {
+          blueMarkerRef.current.update(dt, ship.position);
+          try {
+            const world = blueMarkerRef.current.group.position;
+            markerTimerRef.current += dt;
+
+            if (markerTimerRef.current > 0.2) {
+              markerTimerRef.current = 0;
+
+              setMarkerCoords({
+                x: world.x * 0.01,
+                y: world.y * 0.01,
+                z: world.z * 0.01,
+              });
+            }
+          } catch { }
+        }
+        const VIEW_DISTANCE = 3000 * 3000;
+
+        suns.children.forEach(sun => {
+          const dx = sun.position.x - ship.position.x;
+          const dy = sun.position.y - ship.position.y;
+          const dz = sun.position.z - ship.position.z;
+
+          const distSq = dx * dx + dy * dy + dz * dz;
+
+          if (distSq > VIEW_DISTANCE) return;
+
+          if (sun.userData.growing) {
+            const target = 1;
+            const speed = 0.004;
+
+            sun.scale.x = THREE.MathUtils.lerp(sun.scale.x, target, speed);
+            sun.scale.y = THREE.MathUtils.lerp(sun.scale.y, target, speed);
+            sun.scale.z = THREE.MathUtils.lerp(sun.scale.z, target, speed);
+
+            if (Math.abs(sun.scale.x - target) < 0.01) {
+              sun.scale.set(1, 1, 1);
+              sun.userData.growing = false;
+            }
+          }
         });
       }
-
-      stars.recycle(ship.position, 900);
-      suns.recycle(ship.position, 2500);
-      asteroids.recycle(ship.position, 3000, 1200);
-      debugObjects.current.forEach(obj => {
-        if (obj.update) obj.update();
-      });
-
-      if (blueMarkerRef.current && blueMarkerRef.current.update) {
-        blueMarkerRef.current.update(dt, ship.position);
-        try {
-          const world = blueMarkerRef.current.group.position;
-          markerTimerRef.current += dt;
-
-          if (markerTimerRef.current > 0.2) {
-            markerTimerRef.current = 0;
-
-            setMarkerCoords({
-              x: world.x * 0.01,
-              y: world.y * 0.01,
-              z: world.z * 0.01,
-            });
-          }
-        } catch { }
-      }
-      const VIEW_DISTANCE = 3000 * 3000;
-
-      suns.children.forEach(sun => {
-        const dx = sun.position.x - ship.position.x;
-        const dy = sun.position.y - ship.position.y;
-        const dz = sun.position.z - ship.position.z;
-
-        const distSq = dx * dx + dy * dy + dz * dz;
-
-        if (distSq > VIEW_DISTANCE) return;
-
-        if (sun.userData.growing) {
-          const target = 1;
-          const speed = 0.004;
-
-          sun.scale.x = THREE.MathUtils.lerp(sun.scale.x, target, speed);
-          sun.scale.y = THREE.MathUtils.lerp(sun.scale.y, target, speed);
-          sun.scale.z = THREE.MathUtils.lerp(sun.scale.z, target, speed);
-
-          if (Math.abs(sun.scale.x - target) < 0.01) {
-            sun.scale.set(1, 1, 1);
-            sun.userData.growing = false;
-          }
-        }
-      });
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };
     animate();
 
     glRef.current = glRef.current || {};
-    glRef.current._stopAnimation = () => {
-      running = false;
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
   };
 
   // Handlers para cutscene fim / pular
@@ -420,10 +403,22 @@ export default function SandboxScreen() {
         />
       )}
 
+      <GLView
+        style={{
+          flex: 1,
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          opacity: (!cutsceneVisible && !menuVisible && inGame) ? 1 : 0,
+          pointerEvents: (!cutsceneVisible && !menuVisible && inGame) ? "auto" : "none",
+        }}
+        onContextCreate={onContextCreate}
+        ref={glRef}
+      />
+
       {/* JOGO (GLView + HUD) */}
       {!cutsceneVisible && !menuVisible && inGame && (
         <>
-          <GLView style={{ flex: 1 }} onContextCreate={onContextCreate} ref={glRef} />
           <Hud
             shipHP={currentHP}
             energy={energy}
@@ -434,22 +429,11 @@ export default function SandboxScreen() {
             onMenuPress={async () => {
               setPaused(true);
               resetMovementState();
-              if (asteroidsRef.current && sceneRef.current) {
-                sceneRef.current.remove(asteroidsRef.current);
-                asteroidsRef.current.dispose();
-                asteroidsRef.current = null;
-              }
               setEnergy(0);
               setIsCritical(false);
               setIsRecharging(false);
               criticalRecoveryTriggeredRef.current = false;
               setTutorialStep(0);
-              if (glRef.current && typeof glRef.current._stopAnimation === "function") {
-                glRef.current._stopAnimation();
-              } else if (rafRef.current) {
-                cancelAnimationFrame(rafRef.current);
-                rafRef.current = null;
-              }
               if (blueMarkerRef.current) {
                 try {
                   blueMarkerRef.current?.remove();
