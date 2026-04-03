@@ -11,6 +11,7 @@ export default function useProjectiles(shipRef, sceneRef, options = {}) {
     }, [options.energy]);
     const onConsumeEnergy = options.onConsumeEnergy ?? (() => { });
     const canControlRef = options.canControlRef ?? { current: true };
+    const controlsRef = options.controlsRef ?? { current: { shooting: true } };
     const onShoot = options.onShoot ?? (() => { });
     const shipVelocityRef = options.shipVelocityRef;
     const keys = useRef({
@@ -107,6 +108,8 @@ export default function useProjectiles(shipRef, sceneRef, options = {}) {
     }, []);
 
     const updateProjectiles = () => {
+        if (!controlsRef.current.shooting) return;
+
         const now = Date.now();
 
         if (keys.current.space) {

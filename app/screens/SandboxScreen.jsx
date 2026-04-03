@@ -33,9 +33,19 @@ export default function SandboxScreen() {
   const debugObjects = useRef([]);
   const transitionRef = useRef();
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [controls, setControls] = useState({
+    movement: false,
+    boost: false,
+    shooting: false,
+    inspect: false,
+    inventory: false,
+  });
+  const controlsRef = useRef(controls);
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
-  const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef, speedship, velocity } = useMovement(shipRef);
+  const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef, speedship, velocity } = useMovement(shipRef, {
+    controlsRef
+  });
 
   const [currentHP] = useState(100);
   const [energy, setEnergy] = useState(0);
@@ -80,6 +90,20 @@ export default function SandboxScreen() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  useEffect(() => {
+    setControls({
+      movement: tutorialStep >= 4,
+      boost: tutorialStep >= 6,
+      inspect: tutorialStep >= 9,
+      inventory: tutorialStep >= 10,
+      shooting: tutorialStep >= 12,
+    });
+  }, [tutorialStep]);
+
+  useEffect(() => {
+    controlsRef.current = controls;
+  }, [controls]);
 
   const criticalRecoveryTriggeredRef = useRef(false);
 
@@ -169,7 +193,7 @@ export default function SandboxScreen() {
       case 3:// sequência QUIT
         playSfx("tutorial_alert");
         break;
-        
+
       case 4: // sequência DWAS
         playSfx("tutorial_alert");
         break;
@@ -207,6 +231,7 @@ export default function SandboxScreen() {
   const { updateProjectiles } = useProjectiles(shipRef, sceneRef, {
     energy,
     canControlRef,
+    controlsRef,
     onConsumeEnergy: (amount) => {
       setEnergy(prev => Math.max(prev - amount, 0));
     },

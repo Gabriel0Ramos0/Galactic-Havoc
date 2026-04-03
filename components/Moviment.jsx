@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { useEffect, useRef } from "react";
 
-export default function useMovement(shipRef) {
+export default function useMovement(shipRef, { controlsRef }) {
     const velocity = useRef(new THREE.Vector3(0, 0, 0));
     const acceleration = useRef(new THREE.Vector3(0, 0, 0));
     const targetQuaternion = useRef(new THREE.Quaternion());
@@ -73,10 +73,11 @@ export default function useMovement(shipRef) {
     const updateShip = () => {
         if (!shipRef.current) return;
         if (paused.current) return;
+        if (!controlsRef.current.movement) return;
 
         acceleration.current.set(0, 0, 0);
 
-        const isWarp = keys.current.Shift;
+        const isWarp = controlsRef.current.boost && keys.current.Shift;
         const thrust = isWarp ? speed * warpMultiplier : speed;
         const targetMaxSpeed = isWarp ? warpMaxSpeed : baseMaxSpeed;
 
