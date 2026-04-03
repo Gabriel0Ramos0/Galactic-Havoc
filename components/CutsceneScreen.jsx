@@ -20,7 +20,7 @@ const panelBg = Platform.select({
   android: "rgba(8,8,10,0.64)",
 });
 
-export default function CutsceneScreen({ onFinish }) {
+export default function CutsceneScreen({ onFinish, glReady }) {
   const [started, setStarted] = useState(false);
   const [showBeforeText, setShowBeforeText] = useState(true);
   const [showVideo, setShowVideo] = useState(false);
@@ -214,8 +214,17 @@ export default function CutsceneScreen({ onFinish }) {
   return (
     <View style={styles.container}>
       {!started && (
-        <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-          <Text style={styles.startButtonText}>Iniciar Jornada</Text>
+        <TouchableOpacity
+          style={[
+            styles.startButton,
+            !glReady && { opacity: 0.5 }
+          ]}
+          onPress={handleStart}
+          disabled={!glReady}
+        >
+          <Text style={styles.startButtonText}>
+            {glReady ? "Iniciar Jornada" : "Carregando sistemas..."}
+          </Text>
         </TouchableOpacity>
       )}
 
@@ -319,7 +328,7 @@ export default function CutsceneScreen({ onFinish }) {
                 Localize, investigue e recupere peças dispersas pelo setor.{"\n"}
                 Extra: Verifique o terminal MK-IV.
               </Text>
-              
+
               <TouchableOpacity
                 onPress={handleLoreContinue}
                 style={{

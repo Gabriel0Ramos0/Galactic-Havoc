@@ -32,6 +32,7 @@ export default function SandboxScreen() {
   const debugMode = useRef(false);
   const debugObjects = useRef([]);
   const transitionRef = useRef();
+  const [glReady, setGlReady] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [controls, setControls] = useState({
     movement: false,
@@ -375,6 +376,8 @@ export default function SandboxScreen() {
           }
         });
       }
+      setGlReady(true);
+      
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };
@@ -401,6 +404,7 @@ export default function SandboxScreen() {
           onFinish={() => {
             handleCutsceneFinish();
           }}
+          glReady={glReady}
         />
       )}
 
