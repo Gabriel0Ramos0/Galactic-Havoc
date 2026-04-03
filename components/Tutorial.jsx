@@ -6,180 +6,203 @@ import MessageBox from "@/components/MessageBox";
 export default function Tutorial({ onComplete, onStepChange }) {
     const [step, setStep] = useState(0);
 
-    const [keysPressed, setKeysPressed] = useState({
-        w: false,
-        a: false,
-        s: false,
-        d: false,
-        up: false,
-        down: false,
-        shift: false,
-        i: false,
-        tab: false,
-        space: false,
-    });
-
-    const [sequenceIndex, setSequenceIndex] = useState(0);
-    const sequence = ["d", "w", "a", "s"];
-
     const steps = [
-        "", // step 0, vazio para pular
+        "",
         "Piloto… o campo gravitacional local distorceu os eixos da nave! Precisamos recalibrar manualmente.",
         "Prepare-se. Vamos executar o protocolo de Estabilização Primária.",
-        "Ajuste os propulsores na seguinte ordem: D → W → A → S.",
-        "Bom trabalho. Vetores laterais restaurados. Agora mova-se com W, A, S e D.",
+        "Reinicie os propulsores na seguinte ordem: S → T → A → R → T.",
+        "Bom trabalho, propulsores restaurados! Agora mova-se com W, A, S e D.",
         "Excelente. Ajuste a altitude com ↑ e ↓.",
-        "Perfeito. Ative o BOOST mantendo W pressionado e acionando SHIFT.",
-        "Um sinal desconhecido foi detectado… analisando origem.",
-        "Aproximando-se do ponto de energia. Vá até o brilho azul para identificá-lo.",
+        "Perfeito. Ative o BOOST! Segure W e pressione SHIFT.",
+        "Um sinal desconhecido foi detectado… analisando origem. Aguarde um momento.",
+        "Aproximando-se do ponto de energia. Vá até o objeto para identificá-lo.",
         "É uma nave abandonada… use I para inspecionar.",
-        "Suprimentos encontrados. Abra a Interface da Nave com TAB para equipar os módulos.",
+        "Suprimentos encontrados. Abra a Interface da Nave com TAB para equipar os módulos de disparo.",
         "Atenção… três naves piratas estão se aproximando!",
         "Prepare o sistema de armas. Pressione ESPAÇO para disparar.",
-        "Boa sorte, piloto RS-07... o universo é um lugar perigoso. Siga para a missão de resgate mais próxima para obter mais suprimentos e informações sobre o que está acontecendo.",
+        "Ótimo trabalho, piloto! Os piratas foram neutralizados.",
+        "Restauração completa. O sistema de navegação está online. Siga para o próximo destino e continue sua aventura!",
     ];
 
-    useEffect(() => {
-        if (step >= 0 && step <= 2) {
-            const t = setTimeout(() => setStep(s => s + 1), 5000);
-            return () => clearTimeout(t);
-        }
-    }, [step]);
-
-    // Notifica o Sandbox quando o step muda
+    // Notifica mudanças de step
     useEffect(() => {
         if (typeof onStepChange === "function") {
             onStepChange(step);
         }
     }, [step]);
 
-    //                   KEYBOARD LISTENER
-    // ---------------------------------------------------
+    // Steps automáticos iniciais
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            const key = (e.key || "").toLowerCase();
+        if (step >= 0 && step <= 2) {
+            const t = setTimeout(() => setStep(s => s + 1), 4000);
+            return () => clearTimeout(t);
+        }
+    }, [step]);
 
-            if (step <= 2) return;
+    // STEP 3 → sequência START
+    useEffect(() => {
+        if (step !== 3) return;
 
-            // DWAS sequence
-            if (step === 3) {
-                setSequenceIndex((prev) => {
-                    if (key === sequence[prev]) {
-                        const next = prev + 1;
-                        if (next >= sequence.length) {
-                            setTimeout(() => {
-                                setSequenceIndex(0);
-                                setStep(4);
-                            }, 150);
-                            return 0;
-                        }
-                        return next;
-                    }
-                    return 0;
-                });
-                return;
-            }
+        const sequence = ["s", "t", "a", "r", "t"];
+        let index = 0;
 
-            // General keys
-            if (["w", "a", "s", "d"].includes(key)) {
-                setKeysPressed((p) => ({ ...p, [key]: true }));
-            }
-            if (key === "arrowup") {
-                setKeysPressed((p) => ({ ...p, up: true }));
-            }
-            if (key === "arrowdown") {
-                setKeysPressed((p) => ({ ...p, down: true }));
-            }
-            if (key === "shift") {
-                setKeysPressed((p) => ({ ...p, shift: true }));
-            }
-            if (key === "i") {
-                setKeysPressed((p) => ({ ...p, i: true }));
-            }
-            if (key === "tab") {
-                e.preventDefault();
-                setKeysPressed((p) => ({ ...p, tab: true }));
-            }
-            if (key === " ") {
-                setKeysPressed((p) => ({ ...p, space: true }));
+        const handleKey = (e) => {
+            const key = e.key.toLowerCase();
+
+            if (key === sequence[index]) {
+                index++;
+                if (index === sequence.length) {
+                    setStep(4);
+                }
+            } else {
+                index = 0; // reset se errar
             }
         };
 
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
     }, [step]);
 
-    // ---------------------------------------------------
-    //                STEP PROGRESSION
-    // ---------------------------------------------------
+    // STEP 4 → WASD
     useEffect(() => {
-        // Step 4 → require WASD
-        if (step === 4) {
-            const { w, a, s, d } = keysPressed;
-            if (w && a && s && d) setStep(5);
-        }
+        if (step !== 4) return;
 
-        // Step 5 → ArrowUp + ArrowDown
-        if (step === 5) {
-            if (keysPressed.up && keysPressed.down) setStep(6);
-        }
+        const pressed = new Set();
 
-        // Step 6 → Boost
-        if (step === 6) {
-            if (keysPressed.shift) setStep(7);
-        }
+        const handleKey = (e) => {
+            const key = e.key.toLowerCase();
+            if (["w", "a", "s", "d"].includes(key)) {
+                pressed.add(key);
+                if (pressed.size === 4) {
+                    setStep(5);
+                }
+            }
+        };
 
-        // Step 7 → auto advance
-        if (step === 7) {
-            const t = setTimeout(() => setStep(8), 4000);
-            return () => clearTimeout(t);
-        }
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [step]);
 
-        // Step 8 → waiting for in-game event (go to marker)
-        if (step === 8) {
-            const onReached = (ev) => {
-                setStep((currentStep) => {
-                    if (currentStep === 8) return 9;
-                    return currentStep;
-                });
-            };
-
-            window.addEventListener("blueMarkerReached", onReached);
-            return () => window.removeEventListener("blueMarkerReached", onReached);
-        }
-
-        // Step 9 → Inspect with I
-        if (step === 9) {
-            if (keysPressed.i) setStep(10);
-        }
-
-        // Step 10 → Open Ship Interface (TAB)
-        if (step === 10) {
-            if (keysPressed.tab) setStep(11);
-        }
-
-        // Step 11 → auto advance to combat
-        if (step === 11) {
-            const t = setTimeout(() => setStep(12), 3000);
-            return () => clearTimeout(t);
-        }
-
-        // Step 12 → Fire with SPACE
-        if (step === 12) {
-            if (keysPressed.space) setStep(13);
-        }
-
-        // Step 13 → finish tutorial
-        if (step === 13) {
-            const t = setTimeout(() => onComplete && onComplete(), 2500);
-            return () => clearTimeout(t);
-        }
-
-    }, [step, keysPressed]);
-
-    // Reset sequence if not in sequence step
+    // STEP 5 → ↑ ↓
     useEffect(() => {
-        if (step !== 3) setSequenceIndex(0);
+        if (step !== 5) return;
+
+        let up = false;
+        let down = false;
+
+        const handleKey = (e) => {
+            if (e.key === "ArrowUp") up = true;
+            if (e.key === "ArrowDown") down = true;
+
+            if (up && down) setStep(6);
+        };
+
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [step]);
+
+    // STEP 6 → SHIFT (boost)
+    useEffect(() => {
+        if (step !== 6) return;
+
+        const handleKey = (e) => {
+            if (e.key === "Shift") {
+                setStep(7);
+            }
+        };
+
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [step]);
+
+    // STEP 7 → auto
+    useEffect(() => {
+        if (step !== 7) return;
+
+        const t = setTimeout(() => setStep(8), 4000);
+        return () => clearTimeout(t);
+    }, [step]);
+
+    // STEP 8 → evento do jogo (blue marker)
+    useEffect(() => {
+        if (step !== 8) return;
+
+        const onReached = () => {
+            setStep(9);
+        };
+
+        window.addEventListener("blueMarkerReached", onReached);
+        return () => window.removeEventListener("blueMarkerReached", onReached);
+    }, [step]);
+
+    // STEP 9 → tecla I
+    useEffect(() => {
+        if (step !== 9) return;
+
+        const handleKey = (e) => {
+            if (e.key.toLowerCase() === "i") {
+                setStep(10);
+            }
+        };
+
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [step]);
+
+    // STEP 10 → TAB
+    useEffect(() => {
+        if (step !== 10) return;
+
+        const handleKey = (e) => {
+            if (e.key === "Tab") {
+                e.preventDefault();
+                setStep(11);
+            }
+        };
+
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [step]);
+
+    // STEP 11 → auto
+    useEffect(() => {
+        if (step !== 11) return;
+
+        const t = setTimeout(() => setStep(12), 4000);
+        return () => clearTimeout(t);
+    }, [step]);
+
+    // STEP 12 → SPACE
+    useEffect(() => {
+        if (step !== 12) return;
+
+        const handleKey = (e) => {
+            if (e.code === "Space") {
+                setStep(13);
+            }
+        };
+
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [step]);
+
+    // STEP 13 → auto
+    useEffect(() => {
+        if (step !== 13) return;
+
+        const t = setTimeout(() => setStep(14), 4000);
+        return () => clearTimeout(t);
+    }, [step]);
+
+    // STEP 14 → finalizar
+    useEffect(() => {
+        if (step !== 14) return;
+
+        const t = setTimeout(() => {
+            onComplete && onComplete();
+        }, 2500);
+
+        return () => clearTimeout(t);
     }, [step]);
 
     if (step > steps.length - 1) return null;

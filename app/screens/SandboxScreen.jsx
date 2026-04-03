@@ -166,7 +166,10 @@ export default function SandboxScreen() {
         criticalRecoveryTriggeredRef.current = false;
         break;
 
-      case 3:
+      case 3:// sequência QUIT
+        playSfx("tutorial_alert");
+        break;
+        
       case 4: // sequência DWAS
         playSfx("tutorial_alert");
         break;
