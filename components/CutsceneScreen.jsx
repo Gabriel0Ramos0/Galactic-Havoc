@@ -29,6 +29,8 @@ export default function CutsceneScreen({ onFinish, glReady }) {
 
   const [showHUD, setShowHUD] = useState(false);
   const [ready, setReady] = useState(false);
+  const glow = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
 
   const videoRef = useRef(null);
   const hasStartedVideo = useRef(false);
@@ -66,6 +68,33 @@ export default function CutsceneScreen({ onFinish, glReady }) {
       });
     }
   }, [started]);
+
+  useEffect(() => {
+    if (glReady) {
+      // brilho subindo
+      Animated.timing(glow, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }).start();
+
+      // pulso infinito
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, {
+            toValue: 1.05,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [glReady]);
 
   useEffect(() => {
     if (
@@ -214,18 +243,24 @@ export default function CutsceneScreen({ onFinish, glReady }) {
   return (
     <View style={styles.container}>
       {!started && (
-        <TouchableOpacity
+        <Animated.View
           style={[
             styles.startButton,
-            !glReady && { opacity: 0.5 }
+            {
+              opacity: glReady ? glow : 0.5,
+              transform: [{ scale: glReady ? pulse : 1 }],
+            },
           ]}
-          onPress={handleStart}
-          disabled={!glReady}
         >
-          <Text style={styles.startButtonText}>
-            {glReady ? "Iniciar Jornada" : "Carregando sistemas..."}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleStart}
+            disabled={!glReady}
+          >
+            <Text style={styles.startButtonText}>
+              {glReady ? "Iniciar Jornada" : "Carregando sistemas..."}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       )}
 
       {/* "Antes..." */}
@@ -486,6 +521,10 @@ const styles = StyleSheet.create({
     top: height * 0.46,
     left: width * 0.5 - 120,
     width: 240,
+    shadowColor: "rgba(0,255,170,1)",
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    elevation: 10,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
