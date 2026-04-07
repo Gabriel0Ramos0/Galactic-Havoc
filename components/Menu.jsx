@@ -35,9 +35,12 @@ export default function Menu({ onStart, onConfig, onCredits, onHistory, onExit, 
         }),
       },
     ],
-    textShadowRadius: titleAnim.interpolate({
+    textShadow: titleAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [10, 20],
+      outputRange: [
+        "0px 0px 10px rgba(0,255,170,0.5)",
+        "0px 0px 20px rgba(0,255,170,0.5)",
+      ],
     }),
   };
 
@@ -123,9 +126,7 @@ const styles = StyleSheet.create({
     color: "#0ff",
     fontWeight: "bold",
     marginBottom: 50,
-    textShadowColor: "#0ff",
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 15,
+    textShadow: "2px 2px 15px #0ff",
   },
   buttonContainer: {
     alignItems: "center",
@@ -163,10 +164,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(0, 200, 255, 0.4)",
-    shadowColor: "#00eaff",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
+    boxshadowColor: "#00eaff",
+    boxshadowOpacity: 0.3,
+    boxshadowOffset: { width: 0, height: 2 },
+    boxshadowRadius: 5,
   },
   scoreTitle: {
     color: "#00eaff",

@@ -460,11 +460,14 @@ export default function CutsceneScreen({ onFinish, glReady }) {
                   style={[
                     styles.confirmText,
                     {
-                      textShadowColor: `rgba(0,255,170,${glowAnim.interpolate({
+                      textShadow: glowAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [0.15, 0.9],
-                      })})`,
-                    },
+                        outputRange: [
+                          "0px 0px 12px rgba(0,255,170,0.15)",
+                          "0px 0px 12px rgba(0,255,170,0.9)",
+                        ],
+                      }),
+                    }
                   ]}
                 >
                   Confirmar Missão
@@ -521,9 +524,9 @@ const styles = StyleSheet.create({
     top: height * 0.46,
     left: width * 0.5 - 120,
     width: 240,
-    shadowColor: "rgba(0,255,170,1)",
-    shadowOpacity: 0.7,
-    shadowRadius: 10,
+    boxShadowColor: "rgba(0,255,170,1)",
+    boxshadowOpacity: 0.7,
+    boxshadowRadius: 10,
     elevation: 10,
     paddingVertical: 14,
     borderRadius: 12,
@@ -554,9 +557,7 @@ const styles = StyleSheet.create({
     fontSize: 42,
     fontWeight: "800",
     letterSpacing: 6,
-    textShadowColor: "rgba(0,255,170,0.18)",
-    textShadowOffset: { width: 0, height: 6 },
-    textShadowRadius: 12,
+    textShadow: "0px 6px 12px rgba(0,255,170,0.18)",
   },
 
   // video
@@ -647,10 +648,10 @@ const styles = StyleSheet.create({
     backgroundColor: panelBg,
     borderWidth: 1,
     borderColor: "rgba(0,255,170,0.12)",
-    shadowColor: baseGreen,
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
+    boxshadowColor: baseGreen,
+    boxshadowOpacity: 0.08,
+    boxshadowRadius: 24,
+    boxshadowOffset: { width: 0, height: 8 },
     elevation: 8,
     overflow: "hidden",
   },
@@ -726,7 +727,7 @@ const styles = StyleSheet.create({
     color: baseGreen,
     fontWeight: "700",
     fontSize: 16,
-    textShadowRadius: 6,
+    textShadow: "0px 0px 6px rgba(0,0,0,0.5)",
   },
 
   smallStatus: {
@@ -765,8 +766,8 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: "rgba(0,255,170,0.06)",
-    shadowColor: baseGreen,
-    shadowRadius: 40,
-    shadowOpacity: 0.35,
+    boxshadowColor: baseGreen,
+    boxshadowRadius: 40,
+    boxshadowOpacity: 0.35,
   },
 });

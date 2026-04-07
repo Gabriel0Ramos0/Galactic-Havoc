@@ -180,9 +180,9 @@ const styles = StyleSheet.create({
 
   hpFill: {
     height: "100%",
-    shadowColor: "#00ffff",
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
+    boxshadowColor: "#00ffff",
+    boxshadowOpacity: 0.6,
+    boxshadowRadius: 8,
   },
 
   hpValue: {
@@ -233,9 +233,9 @@ const styles = StyleSheet.create({
 
   energyFill: {
     width: "100%",
-    shadowColor: "#00ffff",
-    shadowOpacity: 0.7,
-    shadowRadius: 10,
+    boxshadowColor: "#00ffff",
+    boxshadowOpacity: 0.7,
+    boxshadowRadius: 10,
   },
 
   energyValue: {
@@ -297,8 +297,8 @@ const styles = StyleSheet.create({
 
   speedFill: {
     height: "100%",
-    shadowColor: "#00ffff",
-    shadowOpacity: 0.9,
-    shadowRadius: 12,
+    boxshadowColor: "#00ffff",
+    boxshadowOpacity: 0.9,
+    boxshadowRadius: 12,
   },
 });
