@@ -32,6 +32,22 @@ export default function useCameraController(cameraRef, shipRef) {
           pinchDistance.current = dx * dx + dy * dy;
         } else {
           isDragging.current = true;
+
+          // sincroniza órbita com a posição real da câmera
+          const offset = tempVec1.current
+            .copy(cameraRef.current.position)
+            .sub(shipRef.current.position);
+
+          const radius = offset.length();
+
+          orbit.current.radius = radius;
+
+          orbit.current.theta = Math.atan2(offset.x, offset.z);
+          orbit.current.phi = Math.acos(offset.y / radius);
+
+          targetOrbit.current.theta = orbit.current.theta;
+          targetOrbit.current.phi = orbit.current.phi;
+
           lastTouch.current = {
             x: evt.nativeEvent.locationX,
             y: evt.nativeEvent.locationY,
@@ -90,12 +106,12 @@ export default function useCameraController(cameraRef, shipRef) {
 
     const target = tempVec1.current
       .copy(shipRef.current.position)
-      .addScaledVector(velocity, 0.5);
+      .addScaledVector(isDragging.current ? tempVec3.current.set(0, 0, 0) : velocity, 0.5);
 
     let desiredPos;
 
     if (isDragging.current) {
-      const smoothOrbit = 0.1;
+      const smoothOrbit = 0.15;
 
       orbit.current.theta = THREE.MathUtils.lerp(
         orbit.current.theta,
@@ -117,9 +133,9 @@ export default function useCameraController(cameraRef, shipRef) {
           radius * Math.cos(phi),
           radius * Math.sin(phi) * Math.cos(theta)
         )
-        .add(target);
+        .add(shipRef.current.position);
 
-      cameraRef.current.position.lerp(desiredPos, 0.15);
+      cameraRef.current.position.copy(desiredPos);
 
     } else {
       const desiredDirection = tempVec2.current
