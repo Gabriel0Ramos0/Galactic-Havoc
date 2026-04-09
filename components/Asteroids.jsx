@@ -81,12 +81,9 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
 
     infos.push({
       mesh: asteroid,
-      rotVel: {
-        x: (Math.random() - 0.5) * 0.05,
-        y: (Math.random() - 0.5) * 0.05,
-        z: (Math.random() - 0.5) * 0.05
-      },
       scale,
+      hp: Math.floor(80 + Math.random() * 40),
+      alive: true,
     });
   }
 
@@ -98,9 +95,15 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
       const mesh = info.mesh;
       const distSq = mesh.position.distanceToSquared(shipPosition);
 
-      if (distSq > maxSq || distSq < 50 * 50) {
+      if (distSq > maxSq) {
         let attempts = 0;
         let newPos = new THREE.Vector3();
+
+        if (!info.alive) {
+          info.hp = Math.floor(80 + Math.random() * 40);
+          info.alive = true;
+          mesh.visible = true;
+        }
 
         do {
           newPos.copy(
@@ -122,8 +125,9 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
   };
 
   // --- colisões ---
-  group.checkCollisions = (shipPosition, shipRadius = 5) => {
-    const hits = [];
+  group.checkCollisions = (shipPosition, ship) => {
+    const shipRadius = 10;
+    const now = Date.now();
 
     for (let i = 0; i < infos.length; i++) {
       const info = infos[i];
@@ -132,10 +136,21 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
       const dist = mesh.position.distanceTo(shipPosition);
       const radius = info.scale * 0.8;
 
-      if (dist < shipRadius + radius) hits.push(i);
-    }
+      if (dist < shipRadius + radius) {
 
-    return hits;
+        if (!info.lastHit || now - info.lastHit > 500) {
+          info.lastHit = now;
+
+          info.hp -= 20;
+          ship.hp -= 15;
+
+          if (info.hp <= 0 && info.alive) {
+            info.alive = false;
+            mesh.visible = false;
+          }
+        }
+      }
+    }
   };
 
   // --- dispose completo ---

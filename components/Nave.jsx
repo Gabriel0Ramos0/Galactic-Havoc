@@ -42,13 +42,16 @@ function loadShipModel() {
 
 export async function createShip(scene) {
   const baseModel = await loadShipModel();
-
   const ship = new THREE.Group();
   const clone = baseModel.clone(true);
 
   clone.position.set(0, 4, 0);
-
   ship.add(clone);
+  ship.userData.shipStats = {
+    maxHP: 500,
+    hp: 500
+  };
+
   scene.add(ship);
   ship.userData.loaded = true;
 

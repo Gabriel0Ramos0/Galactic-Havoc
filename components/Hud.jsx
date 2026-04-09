@@ -3,8 +3,8 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Tutorial from "@/components/Tutorial";
 
-export default function Hud({ shipHP = 100, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, markerCoords = null }) {
-
+export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, markerCoords = null }) {
+  const hpPercent = (shipHP / maxHP) * 100;
   return (
     <>
       <View style={styles.container}>
@@ -18,17 +18,17 @@ export default function Hud({ shipHP = 100, energy = 100, isRecharging, score = 
                 style={[
                   styles.hpFill,
                   {
-                    width: `${shipHP}%`,
+                    width: `${hpPercent}%`,
                     backgroundColor:
-                      shipHP > 60 ? "#3cff75" :
-                        shipHP > 30 ? "#ffd54a" :
+                      hpPercent > 80 ? "#3cff75" :
+                        hpPercent > 45 ? "#ffd54a" :
                           "#ff3b3b",
                   },
                 ]}
               />
             </View>
 
-            <Text style={styles.hpValue}>{shipHP}%</Text>
+            <Text style={styles.hpValue}>{shipHP} / {maxHP}</Text>
           </View>
           {/* Coordenadas */}
           <View style={styles.coordsBox}>

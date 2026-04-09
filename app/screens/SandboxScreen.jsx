@@ -48,7 +48,7 @@ export default function SandboxScreen() {
     controlsRef
   });
 
-  const [currentHP] = useState(100);
+  const [shipHP, setShipHP] = useState(500);
   const [energy, setEnergy] = useState(0);
   const lastShotTimeRef = useRef(0);
   const [isRecharging, setIsRecharging] = useState(false);
@@ -316,6 +316,11 @@ export default function SandboxScreen() {
         const scale = 0.01;
         hudTimerRef.current += dt;
 
+        const hp = shipRef.current?.userData.shipStats?.hp ?? 0;
+        if (hp !== shipHP) {
+          setShipHP(hp);
+        }
+
         if (hudTimerRef.current > 0.2) {
           hudTimerRef.current = 0;
 
@@ -332,6 +337,13 @@ export default function SandboxScreen() {
         debugObjects.current.forEach(obj => {
           if (obj.update) obj.update();
         });
+
+        if (asteroidsRef.current && shipRef.current) {
+          asteroidsRef.current.checkCollisions(
+            shipRef.current.position,
+            shipRef.current.userData.shipStats
+          );
+        }
 
         if (blueMarkerRef.current && blueMarkerRef.current.update) {
           blueMarkerRef.current.update(dt, ship.position);
@@ -452,7 +464,8 @@ export default function SandboxScreen() {
       {!cutsceneVisible && !menuVisible && inGame && (
         <>
           <Hud
-            shipHP={currentHP}
+            shipHP={shipHP}
+            maxHP={shipRef.current?.userData.shipStats?.maxHP ?? 500}
             energy={energy}
             isRecharging={isRecharging}
             score={currentScore}
@@ -462,6 +475,7 @@ export default function SandboxScreen() {
               setPaused(true);
               resetMovementState();
               setEnergy(0);
+              setShipHP(500);
               setIsCritical(false);
               setIsRecharging(false);
               criticalRecoveryTriggeredRef.current = false;
