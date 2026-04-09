@@ -39,7 +39,7 @@ function disposeMaterial(material) {
   material.dispose();
 }
 
-export default async function createAsteroids(count, spread, minScale, maxScale) {
+export default async function createAsteroids(count, spread, minScale, maxScale, options = {}) {
   const group = new THREE.Group();
   const infos = [];
   const baseAsteroid = await loadAsteroidBase();
@@ -161,24 +161,29 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
     }
   };
 
+  const onProjectileHit = options.onProjectileHit || (() => { });
+
   group.checkProjectileCollisions = (projectiles, scene) => {
     for (let i = projectiles.length - 1; i >= 0; i--) {
       const projectile = projectiles[i];
-
       const projectileBox = new THREE.Box3().setFromObject(projectile);
 
-      for (let j = 0; j < infos.length; j++) {
-        const info = infos[j];
+      for (let info of infos) {
         if (!info.alive) continue;
 
         info.box.setFromObject(info.mesh);
 
         if (info.box.intersectsBox(projectileBox)) {
-
           info.hp -= projectile.userData.damage;
 
-          scene.remove(projectile);
+          if (scene && projectile.parent) {
+            scene.remove(projectile);
+          }
           projectiles.splice(i, 1);
+
+          if (scene) {
+            onProjectileHit(scene, projectile.position.clone());
+          }
 
           if (info.hp <= 0 && info.alive) {
             info.alive = false;

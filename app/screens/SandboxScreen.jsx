@@ -229,7 +229,7 @@ export default function SandboxScreen() {
   const sceneRef = useRef(null);
   const blueMarkerRef = useRef(null);
   const shipLightsRef = useRef(null);
-  const { updateProjectiles, projectiles } = useProjectiles(shipRef, sceneRef, {
+  const { updateProjectiles, projectiles, spawnProjectileParticles } = useProjectiles(shipRef, sceneRef, {
     energy,
     canControlRef,
     controlsRef,
@@ -302,7 +302,9 @@ export default function SandboxScreen() {
     await delay();
     const suns = await createSuns(3, 6000);
     await delay();
-    const asteroids = await createAsteroids(200, 8000, 2, 20);
+    const asteroids = await createAsteroids(200, 8000, 2, 20, {
+      onProjectileHit: (scene, position) => spawnProjectileParticles(scene, position),
+    });
     asteroidsRef.current = asteroids;
 
     // --- debug boxes para asteroides ---
@@ -345,7 +347,7 @@ export default function SandboxScreen() {
       if (!inGame) {
         updateShip();
         updateCamera();
-        updateProjectiles();
+        updateProjectiles(dt);
 
         const scale = 0.01;
         hudTimerRef.current += dt;
