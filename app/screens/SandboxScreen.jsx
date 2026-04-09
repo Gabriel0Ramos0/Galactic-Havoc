@@ -263,12 +263,35 @@ export default function SandboxScreen() {
     const ship = await createShip(scene);
     shipRef.current = ship;
 
-    // Eixos para referência
-    const axesHelper = new THREE.AxesHelper(10);
-    axesHelper.visible = false;
-    ship.add(axesHelper);
+    const shipBox = new THREE.Box3();
+    const shipHelper = new THREE.Box3Helper(shipBox, 0x00ff00);
 
-    debugObjects.current.push(axesHelper);
+    shipHelper.visible = false;
+    scene.add(shipHelper);
+
+    debugObjects.current.push({
+      mesh: ship,
+      box: shipBox,
+      helper: shipHelper,
+      update() {
+        this.box.setFromObject(this.mesh);
+        this.helper.box.copy(this.box);
+      }
+    });
+
+    const axesHelper = new THREE.AxesHelper(7);
+    axesHelper.visible = false;
+    scene.add(axesHelper);
+
+    debugObjects.current.push({
+      helper: axesHelper,
+      update() {
+        if (!ship) return;
+
+        axesHelper.position.copy(ship.position);
+        axesHelper.rotation.copy(ship.rotation);
+      }
+    });
 
     // Universo
 
@@ -281,13 +304,24 @@ export default function SandboxScreen() {
     await delay();
     const asteroids = await createAsteroids(200, 8000, 2, 20);
     asteroidsRef.current = asteroids;
-
+  
+    // --- debug boxes para asteroides ---
     asteroids.children.forEach(ast => {
-      const box = new THREE.BoxHelper(ast, 0x00ffff);
-      box.visible = false;
+      const box = new THREE.Box3();
+      const helper = new THREE.Box3Helper(box, 0xff0000);
 
-      scene.add(box);
-      debugObjects.current.push(box);
+      helper.visible = false;
+      scene.add(helper);
+
+      debugObjects.current.push({
+        mesh: ast,
+        box,
+        helper,
+        update() {
+          this.box.setFromObject(this.mesh);
+          this.helper.box.copy(this.box);
+        }
+      });
     });
 
     scene.add(stars);
@@ -336,6 +370,12 @@ export default function SandboxScreen() {
         asteroids.recycle(ship.position, 3000, 1200);
         debugObjects.current.forEach(obj => {
           if (obj.update) obj.update();
+
+          if (obj.helper) {
+            obj.helper.visible = debugMode.current;
+          } else if (obj.visible !== undefined) {
+            obj.visible = debugMode.current;
+          }
         });
 
         if (asteroidsRef.current && shipRef.current) {
@@ -389,7 +429,7 @@ export default function SandboxScreen() {
         });
       }
       setGlReady(true);
-      
+
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };

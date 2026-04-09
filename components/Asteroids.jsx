@@ -79,8 +79,11 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
 
     group.add(asteroid);
 
+    const box = new THREE.Box3().setFromObject(asteroid);
+
     infos.push({
       mesh: asteroid,
+      box,
       scale,
       hp: Math.floor(80 + Math.random() * 40),
       alive: true,
@@ -126,17 +129,22 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
 
   // --- colisões ---
   group.checkCollisions = (shipPosition, ship) => {
-    const shipRadius = 10;
     const now = Date.now();
+
+    const shipBox = new THREE.Box3().setFromCenterAndSize(
+      shipPosition,
+      new THREE.Vector3(20, 20, 20)
+    );
 
     for (let i = 0; i < infos.length; i++) {
       const info = infos[i];
       const mesh = info.mesh;
 
-      const dist = mesh.position.distanceTo(shipPosition);
-      const radius = info.scale * 0.8;
+      if (!info.alive) continue;
 
-      if (dist < shipRadius + radius) {
+      info.box.setFromObject(mesh);
+
+      if (info.box.intersectsBox(shipBox)) {
 
         if (!info.lastHit || now - info.lastHit > 500) {
           info.lastHit = now;
