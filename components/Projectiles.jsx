@@ -2,77 +2,103 @@ import * as THREE from "three";
 import { useRef, useEffect } from "react";
 
 export function createProjectileParticles(scene, position) {
-    const count = 40;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
-    const velocities = new Float32Array(count * 3);
-    const lifeTimes = new Float32Array(count);
-    const scales = new Float32Array(count);
+    const centralCount = 1;
+    const splashCount = 25;
+    const trailCount = 5; // partículas persistentes
+    const totalCount = centralCount + splashCount + trailCount;
 
-    // Ponto central de impacto (maior)
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(totalCount * 3);
+    const velocities = new Float32Array(totalCount * 3);
+    const lifeTimes = new Float32Array(totalCount);
+    const scales = new Float32Array(totalCount);
+    const trails = new Float32Array(totalCount); // flag de rastro
+
+    // 1. Ponto central de impacto
     positions[0] = position.x;
     positions[1] = position.y;
     positions[2] = position.z;
-    velocities[0] = 0;
-    velocities[1] = 0;
-    velocities[2] = 0;
+    velocities[0] = velocities[1] = velocities[2] = 0;
     lifeTimes[0] = 0.6;
     scales[0] = 1.5;
+    trails[0] = 0;
 
-    // Partículas secundárias
-    for (let i = 1; i < count; i++) {
+    // 2. Splash rápido
+    for (let i = 1; i <= splashCount; i++) {
         positions[i * 3 + 0] = position.x;
         positions[i * 3 + 1] = position.y;
         positions[i * 3 + 2] = position.z;
 
-        // direção aleatória
-        const dir = new THREE.Vector3(
-            (Math.random() - 0.5),
-            (Math.random() - 0.5),
-            (Math.random() - 0.5)
-        ).normalize();
-
-        const speed = 0.5 + Math.random() * 2; // velocidade das partículas
+        const dir = new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).normalize();
+        const speed = 0.5 + Math.random() * 2;
         velocities[i * 3 + 0] = dir.x * speed;
         velocities[i * 3 + 1] = dir.y * speed;
         velocities[i * 3 + 2] = dir.z * speed;
 
-        lifeTimes[i] = 0.4 + Math.random() * 0.4; // partículas curtas
-        scales[i] = 0.2 + Math.random() * 0.5; // tamanhos variados
+        lifeTimes[i] = 0.4 + Math.random() * 0.4;
+        scales[i] = 0.2 + Math.random() * 0.5;
+        trails[i] = 0; // sem rastro
+    }
+
+    // 3. Partículas persistentes com rastro
+    for (let i = splashCount + 1; i < totalCount; i++) {
+        positions[i * 3 + 0] = position.x;
+        positions[i * 3 + 1] = position.y;
+        positions[i * 3 + 2] = position.z;
+
+        const dir = new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).normalize();
+        const speed = 0.1 + Math.random() * 0.3; // mais lenta
+        velocities[i * 3 + 0] = dir.x * speed;
+        velocities[i * 3 + 1] = dir.y * speed;
+        velocities[i * 3 + 2] = dir.z * speed;
+
+        lifeTimes[i] = 1.5 + Math.random() * 1.5; // vida longa
+        scales[i] = 0.1 + Math.random() * 0.3;
+        trails[i] = 1; // rastro ativo
     }
 
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("life", new THREE.BufferAttribute(lifeTimes, 1));
     geometry.setAttribute("scale", new THREE.BufferAttribute(scales, 1));
+    geometry.setAttribute("trail", new THREE.BufferAttribute(trails, 1));
 
     const material = new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
-        uniforms: {
-            color: { value: new THREE.Color(0x00ffff) }, // azul laser
-        },
+        uniforms: { color: { value: new THREE.Color(0x00ffff) } },
         vertexShader: `
             attribute float life;
             attribute float scale;
+            attribute float trail;
             varying float vLife;
             varying float vScale;
+            varying float vTrail;
             void main() {
                 vLife = life;
                 vScale = scale;
+                vTrail = trail;
                 gl_PointSize = 20.0 * vScale * vLife;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
             }
         `,
         fragmentShader: `
             uniform vec3 color;
             varying float vLife;
             varying float vScale;
+            varying float vTrail;
             void main() {
                 float dist = length(gl_PointCoord - vec2(0.5));
-                float alpha = smoothstep(0.5, 0.0, dist) * vLife;
+                float alpha = smoothstep(0.5,0.0,dist)*vLife;
+
                 // cintilação leve
-                alpha *= 0.7 + 0.3 * sin(vLife * 20.0);
+                alpha *= 0.7 + 0.3 * sin(vLife*20.0);
+
+                // rastro sutil
+                if(vTrail>0.5){
+                    alpha *= 0.6;
+                }
+
                 gl_FragColor = vec4(color, alpha);
             }
         `,
@@ -85,16 +111,13 @@ export function createProjectileParticles(scene, position) {
         update: (dt) => {
             let aliveCount = 0;
             const pos = geometry.attributes.position.array;
-
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < totalCount; i++) {
                 pos[i * 3 + 0] += velocities[i * 3 + 0] * dt * 10;
                 pos[i * 3 + 1] += velocities[i * 3 + 1] * dt * 10;
                 pos[i * 3 + 2] += velocities[i * 3 + 2] * dt * 10;
-
                 lifeTimes[i] -= dt * 2;
                 if (lifeTimes[i] > 0) aliveCount++;
             }
-
             geometry.attributes.position.needsUpdate = true;
             geometry.attributes.life.needsUpdate = true;
 
@@ -104,9 +127,8 @@ export function createProjectileParticles(scene, position) {
                 material.dispose();
                 return false;
             }
-
             return true;
-        },
+        }
     };
 }
 
