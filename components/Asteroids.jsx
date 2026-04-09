@@ -161,6 +161,36 @@ export default async function createAsteroids(count, spread, minScale, maxScale)
     }
   };
 
+  group.checkProjectileCollisions = (projectiles, scene) => {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+      const projectile = projectiles[i];
+
+      const projectileBox = new THREE.Box3().setFromObject(projectile);
+
+      for (let j = 0; j < infos.length; j++) {
+        const info = infos[j];
+        if (!info.alive) continue;
+
+        info.box.setFromObject(info.mesh);
+
+        if (info.box.intersectsBox(projectileBox)) {
+
+          info.hp -= projectile.userData.damage;
+
+          scene.remove(projectile);
+          projectiles.splice(i, 1);
+
+          if (info.hp <= 0 && info.alive) {
+            info.alive = false;
+            info.mesh.visible = false;
+          }
+
+          break;
+        }
+      }
+    }
+  };
+
   // --- dispose completo ---
   group.dispose = () => {
     group.traverse((child) => {

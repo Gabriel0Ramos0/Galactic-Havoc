@@ -229,7 +229,7 @@ export default function SandboxScreen() {
   const sceneRef = useRef(null);
   const blueMarkerRef = useRef(null);
   const shipLightsRef = useRef(null);
-  const { updateProjectiles } = useProjectiles(shipRef, sceneRef, {
+  const { updateProjectiles, projectiles } = useProjectiles(shipRef, sceneRef, {
     energy,
     canControlRef,
     controlsRef,
@@ -304,7 +304,7 @@ export default function SandboxScreen() {
     await delay();
     const asteroids = await createAsteroids(200, 8000, 2, 20);
     asteroidsRef.current = asteroids;
-  
+
     // --- debug boxes para asteroides ---
     asteroids.children.forEach(ast => {
       const box = new THREE.Box3();
@@ -382,6 +382,13 @@ export default function SandboxScreen() {
           asteroidsRef.current.checkCollisions(
             shipRef.current.position,
             shipRef.current.userData.shipStats
+          );
+        }
+
+        if (asteroidsRef.current && projectiles.current) {
+          asteroidsRef.current.checkProjectileCollisions(
+            projectiles.current,
+            scene
           );
         }
 
