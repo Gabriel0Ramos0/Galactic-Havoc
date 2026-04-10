@@ -4,7 +4,7 @@ import { View, Text, Animated, StyleSheet, Dimensions } from "react-native";
 export default function MessageBox({
     message = "",
     position = "bottom-left",
-    duration = 10000, // tempo visível em ms
+    duration = 10000, // tempo visível
     onHidden = () => { },
 }) {
     const slide = useRef(new Animated.Value(60)).current;
@@ -45,7 +45,7 @@ export default function MessageBox({
             }),
         ]).start();
 
-        // iniciar loops de energia UMA VEZ por component mount
+        // iniciar loops
         glowLoop.current = Animated.loop(
             Animated.sequence([
                 Animated.timing(glow, {

@@ -9,9 +9,7 @@ export default async function createBlueMarker({
     activateDistance = 180
 }) {
 
-    // ===============================
-    // 1. Spawn
-    // ===============================
+    // Spawn
     function randomCoordinate() {
         return (Math.random() - 0.5) * spread;
     }
@@ -25,16 +23,12 @@ export default async function createBlueMarker({
         );
     } while (pos.length() < minDistance);
 
-    // ===============================
-    // 2. Grupo principal
-    // ===============================
+    // Grupo principal
     const markerGroup = new THREE.Group();
     markerGroup.position.copy(pos);
     scene.add(markerGroup);
 
-    // ===============================
-    // 3. LABEL
-    // ===============================
+    // LABEL
     const canvas = document.createElement("canvas");
     canvas.width = 256;
     canvas.height = 64;
@@ -57,9 +51,7 @@ export default async function createBlueMarker({
     sprite.position.set(0, 60, 0);
     markerGroup.add(sprite);
 
-    // ===============================
-    // 4. GLOW FAKE (AURA)
-    // ===============================
+    // GLOW FAKE (AURA)
     const glowGeom = new THREE.SphereGeometry(40, 32, 32);
     const glowMat = new THREE.MeshBasicMaterial({
         color: 0x3388ff,
@@ -72,9 +64,7 @@ export default async function createBlueMarker({
     const glowSphere = new THREE.Mesh(glowGeom, glowMat);
     markerGroup.add(glowSphere);
 
-    // ===============================
-    // 5. Nave-Mãe (OBJ)
-    // ===============================
+    // Nave-Mãe (OBJ)
     let motherShip = null;
 
     new MTLLoader().load(
@@ -88,29 +78,24 @@ export default async function createBlueMarker({
                     require("../assets/models/marker/estacao_espacial.obj"),
                     (object) => {
 
-                        // === 1. Centralização REAL ===
+                        // Centralização
                         const box = new THREE.Box3().setFromObject(object);
                         const center = new THREE.Vector3();
                         box.getCenter(center);
                         object.position.sub(center);
 
-                        // === 2. Ajuste de base (deixa "deitado no centro") ===
+                        // Ajuste de base 
                         const size = new THREE.Vector3();
                         box.getSize(size);
 
-                        // sobe metade da altura pra não "afundar" na esfera
                         object.position.y += size.y * 0.15;
 
-                        // === 3. Escala elegante (uniforme) ===
-                        const targetSize = 90; // sensação visual boa pro marker
+                        const targetSize = 90;
                         const maxAxis = Math.max(size.x, size.y, size.z);
                         const scale = targetSize / maxAxis;
+
                         object.scale.setScalar(scale);
-
-                        // === 4. Orientação correta ===
                         object.rotation.x = Math.PI / 2;
-
-                        // === 5. Material limpo (sem glow, sem emissivo) ===
                         object.traverse((child) => {
                             if (child.isMesh && child.material) {
                                 child.material.emissive?.set?.(0x000000);
@@ -128,9 +113,7 @@ export default async function createBlueMarker({
         }
     );
 
-    // ===============================
-    // 6. Estado
-    // ===============================
+    // Estado
     markerGroup.userData = {
         time: 0,
         activated: false,
@@ -138,9 +121,7 @@ export default async function createBlueMarker({
         activateDistance
     };
 
-    // ===============================
-    // 7. Som
-    // ===============================
+    // Som
     let sound = null;
     try {
         sound = new Audio.Sound();
@@ -149,9 +130,7 @@ export default async function createBlueMarker({
         );
     } catch (_) { }
 
-    // ===============================
-    // 8. UPDATE
-    // ===============================
+    // UPDATE
     function update(dt, shipPosition) {
         markerGroup.userData.time += dt;
         const t = markerGroup.userData.time;
@@ -169,16 +148,12 @@ export default async function createBlueMarker({
             motherShip.position.y = Math.sin(t * 0.35) * 4;
         }
 
-        // ===============================
         // GLOW BASE
-        // ===============================
         glowSphere.scale.setScalar(
             1 + Math.sin(t * 2.5) * 0.15
         );
 
-        // ===============================
         // ATIVAÇÃO → GLOW SE EXPANDE E MORRE
-        // ===============================
         if (
             !markerGroup.userData.activated &&
             distance <= activateDistance
@@ -212,9 +187,7 @@ export default async function createBlueMarker({
         }
     }
 
-    // ===============================
-    // 9. REMOVE
-    // ===============================
+    // REMOVE
     async function remove() {
         scene.remove(markerGroup);
         try {

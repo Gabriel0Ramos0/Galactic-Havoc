@@ -4,7 +4,7 @@ import * as THREE from "three";
 
 let cachedBaseAsteroid = null;
 
-// --- carregamento único do modelo ---
+// Carregar Modelo
 async function loadAsteroidBase() {
   if (cachedBaseAsteroid) return cachedBaseAsteroid;
 
@@ -28,7 +28,7 @@ async function loadAsteroidBase() {
   return base;
 }
 
-// --- helper para limpar materiais ---
+// Limpar Materiais
 function disposeMaterial(material) {
   for (const key in material) {
     const value = material[key];
@@ -58,7 +58,7 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
     );
   }
 
-  // --- gerar instâncias ---
+  // Gerar Instâncias
   for (let i = 0; i < count; i++) {
     const asteroid = baseAsteroid.clone(true);
 
@@ -90,7 +90,7 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
     });
   }
 
-  // --- reciclagem ---
+  // Reciclagem
   group.recycle = (shipPosition, maxDistance, minDistanceFromShip) => {
     const maxSq = maxDistance * maxDistance;
 
@@ -130,7 +130,7 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
   const onProjectileHit = options.onProjectileHit || (() => { });
   const onAsteroidDestroyed = options.onAsteroidDestroyed || (() => { });
 
-  // --- colisões ---
+  // Colisões
   group.checkCollisions = (shipPosition, onDamage, scene) => {
     const now = Date.now();
 
@@ -153,8 +153,6 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
           info.lastHit = now;
 
           info.hp -= 20;
-
-          // 💥 AQUI MUDA TUDO
           onDamage?.(15);
 
           if (info.hp <= 0 && info.alive) {
@@ -213,7 +211,7 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
     }
   };
 
-  // --- dispose completo ---
+  // Dispose
   group.dispose = () => {
     group.traverse((child) => {
       if (child.isMesh) {

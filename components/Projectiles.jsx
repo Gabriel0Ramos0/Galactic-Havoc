@@ -37,7 +37,7 @@ export function createProjectileParticles(scene, position) {
 
         lifeTimes[i] = 0.4 + Math.random() * 0.4;
         scales[i] = 0.2 + Math.random() * 0.5;
-        trails[i] = 0; // sem rastro
+        trails[i] = 0;
     }
 
     // 3. Partículas persistentes com rastro
@@ -47,12 +47,12 @@ export function createProjectileParticles(scene, position) {
         positions[i * 3 + 2] = position.z;
 
         const dir = new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).normalize();
-        const speed = 0.1 + Math.random() * 0.3; // mais lenta
+        const speed = 0.1 + Math.random() * 0.3;
         velocities[i * 3 + 0] = dir.x * speed;
         velocities[i * 3 + 1] = dir.y * speed;
         velocities[i * 3 + 2] = dir.z * speed;
 
-        lifeTimes[i] = 1.5 + Math.random() * 1.5; // vida longa
+        lifeTimes[i] = 1.5 + Math.random() * 1.5;
         scales[i] = 0.1 + Math.random() * 0.3;
         trails[i] = 1; // rastro ativo
     }

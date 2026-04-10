@@ -7,9 +7,7 @@ export default function spawnAsteroidDestruction(scene, position, normal, size =
     const bigFragments = [];
     const smallFragments = [];
 
-    // -------------------------
-    // 💥 FLASH + SHOCKWAVE
-    // -------------------------
+    // SHOCKWAVE
     const flash = new THREE.Mesh(
         new THREE.SphereGeometry(1.2 * size, 12, 12),
         new THREE.MeshBasicMaterial({
@@ -34,9 +32,7 @@ export default function spawnAsteroidDestruction(scene, position, normal, size =
     group.add(flash);
     group.add(shockwave);
 
-    // -------------------------
-    // 🪨 FRAGMENTOS GRANDES (lentos)
-    // -------------------------
+    // FRAGMENTOS GRANDES
     for (let i = 0; i < 4; i++) {
         const mesh = new THREE.Mesh(
             new THREE.IcosahedronGeometry(0.6 * size, 0),
@@ -62,9 +58,7 @@ export default function spawnAsteroidDestruction(scene, position, normal, size =
         bigFragments.push(mesh);
     }
 
-    // -------------------------
-    // 🧱 FRAGMENTOS PEQUENOS (rápidos)
-    // -------------------------
+    // FRAGMENTOS PEQUENOS
     for (let i = 0; i < 10; i++) {
         const mesh = new THREE.Mesh(
             new THREE.BoxGeometry(0.2 * size, 0.2 * size, 0.2 * size),
@@ -83,9 +77,7 @@ export default function spawnAsteroidDestruction(scene, position, normal, size =
         smallFragments.push(mesh);
     }
 
-    // -------------------------
-    // ✨ POEIRA (Points shader style)
-    // -------------------------
+    // POEIRA
     const count = 40;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
@@ -142,9 +134,7 @@ export default function spawnAsteroidDestruction(scene, position, normal, size =
 
     scene.add(group);
 
-    // -------------------------
-    // ⏱️ UPDATE
-    // -------------------------
+    // UPDATE
     let t = 0;
 
     group.userData.update = (dt) => {

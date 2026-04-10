@@ -19,7 +19,7 @@ export default function Joystick({ onMove }) {
 
         onMove({
             x: deltaX / maxDistance,
-            y: -deltaY / maxDistance, // invertido para frente ser positivo
+            y: -deltaY / maxDistance,
         });
     };
 

@@ -194,7 +194,7 @@ export default function SandboxScreen() {
         criticalRecoveryTriggeredRef.current = false;
         break;
 
-      case 3:// sequência QUIT
+      case 3:// sequência START
         playSfx("tutorial_alert");
         break;
 
@@ -203,11 +203,11 @@ export default function SandboxScreen() {
         break;
 
       case 5:
-      case 6: // boost
+      case 6: // Boost
         playSfx("tutorial_alert");
         break;
 
-      case 8: // marcador aparece
+      case 8: // Marcador Azul
         playSfx("tutorial_marker");
         break;
 
@@ -315,7 +315,7 @@ export default function SandboxScreen() {
     });
     asteroidsRef.current = asteroids;
 
-    // --- debug boxes para asteroides ---
+    // Debug
     asteroids.children.forEach(ast => {
       const box = new THREE.Box3();
       const helper = new THREE.Box3Helper(box, 0xff0000);
@@ -357,7 +357,7 @@ export default function SandboxScreen() {
         updateCamera();
         updateProjectiles(dt);
 
-        // atualizar efeitos visuais (explosões, partículas, etc)
+        // Efeitos Visuais
         effectsRef.current = effectsRef.current.filter(effect => {
           if (!effect.userData.update) return false;
 
