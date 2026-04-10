@@ -128,7 +128,7 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
   };
 
   // --- colisões ---
-  group.checkCollisions = (shipPosition, ship) => {
+  group.checkCollisions = (shipPosition, onDamage) => {
     const now = Date.now();
 
     const shipBox = new THREE.Box3().setFromCenterAndSize(
@@ -150,7 +150,9 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
           info.lastHit = now;
 
           info.hp -= 20;
-          ship.hp -= 15;
+
+          // 💥 AQUI MUDA TUDO
+          onDamage?.(15);
 
           if (info.hp <= 0 && info.alive) {
             info.alive = false;
@@ -160,7 +162,7 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
       }
     }
   };
-
+  
   const onProjectileHit = options.onProjectileHit || (() => { });
 
   group.checkProjectileCollisions = (projectiles, scene) => {

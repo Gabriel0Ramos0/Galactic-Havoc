@@ -20,7 +20,7 @@ export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, s
                   {
                     width: `${hpPercent}%`,
                     backgroundColor:
-                      hpPercent > 80 ? "#3cff75" :
+                      hpPercent > 60 ? "#3cff75" :
                         hpPercent > 45 ? "#ffd54a" :
                           "#ff3b3b",
                   },

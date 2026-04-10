@@ -48,7 +48,8 @@ export default function SandboxScreen() {
     controlsRef
   });
 
-  const [shipHP, setShipHP] = useState(500);
+  const [maxHP, setMaxHP] = useState(500);
+  const [shipHP, setShipHP] = useState(maxHP);
   const [energy, setEnergy] = useState(0);
   const lastShotTimeRef = useRef(0);
   const [isRecharging, setIsRecharging] = useState(false);
@@ -352,11 +353,6 @@ export default function SandboxScreen() {
         const scale = 0.01;
         hudTimerRef.current += dt;
 
-        const hp = shipRef.current?.userData.shipStats?.hp ?? 0;
-        if (hp !== shipHP) {
-          setShipHP(hp);
-        }
-
         if (hudTimerRef.current > 0.2) {
           hudTimerRef.current = 0;
 
@@ -383,7 +379,9 @@ export default function SandboxScreen() {
         if (asteroidsRef.current && shipRef.current) {
           asteroidsRef.current.checkCollisions(
             shipRef.current.position,
-            shipRef.current.userData.shipStats
+            (damage) => {
+              setShipHP(prev => Math.max(prev - damage, 0));
+            }
           );
         }
 
@@ -514,7 +512,7 @@ export default function SandboxScreen() {
         <>
           <Hud
             shipHP={shipHP}
-            maxHP={shipRef.current?.userData.shipStats?.maxHP ?? 500}
+            maxHP={maxHP}
             energy={energy}
             isRecharging={isRecharging}
             score={currentScore}
@@ -524,7 +522,7 @@ export default function SandboxScreen() {
               setPaused(true);
               resetMovementState();
               setEnergy(0);
-              setShipHP(500);
+              setShipHP(maxHP);
               setIsCritical(false);
               setIsRecharging(false);
               criticalRecoveryTriggeredRef.current = false;
