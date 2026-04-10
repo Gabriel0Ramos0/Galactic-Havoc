@@ -192,6 +192,11 @@ export async function loadSfx() {
     require("../assets/sounds/fire.mp3")
   );
 
+  sfx.explosion = new Audio.Sound();
+  await sfx.explosion.loadAsync(
+    require("../assets/sounds/explosionast.mp3")
+  );
+
   sfxLoaded = true;
 }
 

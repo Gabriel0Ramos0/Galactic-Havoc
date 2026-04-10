@@ -127,8 +127,11 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
     }
   };
 
+  const onProjectileHit = options.onProjectileHit || (() => { });
+  const onAsteroidDestroyed = options.onAsteroidDestroyed || (() => { });
+
   // --- colisões ---
-  group.checkCollisions = (shipPosition, onDamage) => {
+  group.checkCollisions = (shipPosition, onDamage, scene) => {
     const now = Date.now();
 
     const shipBox = new THREE.Box3().setFromCenterAndSize(
@@ -156,14 +159,19 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
 
           if (info.hp <= 0 && info.alive) {
             info.alive = false;
-            mesh.visible = false;
+            info.mesh.visible = false;
+
+            onAsteroidDestroyed?.({
+              scene,
+              position: info.mesh.position.clone(),
+              normal: null,
+              size: info.scale
+            });
           }
         }
       }
     }
   };
-  
-  const onProjectileHit = options.onProjectileHit || (() => { });
 
   group.checkProjectileCollisions = (projectiles, scene) => {
     for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -190,6 +198,13 @@ export default async function createAsteroids(count, spread, minScale, maxScale,
           if (info.hp <= 0 && info.alive) {
             info.alive = false;
             info.mesh.visible = false;
+
+            onAsteroidDestroyed?.({
+              scene,
+              position: info.mesh.position.clone(),
+              normal: projectile.userData?.direction || null,
+              size: info.scale
+            });
           }
 
           break;

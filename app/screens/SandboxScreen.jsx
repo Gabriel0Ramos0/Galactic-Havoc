@@ -12,6 +12,7 @@ import { playTrack, stopMusic, transitionToTrack, stopTutorialCombat, playSfx, l
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";
+import spawnAsteroidDestruction from "@/components/AsteroidDestruction";
 import { createShip } from "@/components/Nave";
 import useProjectiles from "@/components/Projectiles";
 import useMovement from "@/components/Moviment";
@@ -29,6 +30,7 @@ export default function SandboxScreen() {
   const cameraRef = useRef();
   const shipRef = useRef();
   const asteroidsRef = useRef(null);
+  const effectsRef = useRef([]);
   const debugMode = useRef(false);
   const debugObjects = useRef([]);
   const transitionRef = useRef();
@@ -305,6 +307,11 @@ export default function SandboxScreen() {
     await delay();
     const asteroids = await createAsteroids(200, 8000, 2, 20, {
       onProjectileHit: (scene, position) => spawnProjectileParticles(scene, position),
+      onAsteroidDestroyed: ({ scene, position, normal, size }) => {
+        const effect = spawnAsteroidDestruction(scene, position, normal, size);
+        effectsRef.current.push(effect);
+        playSfx("explosion");
+      }
     });
     asteroidsRef.current = asteroids;
 
@@ -350,6 +357,15 @@ export default function SandboxScreen() {
         updateCamera();
         updateProjectiles(dt);
 
+        // atualizar efeitos visuais (explosões, partículas, etc)
+        effectsRef.current = effectsRef.current.filter(effect => {
+          if (!effect.userData.update) return false;
+
+          effect.userData.update(dt);
+
+          return effect.parent !== null;
+        });
+
         const scale = 0.01;
         hudTimerRef.current += dt;
 
@@ -381,7 +397,8 @@ export default function SandboxScreen() {
             shipRef.current.position,
             (damage) => {
               setShipHP(prev => Math.max(prev - damage, 0));
-            }
+            },
+            scene
           );
         }
 
