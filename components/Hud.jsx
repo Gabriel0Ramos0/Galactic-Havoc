@@ -43,7 +43,7 @@ export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, s
             )}
           </View>
           <Tutorial
-            onComplete={() => console.log("Tutorial finalizado")}
+            onComplete={() => {}}
             onStepChange={(s) => setTutorialStep(s)}
           />
         </View>

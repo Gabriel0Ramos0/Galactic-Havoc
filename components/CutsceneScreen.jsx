@@ -11,7 +11,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { Video } from "expo-av";
+import { VideoView, useVideoPlayer } from "expo-video";
 
 const { width, height } = Dimensions.get("window");
 const baseGreen = "rgba(0,255,170,1)";
@@ -32,8 +32,9 @@ export default function CutsceneScreen({ onFinish, glReady }) {
   const glow = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
 
-  const videoRef = useRef(null);
+  const player = useVideoPlayer(require("../assets/videos/intro.mp4"));
   const hasStartedVideo = useRef(false);
+  const hasEnded = useRef(false);
 
   // animações
   const textFade = useRef(new Animated.Value(0)).current;
@@ -99,8 +100,7 @@ export default function CutsceneScreen({ onFinish, glReady }) {
   useEffect(() => {
     if (
       showVideo &&
-      ready &&
-      videoRef.current &&
+      player &&
       !hasStartedVideo.current
     ) {
       hasStartedVideo.current = true;
@@ -110,10 +110,10 @@ export default function CutsceneScreen({ onFinish, glReady }) {
         duration: 700,
         useNativeDriver: true,
       }).start(() => {
-        videoRef.current.playAsync().catch(() => onFinish && onFinish());
+        player.play();
       });
     }
-  }, [showVideo, ready]);
+  }, [showVideo]);
 
   // HUD ambient loops
   useEffect(() => {
@@ -225,13 +225,27 @@ export default function CutsceneScreen({ onFinish, glReady }) {
       glowAnim.stopAnimation();
       jitter.stopAnimation();
 
-      if (videoRef.current) {
-        videoRef.current.stopAsync?.();
-        videoRef.current.unloadAsync?.();
-        videoRef.current = null;
-      }
+      player?.pause();
     };
   }, []);
+
+  useEffect(() => {
+    if (!player) return;
+
+    const interval = setInterval(() => {
+      if (!player.duration) return;
+
+      const isEnding =
+        player.currentTime >= player.duration - 0.2;
+
+      if (isEnding && !hasEnded.current) {
+        hasEnded.current = true;
+        handleVideoEnd();
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [player]);
 
   const hudTranslate = {
     transform: [
@@ -273,16 +287,14 @@ export default function CutsceneScreen({ onFinish, glReady }) {
       {/* Video */}
       {showVideo && (
         <Animated.View style={[styles.videoWrapper, { opacity: videoFade }]}>
-          <Video
-            ref={videoRef}
-            source={require("../assets/videos/intro.mp4")}
+          <VideoView
+            player={player}
             style={styles.video}
-            resizeMode="cover"
-            shouldPlay={false}
+            contentFit="cover"
             onLoad={() => setReady(true)}
-            onPlaybackStatusUpdate={(s) => {
-              if (s && s.didJustFinish) handleVideoEnd();
-            }}
+            allowsFullscreen={false}
+            allowsPictureInPicture={false}
+            nativeControls={false}
           />
         </Animated.View>
       )}
@@ -569,7 +581,6 @@ const styles = StyleSheet.create({
   video: {
     width,
     height,
-    marginLeft: "40px",
     backgroundColor: "#000",
   },
 
