@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Audio } from "expo-av";
+import { playSfx } from "@/components/AudioController";
 import { OBJLoader, MTLLoader } from "three-stdlib";
 
 export default async function createBlueMarker({
@@ -121,15 +121,6 @@ export default async function createBlueMarker({
         activateDistance
     };
 
-    // Som
-    let sound = null;
-    try {
-        sound = new Audio.Sound();
-        await sound.loadAsync(
-            require("@/assets/sounds/marker_ping.mp3")
-        );
-    } catch (_) { }
-
     // UPDATE
     function update(dt, shipPosition) {
         markerGroup.userData.time += dt;
@@ -161,7 +152,7 @@ export default async function createBlueMarker({
             markerGroup.userData.activated = true;
             markerGroup.userData.glowLife = 1;
 
-            try { sound?.replayAsync(); } catch (_) { }
+            playSfx("marker_ping");
 
             window.dispatchEvent(
                 new CustomEvent("blueMarkerReached", {
@@ -190,9 +181,6 @@ export default async function createBlueMarker({
     // REMOVE
     async function remove() {
         scene.remove(markerGroup);
-        try {
-            await sound?.unloadAsync();
-        } catch (_) { }
     }
 
     return {

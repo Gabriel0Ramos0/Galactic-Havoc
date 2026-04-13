@@ -8,7 +8,7 @@ import styles from "./style";
 
 import Hud from "@/components/Hud";
 import useCameraController from "@/components/CameraController";
-import { playTrack, stopMusic, transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/components/AudioController";
+import { transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/components/AudioController";
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";

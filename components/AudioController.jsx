@@ -1,7 +1,8 @@
-import { Audio } from "expo-av";
+import { createAudioPlayer } from "expo-audio";
 
 let soundInstance = null;
 let currentTrackIndex = 0;
+let trackMonitor = null;
 let currentVolume = 0.5;
 
 const playlist = [
@@ -56,9 +57,22 @@ export function getCurrentTrack() {
 
 export async function playTrack(index, { skipStop = false } = {}) {
   try {
+
     if (soundInstance && !skipStop) {
-      await soundInstance.stopAsync();
-      await soundInstance.unloadAsync();
+      try {
+        if (typeof soundInstance.stop === "function") {
+          soundInstance.stop();
+        }
+
+        if (typeof soundInstance.remove === "function") {
+          soundInstance.remove();
+        }
+
+      } catch (e) {
+        console.warn("Erro ao limpar som:", e);
+      }
+
+      soundInstance = null;
     }
 
     const track = playlist[index];
@@ -66,20 +80,15 @@ export async function playTrack(index, { skipStop = false } = {}) {
 
     currentTrackIndex = index;
 
-    const { sound } = await Audio.Sound.createAsync(track.file, {
-      volume: currentVolume,
-      isLooping: false,
-    });
+    const sound = createAudioPlayer(track.file);
 
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.didJustFinish && !status.isLooping && !isTransitioning) {
-        const next = getRandomTrackIndex();
-        transitionToTrack(next);
-      }
-    });
+    sound.volume = currentVolume;
+    sound.loop = false;
 
     soundInstance = sound;
-    await soundInstance.playAsync();
+    sound.play();
+    startTrackMonitor(sound);
+
   } catch (e) {
     console.warn("Erro ao tocar música:", e);
   }
@@ -87,8 +96,8 @@ export async function playTrack(index, { skipStop = false } = {}) {
 
 export async function stopMusic() {
   if (soundInstance) {
-    await soundInstance.stopAsync();
-    await soundInstance.unloadAsync();
+    soundInstance.stop();
+    soundInstance.remove();
     soundInstance = null;
   }
 }
@@ -107,12 +116,37 @@ export async function prevTrack() {
 export async function setMusicVolume(value) {
   currentVolume = value;
   if (soundInstance) {
-    await soundInstance.setVolumeAsync(value);
+    soundInstance.volume = value;
   }
 }
 
 export function getMusicVolume() {
   return currentVolume;
+}
+
+function startTrackMonitor(sound) {
+  stopTrackMonitor();
+
+  trackMonitor = setInterval(() => {
+    try {
+      const duration = sound.duration;
+      const current = sound.currentTime;
+
+      if (!duration || !current) return;
+
+      if (duration - current < 0.3 && !isTransitioning) {
+        const next = getRandomTrackIndex();
+        transitionToTrack(next);
+      }
+    } catch (e) { }
+  }, 300);
+}
+
+function stopTrackMonitor() {
+  if (trackMonitor) {
+    clearInterval(trackMonitor);
+    trackMonitor = null;
+  }
 }
 
 let isTransitioning = false;
@@ -122,10 +156,12 @@ export async function transitionToTrack(index, fadeDuration = 1000) {
   isTransitioning = true;
 
   try {
+    stopTrackMonitor();
+
     // fade out atual
     if (soundInstance) {
       await fadeOutSound(soundInstance, fadeDuration);
-      await soundInstance.unloadAsync();
+      soundInstance.remove();
       soundInstance = null;
     }
 
@@ -134,14 +170,14 @@ export async function transitionToTrack(index, fadeDuration = 1000) {
 
     // fade in
     if (soundInstance) {
-      await soundInstance.setVolumeAsync(0);
+      soundInstance.volume = 0;
 
       const steps = 20;
       const stepTime = fadeDuration / steps;
 
       for (let i = 0; i < steps; i++) {
         await new Promise(r => setTimeout(r, stepTime));
-        await soundInstance.setVolumeAsync(((i + 1) / steps) * currentVolume);
+        soundInstance.volume = ((i + 1) / steps) * currentVolume;
       }
     }
 
@@ -167,35 +203,20 @@ const sfx = {};
 export async function loadSfx() {
   if (sfxLoaded) return;
 
-  sfx.tutorial_intro = new Audio.Sound();
-  await sfx.tutorial_intro.loadAsync(
-    require("../assets/sounds/tutorial_intro.mp3")
-  );
+  const create = (file) => {
+    const sound = createAudioPlayer(file);
+    sound.volume = 1;
+    sound.loop = false;
+    return sound;
+  };
 
-  sfx.tutorial_alert = new Audio.Sound();
-  await sfx.tutorial_alert.loadAsync(
-    require("../assets/sounds/tutorial_alert.mp3")
-  );
-
-  sfx.tutorial_marker = new Audio.Sound();
-  await sfx.tutorial_marker.loadAsync(
-    require("../assets/sounds/tutorial_marker.mp3")
-  );
-
-  sfx.tutorial_combat = new Audio.Sound();
-  await sfx.tutorial_combat.loadAsync(
-    require("../assets/sounds/tutorial_combat.mp3")
-  );
-
-  sfx.fire = new Audio.Sound();
-  await sfx.fire.loadAsync(
-    require("../assets/sounds/fire.mp3")
-  );
-
-  sfx.explosion = new Audio.Sound();
-  await sfx.explosion.loadAsync(
-    require("../assets/sounds/explosionast.mp3")
-  );
+  sfx.tutorial_intro = create(require("../assets/sounds/tutorial_intro.mp3"));
+  sfx.tutorial_alert = create(require("../assets/sounds/tutorial_alert.mp3"));
+  sfx.tutorial_marker = create(require("../assets/sounds/tutorial_marker.mp3"));
+  sfx.tutorial_combat = create(require("../assets/sounds/tutorial_combat.mp3"));
+  sfx.fire = create(require("../assets/sounds/fire.mp3"));
+  sfx.explosion = create(require("../assets/sounds/explosionast.mp3"));
+  sfx.marker_ping = create(require("../assets/sounds/marker_ping.mp3"));
 
   sfxLoaded = true;
 }
@@ -209,9 +230,8 @@ export async function playSfx(name) {
   }
 
   try {
-    await sound.stopAsync();
-    await sound.setPositionAsync(0);
-    await sound.playAsync();
+    sound.seekTo(0);
+    sound.play();
   } catch (e) {
     console.warn("Erro ao tocar SFX:", name, e);
   }
@@ -225,23 +245,21 @@ export async function stopTutorialCombat() {
 
 async function fadeOutSound(sound, duration = 800) {
   try {
-    const status = await sound.getStatusAsync();
-    if (!status.isPlaying) return;
-
     const steps = 20;
     const stepTime = duration / steps;
-    let volume = status.volume ?? 1;
+    let volume = sound.volume ?? 1;
 
     const delta = volume / steps;
 
     for (let i = 0; i < steps; i++) {
       volume -= delta;
-      await sound.setVolumeAsync(Math.max(volume, 0));
+      sound.volume = Math.max(volume, 0);
       await new Promise(r => setTimeout(r, stepTime));
     }
 
-    await sound.stopAsync();
-    await sound.setPositionAsync(0);
-    await sound.setVolumeAsync(currentVolume);
+    sound.stop();
+    sound.seekTo(0);
+    sound.volume = currentVolume;
+
   } catch (e) { }
 }
