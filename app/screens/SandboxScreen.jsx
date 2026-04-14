@@ -28,6 +28,7 @@ import createBlueMarker from "@/components/BlueMarker";
 export default function SandboxScreen() {
   const glRef = useRef();
   const cameraRef = useRef();
+  const audioUnlocked = useRef(false);
   const shipRef = useRef();
   const asteroidsRef = useRef(null);
   const effectsRef = useRef([]);
@@ -72,7 +73,7 @@ export default function SandboxScreen() {
 
   // Controla a música do menu
   useEffect(() => {
-    if (menuVisible) {
+    if (menuVisible && audioUnlocked.current) {
       transitionToTrack(0);
     }
   }, [menuVisible]);
@@ -245,6 +246,14 @@ export default function SandboxScreen() {
     },
     shipVelocityRef: velocity
   });
+
+  const unlockAudio = async () => {
+    if (audioUnlocked.current) return;
+    audioUnlocked.current = true;
+
+    await loadSfx();
+    transitionToTrack(0);
+  };
 
   const onContextCreate = async (gl) => {
     if (sceneRef.current) return;
@@ -481,6 +490,7 @@ export default function SandboxScreen() {
             handleCutsceneFinish();
           }}
           glReady={glReady}
+          onUnlockAudio={unlockAudio}
         />
       )}
 

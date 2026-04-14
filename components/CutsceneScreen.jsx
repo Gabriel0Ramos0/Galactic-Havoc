@@ -20,7 +20,7 @@ const panelBg = Platform.select({
   android: "rgba(8,8,10,0.64)",
 });
 
-export default function CutsceneScreen({ onFinish, glReady }) {
+export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const [started, setStarted] = useState(false);
   const [showBeforeText, setShowBeforeText] = useState(true);
   const [showVideo, setShowVideo] = useState(false);
@@ -165,7 +165,10 @@ export default function CutsceneScreen({ onFinish, glReady }) {
     }
   }, [showHUD]);
 
-  const handleStart = () => setStarted(true);
+  const handleStart = async () => {
+    await onUnlockAudio?.();
+    setStarted(true);
+  };
 
   const handleVideoEnd = () => {
     Animated.timing(videoFade, {
@@ -533,8 +536,9 @@ const styles = StyleSheet.create({
   // START BUTTON
   startButton: {
     position: "absolute",
-    top: height * 0.46,
-    left: width * 0.5 - 120,
+    alignSelf: "center",
+    top: "45%",
+    transform: [{ translateY: -40 }],
     width: 240,
     boxShadowColor: "rgba(0,255,170,1)",
     boxshadowOpacity: 0.7,
