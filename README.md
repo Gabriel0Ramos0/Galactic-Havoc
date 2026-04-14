@@ -2,47 +2,78 @@
 
 ![Galactic Havoc Banner](assets/images/Game.png)
 
-**Galactic Havoc** é a evolução do antigo **CAOS Cósmico – Missão Estelar**, agora reescrito em **React Native + Expo** para proporcionar uma experiência nativa e imersiva em dispositivos móveis.  
-O jogo combina aventura espacial, controle via joystick virtual e ranking online de jogadores, mantendo a essência caótica e cósmica do jogo original.
+**Galactic Havoc** é um jogo espacial 3D interativo desenvolvido com **React Native + Expo**, focado em combate, exploração e uma experiência imersiva diretamente no navegador.
 
-## 🎮 Funcionalidades Principais
+> Evolução do projeto **CAOS Cósmico – Missão Estelar**
 
-- **Cutscenes e narrativa interativa**  
-- **Ranking online** integrado via API  
-- **Interface intuitiva** e menus otimizados
+## Jogue Agora
 
-## 🛠️ Tecnologias
+👉 https://galactic-havoc-lyart.vercel.app/
+
+## Funcionalidades
+
+- **Cutscenes e narrativa interativa**
+- **Controle de nave em ambiente 3D**
+- **Interface imersiva**
+- **Sistema de áudio dinâmico**
+- **Acesso direto pelo navegador (sem instalação)**
+- **Ranking online integrado (em evolução)**
+
+## Tecnologias
 
 - React Native + Expo  
-- JavaScript moderno (ES6+)
-- Git para versionamento
+- Three.js  
+- JavaScript (ES6+)
+- Git + Vercel (deploy contínuo)
 
-## 📱 Disponibilidade
+## Como rodar localmente
 
-Em breve disponível na **Google Play Store** e **Apple App Store**!  
-[Acompanhe o lançamento](#) – Em breve o link será colocado!
+```bash
+npm install
+npx expo start
+```
 
-## Status do Projeto
+## Sobre o projeto
 
-Em desenvolvimento – lógica do jogo e componentes base estão sendo construídos, marcando o início da era **Galactic Havoc**.
+**Galactic Havoc** representa a transição de um projeto experimental para uma experiência jogável e acessível globalmente.
+
+A nova arquitetura com **Expo + Web** permite que qualquer jogador acesse o jogo diretamente pelo navegador, sem necessidade de instalação, abrindo caminho para futuras expansões como:
+
+- 📱 Publicação mobile (Android / iOS)
+- 🌍 Multiplayer online
+- 🧠 IA avançada (em desenvolvimento)
+- 👻 Eventos e elementos dinâmicos no universo do jogo
 
 ## Screenshots
 
-![Espaço](assets/images/Espaço.jpeg) 
-![Tutorial](assets/images/Tutorial.png)   
-![Iluminação](assets/images/terminal.jpeg)
+![Espaço](assets/images/Espaço.jpeg)  
+![Tutorial](assets/images/Tutorial.png)  
+![Terminal](assets/images/terminal.jpeg)
+![Projétil](assets/images/Projétil.png)
 
-## 📜 Licença
+## Status do Projeto
 
-Este projeto está licenciado sob a **MIT License**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Em desenvolvimento ativo  
 
-## 🌟 Contribuição
+✔ Versão web funcional publicada  
+✔ Sistema base de gameplay implementado  
+🔄 Melhorias visuais e estabilidade em progresso  
 
-Contribuições são sempre bem-vindas!  
-Sinta-se à vontade para abrir **issues**, sugerir melhorias ou enviar **pull requests**.  
-Vamos juntos expandir o universo de **Galactic Havoc**! 🌠  
+## Licença
 
-### 👨‍🎨 Contribuidores
+Este projeto está licenciado sob a **MIT License**.  
+Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## Contribuição
+
+Contribuições são bem-vindas!
+
+Sinta-se à vontade para:
+- abrir **issues**
+- sugerir melhorias
+- enviar **pull requests**
+
+## Contribuidores
 
 <table>
   <tr>
@@ -57,7 +88,7 @@ Vamos juntos expandir o universo de **Galactic Havoc**! 🌠
       <a href="https://github.com/GustavoWarmeling05">
         <img src="https://github.com/GustavoWarmeling05.png" width="100" style="border-radius:12px;" /><br/>
         <strong>@GustavoWarmeling05</strong><br/>
-        Modelagem dos asteroides
+        Modelagem 3D Asteróides
       </a>
     </td>
   </tr>
