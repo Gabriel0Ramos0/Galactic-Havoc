@@ -21,6 +21,7 @@ import Menu from "@/components/Menu";
 import Config from "@/components/Config";
 import TransitionController from "@/components/TransitionController";
 import { setupShipLighting, animateShipStartup, animateShipShutdown } from "@/components/effects/lighting";
+import { createThrusterEffect } from "@/components/effects/Thrusters";
 import CutsceneScreen from "@/components/CutsceneScreen";
 import History from "@/components/History";
 import createBlueMarker from "@/components/BlueMarker";
@@ -233,6 +234,7 @@ export default function SandboxScreen() {
   const sceneRef = useRef(null);
   const blueMarkerRef = useRef(null);
   const shipLightsRef = useRef(null);
+  const thrusterEffectRef = useRef(null);
   const { updateProjectiles, projectiles, spawnProjectileParticles } = useProjectiles(shipRef, sceneRef, {
     energy,
     canControlRef,
@@ -274,6 +276,13 @@ export default function SandboxScreen() {
     // Nave
     const ship = await createShip(scene);
     shipRef.current = ship;
+
+    // Inicializa userData para rastrear propriedades da nave
+    ship.userData.velocity = new THREE.Vector3();
+
+    // Efeito de Propulsão
+    const thrusterEffect = createThrusterEffect(scene, shipRef);
+    thrusterEffectRef.current = thrusterEffect;
 
     const shipBox = new THREE.Box3();
     const shipHelper = new THREE.Box3Helper(shipBox, 0x00ff00);
@@ -365,6 +374,16 @@ export default function SandboxScreen() {
         updateShip();
         updateCamera();
         updateProjectiles(dt);
+
+        // Atualiza velocidade da nave
+        if (shipRef.current && velocity.current) {
+          shipRef.current.userData.velocity = velocity.current;
+        }
+
+        // Atualiza efeito de propulsão
+        if (thrusterEffectRef.current) {
+          thrusterEffectRef.current.update(dt);
+        }
 
         // Efeitos Visuais
         effectsRef.current = effectsRef.current.filter(effect => {
