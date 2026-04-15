@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Asset } from 'expo-asset';
-import { createSunLight } from "@/components/lighting";
+import { createSunLight } from "@/components/effects/lighting";
 
 const textures = [
     require('@/assets/textures/sol.png'),

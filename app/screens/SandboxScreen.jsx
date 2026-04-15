@@ -12,7 +12,7 @@ import { transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/compo
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";
-import spawnAsteroidDestruction from "@/components/AsteroidDestruction";
+import spawnAsteroidDestruction from "@/components/effects/AsteroidDestruction";
 import { createShip } from "@/components/Nave";
 import useProjectiles from "@/components/Projectiles";
 import useMovement from "@/components/Moviment";
@@ -20,7 +20,7 @@ import Joystick from "@/components/Joystick";
 import Menu from "@/components/Menu";
 import Config from "@/components/Config";
 import TransitionController from "@/components/TransitionController";
-import { setupShipLighting, animateShipStartup, animateShipShutdown } from "@/components/lighting";
+import { setupShipLighting, animateShipStartup, animateShipShutdown } from "@/components/effects/lighting";
 import CutsceneScreen from "@/components/CutsceneScreen";
 import History from "@/components/History";
 import createBlueMarker from "@/components/BlueMarker";
