@@ -11,15 +11,22 @@ async function loadEnemyModel() {
     const mtlLoader = new MTLLoader();
     const objLoader = new OBJLoader();
 
+    const basePath = "/models/Nave_v2/";
+
+    mtlLoader.setPath(basePath);
+    mtlLoader.setResourcePath(basePath);
+
     loadingPromise = new Promise((resolve, reject) => {
         mtlLoader.load(
-            require("../../assets/models/Nave v2/d5class.mtl"),
+            "d5class.mtl",
             (materials) => {
                 materials.preload();
+
                 objLoader.setMaterials(materials);
+                objLoader.setPath(basePath);
 
                 objLoader.load(
-                    require("../../assets/models/Nave v2/d5class.obj"),
+                    "d5class.obj",
                     (object) => {
                         object.scale.set(3, 3, 3);
                         object.rotation.x = Math.PI / 2;

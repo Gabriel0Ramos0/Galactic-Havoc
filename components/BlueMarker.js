@@ -64,52 +64,59 @@ export default async function createBlueMarker({
     const glowSphere = new THREE.Mesh(glowGeom, glowMat);
     markerGroup.add(glowSphere);
 
-    // Nave-Mãe (OBJ)
+    const basePath = "/models/marker/";
+
     let motherShip = null;
 
-    new MTLLoader().load(
-        require("../assets/models/marker/estacao_espacial.mtl"),
+    const mtlLoader = new MTLLoader();
+    mtlLoader.setPath(basePath);
+    mtlLoader.setResourcePath(basePath);
+
+    const objLoader = new OBJLoader();
+
+    mtlLoader.load(
+        "estacao_espacial.mtl",
         (materials) => {
             materials.preload();
 
-            new OBJLoader()
-                .setMaterials(materials)
-                .load(
-                    require("../assets/models/marker/estacao_espacial.obj"),
-                    (object) => {
+            objLoader.setMaterials(materials);
+            objLoader.setPath(basePath);
 
-                        // Centralização
-                        const box = new THREE.Box3().setFromObject(object);
-                        const center = new THREE.Vector3();
-                        box.getCenter(center);
-                        object.position.sub(center);
+            objLoader.load(
+                "estacao_espacial.obj",
+                (object) => {
 
-                        // Ajuste de base 
-                        const size = new THREE.Vector3();
-                        box.getSize(size);
+                    const box = new THREE.Box3().setFromObject(object);
+                    const center = new THREE.Vector3();
+                    box.getCenter(center);
+                    object.position.sub(center);
 
-                        object.position.y += size.y * 0.15;
+                    const size = new THREE.Vector3();
+                    box.getSize(size);
 
-                        const targetSize = 90;
-                        const maxAxis = Math.max(size.x, size.y, size.z);
-                        const scale = targetSize / maxAxis;
+                    object.position.y += size.y * 0.15;
 
-                        object.scale.setScalar(scale);
-                        object.rotation.x = Math.PI / 2;
-                        object.traverse((child) => {
-                            if (child.isMesh && child.material) {
-                                child.material.emissive?.set?.(0x000000);
-                                child.material.emissiveIntensity = 0;
-                                child.material.transparent = false;
-                                child.material.opacity = 1;
-                                child.material.depthWrite = true;
-                            }
-                        });
+                    const targetSize = 90;
+                    const maxAxis = Math.max(size.x, size.y, size.z);
+                    const scale = targetSize / maxAxis;
 
-                        motherShip = object;
-                        markerGroup.add(object);
-                    }
-                );
+                    object.scale.setScalar(scale);
+                    object.rotation.x = Math.PI / 2;
+
+                    object.traverse((child) => {
+                        if (child.isMesh && child.material) {
+                            child.material.emissive?.set?.(0x000000);
+                            child.material.emissiveIntensity = 0;
+                            child.material.transparent = false;
+                            child.material.opacity = 1;
+                            child.material.depthWrite = true;
+                        }
+                    });
+
+                    motherShip = object;
+                    markerGroup.add(object);
+                }
+            );
         }
     );
 

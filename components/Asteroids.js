@@ -8,13 +8,20 @@ let cachedBaseAsteroid = null;
 async function loadAsteroidBase() {
   if (cachedBaseAsteroid) return cachedBaseAsteroid;
 
+  const basePath = "/models/asteroide/";
+
   const mtlLoader = new MTLLoader();
-  const materials = await mtlLoader.loadAsync(require("../assets/models/asteroide/ASTEROIDE.mtl"));
+  mtlLoader.setPath(basePath);
+  mtlLoader.setResourcePath(basePath);
+
+  const materials = await mtlLoader.loadAsync("ASTEROIDE.mtl");
   materials.preload();
 
   const objLoader = new OBJLoader();
   objLoader.setMaterials(materials);
-  const base = await objLoader.loadAsync(require("../assets/models/asteroide/ASTEROIDE.obj"));
+  objLoader.setPath(basePath);
+
+  const base = await objLoader.loadAsync("ASTEROIDE.obj");
 
   base.traverse((child) => {
     if (child.isMesh) {

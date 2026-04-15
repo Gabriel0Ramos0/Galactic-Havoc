@@ -11,16 +11,21 @@ function loadShipModel() {
 
   const mtlLoader = new MTLLoader();
   const objLoader = new OBJLoader();
+  const basePath = "/models/Nave/";
+
+  mtlLoader.setPath(basePath);
+  mtlLoader.setResourcePath(basePath);
 
   loadingPromise = new Promise((resolve, reject) => {
     mtlLoader.load(
-      require("../assets/models/Nave/neghvar.mtl"),
+      "neghvar.mtl",
       (materials) => {
         materials.preload();
         objLoader.setMaterials(materials);
+        objLoader.setPath(basePath);
 
         objLoader.load(
-          require("../assets/models/Nave/neghvar.obj"),
+          "neghvar.obj",
           (object) => {
             object.scale.set(1, 1, 1);
             object.rotation.x = Math.PI / 2;
