@@ -2,7 +2,7 @@
 import * as THREE from "three";
 
 const CHUNK_SIZE = 1000;
-const VIEW_DISTANCE = 3000;
+const VIEW_DISTANCE = 5500;
 const VIEW_DISTANCE_SQ = VIEW_DISTANCE * VIEW_DISTANCE;
 
 export default class ChunkManager {
@@ -12,6 +12,8 @@ export default class ChunkManager {
         this.debugChunks = new Map();
         this.debugVisible = false;
         this.sunTextures = null;
+        this.suns = [];
+        this.minSunDistance = 3000; // ajuste aqui
         this.seed = seed ?? Math.floor(Math.random() * 999999999);
         this.spawnQueue = [];
     }
@@ -57,12 +59,33 @@ export default class ChunkManager {
         for (let i = 0; i < limit; i++) {
             const item = this.spawnQueue.shift();
             if (!item) return;
+            if (!this.chunks.has(item.key)) return;
 
             const { cx, cy, cz } = item;
+
+            const key = this.getChunkKey(cx, cy, cz);
+
+            if (!this.chunks.has(key)) continue;
 
             this.createChunkDebug(cx, cy, cz);
             this.createSunInChunk(cx, cy, cz).catch(console.error);
         }
+    }
+
+    isTooCloseToOtherSuns(position) {
+        const minDistSq = this.minSunDistance * this.minSunDistance;
+
+        for (const sun of this.suns) {
+            const dx = sun.position.x - position.x;
+            const dy = sun.position.y - position.y;
+            const dz = sun.position.z - position.z;
+
+            if ((dx * dx + dy * dy + dz * dz) < minDistSq) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     async loadSunTextures() {
@@ -99,7 +122,7 @@ export default class ChunkManager {
         const random = this.createRNG(seed);
 
         // CHANCE DE SPAWN
-        if (random() > 0.05) return; // 5%
+        if (random() > 0.005) return; // 0.5%
 
         const textures = await this.loadSunTextures();
 
@@ -113,6 +136,8 @@ export default class ChunkManager {
             z * CHUNK_SIZE + offsetZ
         );
 
+        if (this.isTooCloseToOtherSuns(position)) return;
+
         const { createSun } = await import("@/components/Sun");
 
         const sun = createSun({
@@ -122,6 +147,7 @@ export default class ChunkManager {
         });
 
         this.scene.add(sun);
+        this.suns.push(sun);
 
         const chunkData = this.chunks.get(key);
 
@@ -171,11 +197,12 @@ export default class ChunkManager {
                     needed.add(key);
 
                     if (!this.chunks.has(key)) {
-                        this.chunks.set(key, {
-                            sun: null
-                        });
+                        this.chunks.set(key, { sun: null });
 
-                        this.spawnQueue.push({ cx, cy, cz });
+                        this.spawnQueue.push({
+                            cx, cy, cz,
+                            key
+                        });
                     }
                 }
             }
@@ -242,11 +269,10 @@ export default class ChunkManager {
         const chunkData = this.chunks.get(key);
 
         if (chunkData?.sun) {
-            this.scene.remove(chunkData.sun);
-            chunkData.sun.geometry?.dispose?.();
-            chunkData.sun.material?.dispose?.();
-
-            chunkData.sun = null;
+            const index = this.suns.indexOf(chunkData.sun);
+            if (index !== -1) {
+                this.suns.splice(index, 1);
+            }
         }
     }
 

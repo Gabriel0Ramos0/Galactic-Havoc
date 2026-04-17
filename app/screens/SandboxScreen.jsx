@@ -278,7 +278,7 @@ export default function SandboxScreen() {
     chunkManagerRef.current = new ChunkManager(scene, worldSeed);
 
     // Câmera
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 3000);
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 6000);
     cameraRef.current = camera;
 
     // Nave
@@ -415,8 +415,8 @@ export default function SandboxScreen() {
           });
         }
 
-        stars.recycle(ship.position, 900);
-        asteroids.recycle(ship.position, 3000, 1200);
+        stars.recycle(ship.position, 1500);
+        asteroids.recycle(ship.position, 4500, 2000);
         debugObjects.current.forEach(obj => {
           if (obj.update) obj.update();
 
