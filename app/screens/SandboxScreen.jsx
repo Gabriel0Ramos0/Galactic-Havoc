@@ -9,6 +9,7 @@ import styles from "./style";
 import Hud from "@/components/Hud";
 import useCameraController from "@/components/CameraController";
 import { transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/components/AudioController";
+import ChunkManager from "@/components/ChunkManager";
 import createStars from "@/components/Star";
 import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";
@@ -30,6 +31,7 @@ export default function SandboxScreen() {
   const glRef = useRef();
   const cameraRef = useRef();
   const audioUnlocked = useRef(false);
+  const chunkManagerRef = useRef(null);
   const shipRef = useRef();
   const asteroidsRef = useRef(null);
   const effectsRef = useRef([]);
@@ -269,6 +271,9 @@ export default function SandboxScreen() {
     // Cena
     const scene = new THREE.Scene();
 
+    // Gerenciador de Chunks
+    chunkManagerRef.current = new ChunkManager(scene);
+
     // Câmera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 3000);
     cameraRef.current = camera;
@@ -394,6 +399,11 @@ export default function SandboxScreen() {
           return effect.parent !== null;
         });
 
+        // Atualiza chunks
+        if (chunkManagerRef.current && shipRef.current) {
+          chunkManagerRef.current.update(shipRef.current.position);
+        }
+
         const scale = 0.01;
         hudTimerRef.current += dt;
 
@@ -454,7 +464,6 @@ export default function SandboxScreen() {
             }
           } catch { }
         }
-        const VIEW_DISTANCE = 3000 * 3000;
 
         suns.children.forEach(sun => {
           const dx = sun.position.x - ship.position.x;
@@ -462,8 +471,6 @@ export default function SandboxScreen() {
           const dz = sun.position.z - ship.position.z;
 
           const distSq = dx * dx + dy * dy + dz * dz;
-
-          if (distSq > VIEW_DISTANCE) return;
 
           if (sun.userData.growing) {
             const target = 1;
