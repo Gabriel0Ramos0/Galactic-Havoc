@@ -6,10 +6,11 @@ const VIEW_DISTANCE = 3000;
 const VIEW_DISTANCE_SQ = VIEW_DISTANCE * VIEW_DISTANCE;
 
 export default class ChunkManager {
-    constructor(scene) {
+    constructor(scene, seed = null) {
         this.scene = scene;
         this.chunks = new Map();
         this.debugChunks = new Map();
+        this.seed = seed ?? Math.floor(Math.random() * 999999999);
     }
 
     getChunkCoord(position) {
@@ -22,6 +23,31 @@ export default class ChunkManager {
 
     getChunkKey(x, y, z) {
         return `${x}_${y}_${z}`;
+    }
+
+    getChunkSeed(x, y, z) {
+        const str = `${this.seed}_${x}_${y}_${z}`;
+        return this.hashString(str);
+    }
+
+    createRNG(seed) {
+        let s = seed;
+
+        return function () {
+            s = (s * 1664525 + 1013904223) % 4294967296;
+            return s / 4294967296;
+        };
+    }
+
+    hashString(str) {
+        let hash = 0;
+
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+        }
+
+        return Math.abs(hash);
     }
 
     update(playerPosition) {
@@ -81,6 +107,9 @@ export default class ChunkManager {
 
     createChunkDebug(x, y, z) {
         const key = this.getChunkKey(x, y, z);
+        const seed = this.getChunkSeed(x, y, z);
+
+        const random = this.createRNG(seed);
 
         const size = CHUNK_SIZE;
 
@@ -93,6 +122,10 @@ export default class ChunkManager {
 
         const edges = new THREE.EdgesGeometry(geometry);
         const line = new THREE.LineSegments(edges, material);
+
+        // const offsetX = random() * CHUNK_SIZE;
+        // const offsetY = random() * CHUNK_SIZE;
+        // const offsetZ = random() * CHUNK_SIZE;
 
         line.position.set(
             x * CHUNK_SIZE + CHUNK_SIZE / 2,
@@ -113,5 +146,19 @@ export default class ChunkManager {
         obj.material?.dispose?.();
 
         this.debugChunks.delete(key);
+    }
+
+    dispose() {
+        this.debugChunks.forEach((obj) => {
+            this.scene.remove(obj);
+
+            obj.geometry?.dispose?.();
+            obj.material?.dispose?.();
+        });
+
+        this.debugChunks.clear();
+        this.chunks.clear();
+
+        this.currentChunk = null;
     }
 }

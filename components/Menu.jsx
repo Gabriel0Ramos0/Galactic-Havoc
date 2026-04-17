@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, Animated } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Animated } from "react-native";
 
 export default function Menu({ onStart, onConfig, onCredits, onHistory, onExit, onLogin }) {
   // Animação do título
   const titleAnim = useRef(new Animated.Value(0)).current;
   const [open, setOpen] = useState(false);
   const animHeight = useRef(new Animated.Value(40)).current;
+  const [seed, setSeed] = useState("");
 
   useEffect(() => {
     Animated.loop(
@@ -55,10 +56,19 @@ export default function Menu({ onStart, onConfig, onCredits, onHistory, onExit, 
       {/* Título com efeito neon */}
       <Animated.Text style={[styles.title, titleStyle]}>GALACTIC HAVOC</Animated.Text>
 
+      {/* Input de seed */}
+      <TextInput
+        style={styles.input}
+        placeholder="Seed do universo (opcional)"
+        placeholderTextColor="#888"
+        value={seed}
+        onChangeText={setSeed}
+      />
+
       {/* Botões centrais */}
       <View style={styles.buttonContainer}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.button} onPress={onStart}>
+          <TouchableOpacity style={styles.button} onPress={() => onStart(seed)}>
             <Text style={styles.buttonText}>Iniciar</Text>
           </TouchableOpacity>
 
@@ -120,6 +130,7 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
+    pointerEvents: "none",
   },
   title: {
     fontSize: 48,
@@ -196,5 +207,17 @@ const styles = StyleSheet.create({
     color: "#00eaff",
     fontSize: 14,
     fontWeight: "bold",
+  },
+  input: {
+    width: 260,
+    height: 40,
+    borderColor: "#0ff",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    color: "#0ff",
+    marginBottom: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    textAlign: "center",
   },
 });

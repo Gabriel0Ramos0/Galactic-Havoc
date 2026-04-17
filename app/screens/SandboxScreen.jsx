@@ -48,6 +48,7 @@ export default function SandboxScreen() {
     inventory: false,
   });
   const controlsRef = useRef(controls);
+  const [worldSeed, setWorldSeed] = useState(null);
 
   const { panHandlers, updateCamera, onWheel } = useCameraController(cameraRef, shipRef);
   const { updateShip, joystickDelta, resetMovementState, setPaused, canControl: canControlRef, speedship, velocity } = useMovement(shipRef, {
@@ -272,7 +273,7 @@ export default function SandboxScreen() {
     const scene = new THREE.Scene();
 
     // Gerenciador de Chunks
-    chunkManagerRef.current = new ChunkManager(scene);
+    chunkManagerRef.current = new ChunkManager(scene, worldSeed);
 
     // Câmera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 3000);
@@ -523,7 +524,7 @@ export default function SandboxScreen() {
       {/* MENU */}
       {!cutsceneVisible && menuVisible && (
         <Menu
-          onStart={async () => {
+          onStart={async (seedFromMenu) => {
             resetMovementState();
             setPaused(false);
             if (blueMarkerRef.current) {
@@ -533,6 +534,21 @@ export default function SandboxScreen() {
               blueMarkerRef.current = null;
               setMarkerCoords(null);
             }
+            const seed = seedFromMenu?.trim()
+              ? seedFromMenu
+              : Math.floor(Math.random() * 999999999).toString();
+
+            setWorldSeed(seed);
+
+            if (chunkManagerRef.current) {
+              chunkManagerRef.current.dispose();
+            }
+
+            if (sceneRef.current) {
+              chunkManagerRef.current = new ChunkManager(sceneRef.current, seed);
+            }
+
+            // console.log("Seed do universo:", seed);
             await transitionRef.current.start(async () => {
               setMenuVisible(false);
               setInGame(true);
