@@ -11,7 +11,9 @@ export default class ChunkManager {
         this.chunks = new Map();
         this.debugChunks = new Map();
         this.debugVisible = false;
+        this.sunTextures = null;
         this.seed = seed ?? Math.floor(Math.random() * 999999999);
+        this.spawnQueue = [];
     }
 
     getChunkCoord(position) {
@@ -51,6 +53,83 @@ export default class ChunkManager {
         return Math.abs(hash);
     }
 
+    processQueue(limit = 2) {
+        for (let i = 0; i < limit; i++) {
+            const item = this.spawnQueue.shift();
+            if (!item) return;
+
+            const { cx, cy, cz } = item;
+
+            this.createChunkDebug(cx, cy, cz);
+            this.createSunInChunk(cx, cy, cz).catch(console.error);
+        }
+    }
+
+    async loadSunTextures() {
+        if (this.sunTextures) return this.sunTextures;
+
+        if (this.loadingTextures) return this.loadingTextures;
+
+        this.loadingTextures = (async () => {
+            const { Asset } = await import('expo-asset');
+
+            const texturesRaw = [
+                require('@/assets/textures/sol.png'),
+                require('@/assets/textures/sol-azul.png')
+            ];
+
+            const textures = await Promise.all(
+                texturesRaw.map(async (t) => {
+                    const asset = Asset.fromModule(t);
+                    await asset.downloadAsync();
+                    return new THREE.TextureLoader().load(asset.localUri);
+                })
+            );
+
+            this.sunTextures = textures;
+            return textures;
+        })();
+
+        return this.loadingTextures;
+    }
+
+    async createSunInChunk(x, y, z) {
+        const key = this.getChunkKey(x, y, z);
+        const seed = this.getChunkSeed(x, y, z);
+        const random = this.createRNG(seed);
+
+        // CHANCE DE SPAWN
+        if (random() > 0.05) return; // 5%
+
+        const textures = await this.loadSunTextures();
+
+        const offsetX = random() * CHUNK_SIZE;
+        const offsetY = random() * CHUNK_SIZE;
+        const offsetZ = random() * CHUNK_SIZE;
+
+        const position = new THREE.Vector3(
+            x * CHUNK_SIZE + offsetX,
+            y * CHUNK_SIZE + offsetY,
+            z * CHUNK_SIZE + offsetZ
+        );
+
+        const { createSun } = await import("@/components/Sun");
+
+        const sun = createSun({
+            position,
+            random,
+            textures
+        });
+
+        this.scene.add(sun);
+
+        const chunkData = this.chunks.get(key);
+
+        if (chunkData) {
+            chunkData.sun = sun;
+        }
+    }
+
     update(playerPosition) {
         const chunk = this.getChunkCoord(playerPosition);
         const key = this.getChunkKey(chunk.x, chunk.y, chunk.z);
@@ -59,6 +138,7 @@ export default class ChunkManager {
             this.currentChunk = key;
             this.updateChunks(chunk);
         }
+        this.processQueue(1);
     }
 
     updateChunks(centerChunk) {
@@ -91,8 +171,11 @@ export default class ChunkManager {
                     needed.add(key);
 
                     if (!this.chunks.has(key)) {
-                        this.chunks.set(key, true);
-                        this.createChunkDebug(cx, cy, cz);
+                        this.chunks.set(key, {
+                            sun: null
+                        });
+
+                        this.spawnQueue.push({ cx, cy, cz });
                     }
                 }
             }
@@ -101,6 +184,7 @@ export default class ChunkManager {
         for (let key of this.chunks.keys()) {
             if (!needed.has(key)) {
                 this.removeChunkDebug(key);
+                this.removeChunkObjects(key);
                 this.chunks.delete(key);
             }
         }
@@ -133,10 +217,6 @@ export default class ChunkManager {
         const line = new THREE.LineSegments(edges, material);
         line.visible = this.debugVisible;
 
-        // const offsetX = random() * CHUNK_SIZE;
-        // const offsetY = random() * CHUNK_SIZE;
-        // const offsetZ = random() * CHUNK_SIZE;
-
         line.position.set(
             x * CHUNK_SIZE + CHUNK_SIZE / 2,
             y * CHUNK_SIZE + CHUNK_SIZE / 2,
@@ -158,16 +238,27 @@ export default class ChunkManager {
         this.debugChunks.delete(key);
     }
 
-    dispose() {
-        this.debugChunks.forEach((obj) => {
-            this.scene.remove(obj);
+    removeChunkObjects(key) {
+        const chunkData = this.chunks.get(key);
 
-            obj.geometry?.dispose?.();
-            obj.material?.dispose?.();
-        });
+        if (chunkData?.sun) {
+            this.scene.remove(chunkData.sun);
+            chunkData.sun.geometry?.dispose?.();
+            chunkData.sun.material?.dispose?.();
+
+            chunkData.sun = null;
+        }
+    }
+
+    dispose() {
+        for (let key of this.chunks.keys()) {
+            this.removeChunkDebug(key);
+            this.removeChunkObjects(key);
+        }
 
         this.debugChunks.clear();
         this.chunks.clear();
+        this.spawnQueue = [];
 
         this.currentChunk = null;
     }

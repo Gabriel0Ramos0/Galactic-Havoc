@@ -11,7 +11,6 @@ import useCameraController from "@/components/CameraController";
 import { transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/components/AudioController";
 import ChunkManager from "@/components/ChunkManager";
 import createStars from "@/components/Star";
-import createSuns from "@/components/Sun";
 import createAsteroids from "@/components/Asteroids";
 import spawnAsteroidDestruction from "@/components/effects/AsteroidDestruction";
 import { createShip } from "@/components/Nave";
@@ -324,13 +323,9 @@ export default function SandboxScreen() {
     });
 
     // Universo
-
     const delay = () => new Promise(res => setTimeout(res, 0));
-
     await delay();
     const stars = await createStars(3000, 2000);
-    await delay();
-    const suns = await createSuns(3, 6000);
     await delay();
     const asteroids = await createAsteroids(200, 8000, 2, 20, {
       onProjectileHit: (scene, position) => spawnProjectileParticles(scene, position),
@@ -362,7 +357,6 @@ export default function SandboxScreen() {
     });
 
     scene.add(stars);
-    scene.add(suns);
     scene.add(asteroids);
 
     // Marcador Azul (Tutorial)
@@ -422,7 +416,6 @@ export default function SandboxScreen() {
         }
 
         stars.recycle(ship.position, 900);
-        suns.recycle(ship.position, 2500);
         asteroids.recycle(ship.position, 3000, 1200);
         debugObjects.current.forEach(obj => {
           if (obj.update) obj.update();
@@ -468,28 +461,6 @@ export default function SandboxScreen() {
             }
           } catch { }
         }
-
-        suns.children.forEach(sun => {
-          const dx = sun.position.x - ship.position.x;
-          const dy = sun.position.y - ship.position.y;
-          const dz = sun.position.z - ship.position.z;
-
-          const distSq = dx * dx + dy * dy + dz * dz;
-
-          if (sun.userData.growing) {
-            const target = 1;
-            const speed = 0.004;
-
-            sun.scale.x = THREE.MathUtils.lerp(sun.scale.x, target, speed);
-            sun.scale.y = THREE.MathUtils.lerp(sun.scale.y, target, speed);
-            sun.scale.z = THREE.MathUtils.lerp(sun.scale.z, target, speed);
-
-            if (Math.abs(sun.scale.x - target) < 0.01) {
-              sun.scale.set(1, 1, 1);
-              sun.userData.growing = false;
-            }
-          }
-        });
       }
       setGlReady(true);
 
