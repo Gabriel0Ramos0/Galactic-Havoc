@@ -10,6 +10,7 @@ export default class ChunkManager {
         this.scene = scene;
         this.chunks = new Map();
         this.debugChunks = new Map();
+        this.debugVisible = false;
         this.seed = seed ?? Math.floor(Math.random() * 999999999);
     }
 
@@ -105,6 +106,14 @@ export default class ChunkManager {
         }
     }
 
+    setDebugVisible(visible) {
+        this.debugVisible = visible;
+
+        this.debugChunks.forEach((obj) => {
+            obj.visible = visible;
+        });
+    }
+
     createChunkDebug(x, y, z) {
         const key = this.getChunkKey(x, y, z);
         const seed = this.getChunkSeed(x, y, z);
@@ -122,6 +131,7 @@ export default class ChunkManager {
 
         const edges = new THREE.EdgesGeometry(geometry);
         const line = new THREE.LineSegments(edges, material);
+        line.visible = this.debugVisible;
 
         // const offsetX = random() * CHUNK_SIZE;
         // const offsetY = random() * CHUNK_SIZE;

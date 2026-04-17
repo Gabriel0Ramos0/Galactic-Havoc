@@ -90,6 +90,9 @@ export default function SandboxScreen() {
         debugObjects.current.forEach(obj => {
           obj.visible = debugMode.current;
         });
+
+        // Chunks
+        chunkManagerRef.current?.setDebugVisible(debugMode.current);
       }
     };
 
