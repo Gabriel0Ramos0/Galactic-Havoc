@@ -269,6 +269,22 @@ export default class ChunkManager {
         const chunkData = this.chunks.get(key);
 
         if (chunkData?.sun) {
+            // Remove da cena
+            this.scene.remove(chunkData.sun);
+
+            // Limpa material e geometria
+            chunkData.sun.traverse((child) => {
+                if (child.geometry) child.geometry.dispose?.();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose?.());
+                    } else {
+                        child.material.dispose?.();
+                    }
+                }
+            });
+
+            // Remove do array
             const index = this.suns.indexOf(chunkData.sun);
             if (index !== -1) {
                 this.suns.splice(index, 1);
@@ -281,6 +297,12 @@ export default class ChunkManager {
             this.removeChunkDebug(key);
             this.removeChunkObjects(key);
         }
+
+        this.suns.forEach(sun => {
+            this.scene.remove(sun);
+        });
+
+        this.suns = [];
 
         this.debugChunks.clear();
         this.chunks.clear();

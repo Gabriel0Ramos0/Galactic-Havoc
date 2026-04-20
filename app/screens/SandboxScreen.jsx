@@ -274,9 +274,6 @@ export default function SandboxScreen() {
     // Cena
     const scene = new THREE.Scene();
 
-    // Gerenciador de Chunks
-    chunkManagerRef.current = new ChunkManager(scene, worldSeed);
-
     // Câmera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 6000);
     cameraRef.current = camera;
