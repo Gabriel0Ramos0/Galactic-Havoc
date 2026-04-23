@@ -14,7 +14,7 @@ export default class ChunkManager {
         this.debugVisible = false;
         this.sunTextures = null;
         this.suns = [];
-        this.minSunDistance = 3000; // ajuste aqui
+        this.minSunDistance = 3000;
         this.asteroids = [];
         this.asteroidBase = null;
         this.loadingAsteroidBase = null;
@@ -59,21 +59,33 @@ export default class ChunkManager {
         return Math.abs(hash);
     }
 
-    processQueue(limit = 2) {
+    processQueue(limit = 5) {
+        this.spawnQueue.sort((a, b) => a.priority - b.priority);
+
         for (let i = 0; i < limit; i++) {
             const item = this.spawnQueue.shift();
             if (!item) return;
-            if (!this.chunks.has(item.key)) return;
 
-            const { cx, cy, cz } = item;
-
-            const key = this.getChunkKey(cx, cy, cz);
+            const { cx, cy, cz, key, type } = item;
 
             if (!this.chunks.has(key)) continue;
 
-            this.createChunkDebug(cx, cy, cz);
-            this.createSunInChunk(cx, cy, cz).catch(console.error);
-            this.createAsteroidsInChunk(cx, cy, cz).catch(console.error);
+            // Criação básica
+            if (!type) {
+                this.createChunkDebug(cx, cy, cz);
+
+                this.createSunInChunk(cx, cy, cz).catch(console.error);
+
+                // agenda asteroides
+                this.spawnQueue.push({
+                    type: "asteroids",
+                    cx, cy, cz,
+                    key
+                });
+            }
+            else if (type === "asteroids") {
+                this.createAsteroidsInChunk(cx, cy, cz).catch(console.error);
+            }
         }
     }
 
@@ -162,7 +174,6 @@ export default class ChunkManager {
     countAsteroidsInNeighboringChunks(cx, cy, cz) {
         let count = 0;
 
-        // Verifica 26 chunks vizinhos (3x3x3 - 1)
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dz = -1; dz <= 1; dz++) {
@@ -190,15 +201,15 @@ export default class ChunkManager {
 
         let chance;
         if (neighborAsteroidCount >= 4) {
-            // Muito perto de cluster - 10% chance de 0-1
+            // Muito perto - 10% chance de 0-1
             chance = random();
             return chance < 0.1 ? Math.floor(random() * 2) : 0;
         } else if (neighborAsteroidCount >= 1) {
-            // Perto de cluster - 30% chance de 1-3
+            // Perto - 30% chance de 1-3
             chance = random();
             return chance < 0.3 ? Math.floor(random() * 3) + 1 : 0;
         } else {
-            // Sem vizinhos - 60% chance de 0-4 (mais probabilidade de 1-2)
+            // Sem vizinhos - 60% chance de 0-4
             chance = random();
             if (chance < 0.15) return 0;
             if (chance < 0.45) return 1; // 30% prob
@@ -219,30 +230,40 @@ export default class ChunkManager {
         const baseAsteroid = await this.loadAsteroidBase();
 
         const chunkAsteroids = [];
+        let created = 0;
 
-        for (let i = 0; i < asteroidCount; i++) {
+        const createStep = () => {
+            const batchSize = created < 3 ? 3 : 1;
 
-            // posição primeiro (antes de usar)
-            const offsetX = random() * CHUNK_SIZE;
-            const offsetY = random() * CHUNK_SIZE;
-            const offsetZ = random() * CHUNK_SIZE;
+            for (let i = 0; i < batchSize && created < asteroidCount; i++, created++) {
 
-            const position = new THREE.Vector3(
-                x * CHUNK_SIZE + offsetX,
-                y * CHUNK_SIZE + offsetY,
-                z * CHUNK_SIZE + offsetZ
-            );
+                const offsetX = random() * CHUNK_SIZE;
+                const offsetY = random() * CHUNK_SIZE;
+                const offsetZ = random() * CHUNK_SIZE;
 
-            const asteroidData = createAsteroid({
-                base: baseAsteroid,
-                position,
-                random
-            });
+                const position = new THREE.Vector3(
+                    x * CHUNK_SIZE + offsetX,
+                    y * CHUNK_SIZE + offsetY,
+                    z * CHUNK_SIZE + offsetZ
+                );
 
-            this.scene.add(asteroidData.mesh);
-            this.asteroids.push(asteroidData);
-            chunkAsteroids.push(asteroidData);
-        }
+                const asteroidData = createAsteroid({
+                    base: baseAsteroid,
+                    position,
+                    random
+                });
+
+                this.scene.add(asteroidData.mesh);
+                this.asteroids.push(asteroidData);
+                chunkAsteroids.push(asteroidData);
+            }
+
+            if (created < asteroidCount) {
+                requestAnimationFrame(createStep);
+            }
+        };
+
+        createStep();
 
         const chunkData = this.chunks.get(key);
         if (chunkData) {
@@ -374,7 +395,15 @@ export default class ChunkManager {
             this.currentChunk = key;
             this.updateChunks(chunk);
         }
-        this.processQueue(1);
+        const queueSize = this.spawnQueue.length;
+
+        let speed = 1;
+
+        if (queueSize > 100) speed = 10;
+        else if (queueSize > 50) speed = 5;
+        else if (queueSize > 20) speed = 3;
+
+        this.processQueue(speed);
     }
 
     updateChunks(centerChunk) {
@@ -409,9 +438,12 @@ export default class ChunkManager {
                     if (!this.chunks.has(key)) {
                         this.chunks.set(key, { sun: null });
 
+                        const priority = dx * dx + dy * dy + dz * dz;
+
                         this.spawnQueue.push({
                             cx, cy, cz,
-                            key
+                            key,
+                            priority
                         });
                     }
                 }
