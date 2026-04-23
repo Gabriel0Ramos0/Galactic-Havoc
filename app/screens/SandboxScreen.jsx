@@ -11,7 +11,6 @@ import useCameraController from "@/components/CameraController";
 import { transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/components/AudioController";
 import ChunkManager from "@/components/ChunkManager";
 import createStars from "@/components/Star";
-import createAsteroids from "@/components/Asteroids";
 import spawnAsteroidDestruction from "@/components/effects/AsteroidDestruction";
 import { createShip } from "@/components/Nave";
 import useProjectiles from "@/components/Projectiles";
@@ -32,7 +31,6 @@ export default function SandboxScreen() {
   const audioUnlocked = useRef(false);
   const chunkManagerRef = useRef(null);
   const shipRef = useRef();
-  const asteroidsRef = useRef(null);
   const effectsRef = useRef([]);
   const debugMode = useRef(false);
   const debugObjects = useRef([]);
@@ -324,37 +322,8 @@ export default function SandboxScreen() {
     await delay();
     const stars = await createStars(3000, 2000);
     await delay();
-    const asteroids = await createAsteroids(200, 8000, 2, 20, {
-      onProjectileHit: (scene, position) => spawnProjectileParticles(scene, position),
-      onAsteroidDestroyed: ({ scene, position, normal, size }) => {
-        const effect = spawnAsteroidDestruction(scene, position, normal, size);
-        effectsRef.current.push(effect);
-        playSfx("explosion");
-      }
-    });
-    asteroidsRef.current = asteroids;
-
-    // Debug
-    asteroids.children.forEach(ast => {
-      const box = new THREE.Box3();
-      const helper = new THREE.Box3Helper(box, 0xff0000);
-
-      helper.visible = false;
-      scene.add(helper);
-
-      debugObjects.current.push({
-        mesh: ast,
-        box,
-        helper,
-        update() {
-          this.box.setFromObject(this.mesh);
-          this.helper.box.copy(this.box);
-        }
-      });
-    });
 
     scene.add(stars);
-    scene.add(asteroids);
 
     // Marcador Azul (Tutorial)
     sceneRef.current = scene;
@@ -413,7 +382,6 @@ export default function SandboxScreen() {
         }
 
         stars.recycle(ship.position, 1500);
-        asteroids.recycle(ship.position, 4500, 2000);
         debugObjects.current.forEach(obj => {
           if (obj.update) obj.update();
 
@@ -424,20 +392,31 @@ export default function SandboxScreen() {
           }
         });
 
-        if (asteroidsRef.current && shipRef.current) {
-          asteroidsRef.current.checkCollisions(
+        if (chunkManagerRef.current && shipRef.current) {
+          chunkManagerRef.current.checkAsteroidCollisions(
             shipRef.current.position,
             (damage) => {
               setShipHP(prev => Math.max(prev - damage, 0));
             },
-            scene
+            scene,
+            ({ scene, position, normal, size }) => {
+              const effect = spawnAsteroidDestruction(scene, position, normal, size);
+              effectsRef.current.push(effect);
+              playSfx("explosion");
+            }
           );
         }
 
-        if (asteroidsRef.current && projectiles.current) {
-          asteroidsRef.current.checkProjectileCollisions(
+        if (chunkManagerRef.current && projectiles.current) {
+          chunkManagerRef.current.checkAsteroidProjectileCollisions(
             projectiles.current,
-            scene
+            scene,
+            (scene, position) => spawnProjectileParticles(scene, position),
+            ({ scene, position, normal, size }) => {
+              const effect = spawnAsteroidDestruction(scene, position, normal, size);
+              effectsRef.current.push(effect);
+              playSfx("explosion");
+            }
           );
         }
 
