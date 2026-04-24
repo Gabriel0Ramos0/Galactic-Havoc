@@ -19,6 +19,7 @@ export default class ChunkManager {
         this.asteroids = [];
         this.asteroidBase = null;
         this.loadingAsteroidBase = null;
+        this.destroyedAsteroids = new Set();
         this.seed = seed ?? Math.floor(Math.random() * 999999999);
         const rng = this.createRNG(this.seed);
         this.noise3D = createNoise3D(rng);
@@ -186,26 +187,8 @@ export default class ChunkManager {
         return this.loadingAsteroidBase;
     }
 
-    getDensity(x, y, z) {
-        const scale = 0.0005;
-
-        const base = this.noise3D(
-            x * scale,
-            y * scale,
-            z * scale
-        );
-
-        const detail = this.noise3D(
-            x * scale * 3,
-            y * scale * 3,
-            z * scale * 3
-        ) * 0.3;
-
-        return base + detail;
-    }
-
-    getSpaceType(x, y, z) {
-        const scale = 0.00010;
+    getBiome(x, y, z) {
+        const scale = 0.00005;
 
         return this.noise3D(
             x * scale,
@@ -214,26 +197,35 @@ export default class ChunkManager {
         );
     }
 
+    getDensity(x, y, z) {
+        const scale = 0.0002;
+
+        return this.noise3D(
+            x * scale,
+            y * scale,
+            z * scale
+        );
+    }
+
+    getSpaceType(x, y, z) {
+        const biome = this.getBiome(x, y, z);
+        const density = this.getDensity(x, y, z);
+
+        return (biome * 0.7) + (density * 0.3);
+    }
+
     calculateAsteroidCount(x, y, z) {
         const worldX = x * CHUNK_SIZE;
         const worldY = y * CHUNK_SIZE;
         const worldZ = z * CHUNK_SIZE;
 
-        const spaceType = this.getSpaceType(worldX, worldY, worldZ);
+        const space = this.getSpaceType(worldX, worldY, worldZ);
 
-        // região vazia
-        if (spaceType < -0.3) return 0;
-
-        // região leve
-        if (spaceType < 0.0) return 1;
-
-        // região média
-        if (spaceType < 0.4) return 2;
-
-        // região densa
-        if (spaceType < 0.6) return 4;
-
-        return 6;
+        if (space < -0.25) return 0;
+        if (space < 0.05) return Math.random() < 0.3 ? 1 : 0;
+        if (space < 0.35) return Math.random() < 0.6 ? 2 : 1;
+        if (space < 0.6) return 3;
+        return 5 + Math.floor(Math.random() * 3);
     }
 
     async createAsteroidsInChunk(x, y, z) {
@@ -254,9 +246,15 @@ export default class ChunkManager {
 
             for (let i = 0; i < batchSize && created < asteroidCount; i++, created++) {
 
+                const asteroidId = `${key}_${created}`;
+
                 const offsetX = random() * CHUNK_SIZE;
                 const offsetY = random() * CHUNK_SIZE;
                 const offsetZ = random() * CHUNK_SIZE;
+
+                if (this.destroyedAsteroids.has(asteroidId)) {
+                    continue;
+                }
 
                 const position = new THREE.Vector3(
                     x * CHUNK_SIZE + offsetX,
@@ -269,6 +267,7 @@ export default class ChunkManager {
                     position,
                     random
                 });
+                asteroidData.id = asteroidId;
 
                 this.scene.add(asteroidData.mesh);
                 this.asteroids.push(asteroidData);
@@ -390,6 +389,7 @@ export default class ChunkManager {
                                 if (asteroidData.hp <= 0) {
                                     asteroidData.alive = false;
                                     asteroidData.mesh.visible = false;
+                                    this.destroyedAsteroids.add(asteroidData.id);
 
                                     onAsteroidDestroyed?.({
                                         scene,
@@ -452,6 +452,7 @@ export default class ChunkManager {
                                 if (asteroidData.hp <= 0) {
                                     asteroidData.alive = false;
                                     asteroidData.mesh.visible = false;
+                                    this.destroyedAsteroids.add(asteroidData.id);
 
                                     onAsteroidDestroyed?.({
                                         scene,
