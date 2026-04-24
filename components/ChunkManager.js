@@ -358,28 +358,48 @@ export default class ChunkManager {
             new THREE.Vector3(20, 20, 20)
         );
 
-        for (let i = this.asteroids.length - 1; i >= 0; i--) {
-            const asteroidData = this.asteroids[i];
-            if (!asteroidData.alive) continue;
+        const chunk = this.getChunkCoord(shipPosition);
+        const radius = 1; // chunk atual + vizinhos
 
-            asteroidData.box.setFromObject(asteroidData.mesh);
+        for (let x = -radius; x <= radius; x++) {
+            for (let y = -radius; y <= radius; y++) {
+                for (let z = -radius; z <= radius; z++) {
 
-            if (asteroidData.box.intersectsBox(shipBox)) {
-                if (!asteroidData.lastHit || now - asteroidData.lastHit > 500) {
-                    asteroidData.lastHit = now;
-                    asteroidData.hp -= 20;
-                    onDamage?.(15);
+                    const key = this.getChunkKey(
+                        chunk.x + x,
+                        chunk.y + y,
+                        chunk.z + z
+                    );
 
-                    if (asteroidData.hp <= 0) {
-                        asteroidData.alive = false;
-                        asteroidData.mesh.visible = false;
+                    const chunkData = this.chunks.get(key);
+                    if (!chunkData?.asteroids) continue;
 
-                        onAsteroidDestroyed?.({
-                            scene,
-                            position: asteroidData.mesh.position.clone(),
-                            normal: null,
-                            size: asteroidData.scale
-                        });
+                    for (let i = chunkData.asteroids.length - 1; i >= 0; i--) {
+                        const asteroidData = chunkData.asteroids[i];
+                        if (!asteroidData.alive) continue;
+
+                        asteroidData.box.setFromObject(asteroidData.mesh);
+
+                        if (asteroidData.box.intersectsBox(shipBox)) {
+                            if (!asteroidData.lastHit || now - asteroidData.lastHit > 500) {
+                                asteroidData.lastHit = now;
+                                asteroidData.hp -= 20;
+
+                                onDamage?.(15);
+
+                                if (asteroidData.hp <= 0) {
+                                    asteroidData.alive = false;
+                                    asteroidData.mesh.visible = false;
+
+                                    onAsteroidDestroyed?.({
+                                        scene,
+                                        position: asteroidData.mesh.position.clone(),
+                                        normal: null,
+                                        size: asteroidData.scale
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -387,41 +407,65 @@ export default class ChunkManager {
     }
 
     checkAsteroidProjectileCollisions(projectiles, scene, onProjectileHit, onAsteroidDestroyed) {
+        const radius = 1;
         for (let i = projectiles.length - 1; i >= 0; i--) {
             const projectile = projectiles[i];
             const projectileBox = new THREE.Box3().setFromObject(projectile);
 
-            for (let j = this.asteroids.length - 1; j >= 0; j--) {
-                const asteroidData = this.asteroids[j];
-                if (!asteroidData.alive) continue;
+            const chunk = this.getChunkCoord(projectile.position);
 
-                asteroidData.box.setFromObject(asteroidData.mesh);
+            let hit = false;
 
-                if (asteroidData.box.intersectsBox(projectileBox)) {
-                    asteroidData.hp -= projectile.userData.damage;
+            for (let x = -radius; x <= radius && !hit; x++) {
+                for (let y = -radius; y <= radius && !hit; y++) {
+                    for (let z = -radius; z <= radius && !hit; z++) {
 
-                    if (scene && projectile.parent) {
-                        scene.remove(projectile);
+                        const key = this.getChunkKey(
+                            chunk.x + x,
+                            chunk.y + y,
+                            chunk.z + z
+                        );
+
+                        const chunkData = this.chunks.get(key);
+                        if (!chunkData?.asteroids) continue;
+
+                        for (let j = chunkData.asteroids.length - 1; j >= 0; j--) {
+                            const asteroidData = chunkData.asteroids[j];
+                            if (!asteroidData.alive) continue;
+
+                            asteroidData.box.setFromObject(asteroidData.mesh);
+
+                            if (asteroidData.box.intersectsBox(projectileBox)) {
+
+                                asteroidData.hp -= projectile.userData.damage;
+
+                                if (scene && projectile.parent) {
+                                    scene.remove(projectile);
+                                }
+
+                                projectiles.splice(i, 1);
+
+                                if (scene) {
+                                    onProjectileHit?.(scene, projectile.position.clone());
+                                }
+
+                                if (asteroidData.hp <= 0) {
+                                    asteroidData.alive = false;
+                                    asteroidData.mesh.visible = false;
+
+                                    onAsteroidDestroyed?.({
+                                        scene,
+                                        position: asteroidData.mesh.position.clone(),
+                                        normal: projectile.userData?.direction || null,
+                                        size: asteroidData.scale
+                                    });
+                                }
+
+                                hit = true;
+                                break;
+                            }
+                        }
                     }
-                    projectiles.splice(i, 1);
-
-                    if (scene) {
-                        onProjectileHit?.(scene, projectile.position.clone());
-                    }
-
-                    if (asteroidData.hp <= 0) {
-                        asteroidData.alive = false;
-                        asteroidData.mesh.visible = false;
-
-                        onAsteroidDestroyed?.({
-                            scene,
-                            position: asteroidData.mesh.position.clone(),
-                            normal: projectile.userData?.direction || null,
-                            size: asteroidData.scale
-                        });
-                    }
-
-                    break;
                 }
             }
         }
