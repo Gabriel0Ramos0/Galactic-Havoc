@@ -20,6 +20,7 @@ export default class ChunkManager {
         this.asteroidBase = null;
         this.loadingAsteroidBase = null;
         this.destroyedAsteroids = new Set();
+        this.debugCollision = false;
         this.seed = seed ?? Math.floor(Math.random() * 999999999);
         const rng = this.createRNG(this.seed);
         this.noise3D = createNoise3D(rng);
@@ -271,6 +272,14 @@ export default class ChunkManager {
 
                 this.scene.add(asteroidData.mesh);
                 this.asteroids.push(asteroidData);
+
+                const boxHelper = new THREE.Box3Helper(asteroidData.box, 0xff0000);
+                boxHelper.visible = this.debugCollision;
+
+                this.scene.add(boxHelper);
+
+                asteroidData.debugBox = boxHelper;
+
                 chunkAsteroids.push(asteroidData);
             }
 
@@ -544,6 +553,16 @@ export default class ChunkManager {
         }
     }
 
+    setCollisionDebugVisible(visible) {
+        this.debugCollision = visible;
+
+        for (const asteroid of this.asteroids) {
+            if (asteroid.debugBox) {
+                asteroid.debugBox.visible = visible;
+            }
+        }
+    }
+
     setDebugVisible(visible) {
         this.debugVisible = visible;
 
@@ -620,6 +639,12 @@ export default class ChunkManager {
 
         if (chunkData?.asteroids && chunkData.asteroids.length > 0) {
             for (const asteroidData of chunkData.asteroids) {
+                if (asteroidData.debugBox) {
+                    this.scene.remove(asteroidData.debugBox);
+                    asteroidData.debugBox.geometry?.dispose?.();
+                    asteroidData.debugBox.material?.dispose?.();
+                }
+                
                 this.scene.remove(asteroidData.mesh);
 
                 // Limpa material e geometria

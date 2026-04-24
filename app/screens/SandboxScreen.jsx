@@ -90,6 +90,9 @@ export default function SandboxScreen() {
 
         // Chunks
         chunkManagerRef.current?.setDebugVisible(debugMode.current);
+
+        // Asteróides
+        chunkManagerRef.current?.setCollisionDebugVisible(debugMode.current);
       }
     };
 
