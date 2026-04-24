@@ -1,5 +1,6 @@
 // app/components/ChunkManager.js
 import * as THREE from "three";
+import { createNoise3D } from "simplex-noise";
 import { createAsteroid } from "@/components/Asteroids";
 
 const CHUNK_SIZE = 1000;
@@ -19,6 +20,10 @@ export default class ChunkManager {
         this.asteroidBase = null;
         this.loadingAsteroidBase = null;
         this.seed = seed ?? Math.floor(Math.random() * 999999999);
+        const rng = this.createRNG(this.seed);
+        this.noise3D = createNoise3D(rng);
+        const rng2 = this.createRNG(this.seed + 9999);
+        this.sunNoise3D = createNoise3D(rng2);
         this.spawnQueue = [];
     }
 
@@ -37,6 +42,16 @@ export default class ChunkManager {
     getChunkSeed(x, y, z) {
         const str = `${this.seed}_${x}_${y}_${z}`;
         return this.hashString(str);
+    }
+
+    getSunValue(x, y, z) {
+        const scale = 0.0002;
+
+        return this.sunNoise3D(
+            x * scale,
+            y * scale,
+            z * scale
+        );
     }
 
     createRNG(seed) {
@@ -171,52 +186,54 @@ export default class ChunkManager {
         return this.loadingAsteroidBase;
     }
 
-    countAsteroidsInNeighboringChunks(cx, cy, cz) {
-        let count = 0;
+    getDensity(x, y, z) {
+        const scale = 0.0005;
 
-        for (let dx = -1; dx <= 1; dx++) {
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dz = -1; dz <= 1; dz++) {
-                    if (dx === 0 && dy === 0 && dz === 0) continue;
+        const base = this.noise3D(
+            x * scale,
+            y * scale,
+            z * scale
+        );
 
-                    const key = this.getChunkKey(cx + dx, cy + dy, cz + dz);
-                    const chunkData = this.chunks.get(key);
+        const detail = this.noise3D(
+            x * scale * 3,
+            y * scale * 3,
+            z * scale * 3
+        ) * 0.3;
 
-                    if (chunkData?.asteroids && chunkData.asteroids.length > 0) {
-                        count += chunkData.asteroids.length;
-                    }
-                }
-            }
-        }
+        return base + detail;
+    }
 
-        return count;
+    getSpaceType(x, y, z) {
+        const scale = 0.00010;
+
+        return this.noise3D(
+            x * scale,
+            y * scale,
+            z * scale
+        );
     }
 
     calculateAsteroidCount(x, y, z) {
-        const seed = this.getChunkSeed(x, y, z);
-        const random = this.createRNG(seed);
+        const worldX = x * CHUNK_SIZE;
+        const worldY = y * CHUNK_SIZE;
+        const worldZ = z * CHUNK_SIZE;
 
-        // Verifica clusters vizinhos
-        const neighborAsteroidCount = this.countAsteroidsInNeighboringChunks(x, y, z);
+        const spaceType = this.getSpaceType(worldX, worldY, worldZ);
 
-        let chance;
-        if (neighborAsteroidCount >= 4) {
-            // Muito perto - 10% chance de 0-1
-            chance = random();
-            return chance < 0.1 ? Math.floor(random() * 2) : 0;
-        } else if (neighborAsteroidCount >= 1) {
-            // Perto - 30% chance de 1-3
-            chance = random();
-            return chance < 0.3 ? Math.floor(random() * 3) + 1 : 0;
-        } else {
-            // Sem vizinhos - 60% chance de 0-4
-            chance = random();
-            if (chance < 0.15) return 0;
-            if (chance < 0.45) return 1; // 30% prob
-            if (chance < 0.70) return 2; // 25% prob
-            if (chance < 0.88) return 3; // 18% prob
-            return 4; // 12% prob
-        }
+        // região vazia
+        if (spaceType < -0.3) return 0;
+
+        // região leve
+        if (spaceType < 0.0) return 1;
+
+        // região média
+        if (spaceType < 0.4) return 2;
+
+        // região densa
+        if (spaceType < 0.6) return 4;
+
+        return 6;
     }
 
     async createAsteroidsInChunk(x, y, z) {
@@ -276,8 +293,33 @@ export default class ChunkManager {
         const seed = this.getChunkSeed(x, y, z);
         const random = this.createRNG(seed);
 
-        // CHANCE DE SPAWN
-        if (random() > 0.005) return; // 0.5%
+        // Região Fixa
+        const gridSize = 2;
+
+        const gx = Math.floor(x / gridSize);
+        const gy = Math.floor(y / gridSize);
+        const gz = Math.floor(z / gridSize);
+
+        const regionSeed = this.hashString(`${this.seed}_${gx}_${gy}_${gz}`);
+        const regionRng = this.createRNG(regionSeed);
+
+        const chosenX = Math.floor(regionRng() * gridSize);
+        const chosenY = Math.floor(regionRng() * gridSize);
+        const chosenZ = Math.floor(regionRng() * gridSize);
+
+        if (
+            x % gridSize !== chosenX ||
+            y % gridSize !== chosenY ||
+            z % gridSize !== chosenZ
+        ) return;
+
+        const value = this.getSunValue(
+            x * CHUNK_SIZE,
+            y * CHUNK_SIZE,
+            z * CHUNK_SIZE
+        );
+
+        if (value < 0.6) return;
 
         const textures = await this.loadSunTextures();
 
@@ -290,8 +332,6 @@ export default class ChunkManager {
             y * CHUNK_SIZE + offsetY,
             z * CHUNK_SIZE + offsetZ
         );
-
-        if (this.isTooCloseToOtherSuns(position)) return;
 
         const { createSun } = await import("@/components/Sun");
 
