@@ -107,14 +107,16 @@ export default function useMovement(shipRef, { controlsRef }) {
                 isTurning = true;
             }
 
-            if (keys.current.ArrowUp) {
-                inputDir.y += 1;
-                isTurning = true;
-            }
+            if (controlsRef.current.movementVertical) {
+                if (keys.current.ArrowUp) {
+                    inputDir.y += 1;
+                    isTurning = true;
+                }
 
-            if (keys.current.ArrowDown) {
-                inputDir.y -= 1;
-                isTurning = true;
+                if (keys.current.ArrowDown) {
+                    inputDir.y -= 1;
+                    isTurning = true;
+                }
             }
         }
 

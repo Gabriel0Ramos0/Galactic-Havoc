@@ -46,6 +46,7 @@ export default function SandboxScreen() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [controls, setControls] = useState({
     movement: false,
+    movementVertical: false,
     boost: false,
     shooting: false,
     inspect: false,
@@ -126,6 +127,7 @@ export default function SandboxScreen() {
   useEffect(() => {
     setControls({
       movement: tutorialStep >= 4,
+      movementVertical: tutorialStep >= 5,
       boost: tutorialStep >= 6,
       inspect: tutorialStep >= 9,
       inventory: tutorialStep >= 10,
