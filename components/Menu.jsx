@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Animated } from "react-native";
 
-export default function Menu({ onStart, onConfig, onCredits, onHistory, onExit, onLogin }) {
+export default function Menu({ onStart, hasSession, onConfig, onCredits, onHistory, onExit, onLogin }) {
   // Animação do título
   const titleAnim = useRef(new Animated.Value(0)).current;
   const [open, setOpen] = useState(false);
@@ -68,9 +68,21 @@ export default function Menu({ onStart, onConfig, onCredits, onHistory, onExit, 
       {/* Botões centrais */}
       <View style={styles.buttonContainer}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.button} onPress={() => onStart(seed)}>
-            <Text style={styles.buttonText}>Iniciar</Text>
-          </TouchableOpacity>
+          {hasSession ? (
+            <>
+              <TouchableOpacity style={styles.button} onPress={() => onStart({ mode: "continue" })}>
+                <Text style={styles.buttonText}>Continuar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.button} onPress={() => onStart({ mode: "new", seed })}>
+                <Text style={styles.buttonText}>Novo Jogo</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={styles.button} onPress={() => onStart({ mode: "new", seed })}>
+              <Text style={styles.buttonText}>Iniciar</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.button} onPress={onConfig}>
             <Text style={styles.buttonText}>Configurações</Text>

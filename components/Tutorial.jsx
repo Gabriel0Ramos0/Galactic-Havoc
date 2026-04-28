@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 import { View } from "react-native";
 import MessageBox from "@/components/MessageBox";
 
-export default function Tutorial({ onComplete, onStepChange }) {
-    const [step, setStep] = useState(0);
+export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) {
+    const [step, setStep] = useState(initialStep);
 
     const steps = [
         "",

@@ -25,6 +25,13 @@ import CutsceneScreen from "@/components/CutsceneScreen";
 import History from "@/components/History";
 import createBlueMarker from "@/components/BlueMarker";
 
+// Game State Constants
+const GameState = {
+  MENU: "menu",
+  PLAYING: "playing",
+  PAUSED: "paused",
+};
+
 export default function SandboxScreen() {
   const glRef = useRef();
   const cameraRef = useRef();
@@ -68,16 +75,29 @@ export default function SandboxScreen() {
   const [configVisible, setConfigVisible] = useState(false);
   const [cutsceneVisible, setCutsceneVisible] = useState(true);
   const [historyVisible, setHistoryVisible] = useState(false);
-  const [inGame, setInGame] = useState(false);
+  const [gameState, setGameState] = useState(GameState.MENU);
+  const gameStateRef = useRef(gameState);
+  const [hasSession, setHasSession] = useState(false);
   const rafRef = useRef(null);
   const [tutorialStep, setTutorialStep] = useState(0);
 
-  // Controla a música do menu
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (menuVisible && audioUnlocked.current) {
       transitionToTrack(0);
     }
   }, [menuVisible]);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -120,7 +140,7 @@ export default function SandboxScreen() {
   const criticalRecoveryTriggeredRef = useRef(false);
 
   useEffect(() => {
-    if (!inGame || isTransitioning) return;
+    if (gameState !== GameState.PLAYING || isTransitioning) return;
 
     // entrou em crítico
     if (energy <= 0 && !isCritical) {
@@ -151,7 +171,7 @@ export default function SandboxScreen() {
   }, [canControl]);
 
   useEffect(() => {
-    if (!inGame) return;
+    if (gameState !== GameState.PLAYING) return;
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -172,7 +192,7 @@ export default function SandboxScreen() {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [inGame]);
+  }, [gameState]);
 
   useEffect(() => {
     if (tutorialStep === 8 && sceneRef.current && !blueMarkerRef.current) {
@@ -193,7 +213,7 @@ export default function SandboxScreen() {
   }, []);
 
   useEffect(() => {
-    if (!inGame) return;
+    if (gameState !== GameState.PLAYING) return;
 
     switch (tutorialStep) {
       case 1:
@@ -235,7 +255,7 @@ export default function SandboxScreen() {
       default:
         break;
     }
-  }, [tutorialStep, inGame]);
+  }, [tutorialStep, gameState]);
 
   const sceneRef = useRef(null);
   const blueMarkerRef = useRef(null);
@@ -277,13 +297,12 @@ export default function SandboxScreen() {
 
     // Câmera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 6000);
+    camera.position.set(0, 10, 15);
     cameraRef.current = camera;
 
     // Nave
     const ship = await createShip(scene);
     shipRef.current = ship;
-
-    // Inicializa userData para rastrear propriedades da nave
     ship.userData.velocity = new THREE.Vector3();
 
     // Efeito de Propulsão
@@ -342,7 +361,8 @@ export default function SandboxScreen() {
       rafRef.current = requestAnimationFrame(animate);
       const dt = clock.getDelta();
 
-      if (!inGame) {
+      if (gameStateRef.current === GameState.PLAYING) {
+
         updateShip();
         updateCamera();
         updateProjectiles(dt);
@@ -441,22 +461,30 @@ export default function SandboxScreen() {
           } catch { }
         }
       }
-      setGlReady(true);
+      if (!glReady) {
+        setGlReady(true);
+      }
 
       renderer.render(scene, camera);
       gl.endFrameEXP();
     };
     animate();
 
-    glRef.current = glRef.current || {};
+    // Cleanup ao desmontar ou quando necessário
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
   };
 
   // Handlers para cutscene fim / pular
   const handleCutsceneFinish = async () => {
     transitionRef.current.start(async () => {
       setCutsceneVisible(false);
+      setPaused(true);
+      setGameState(GameState.MENU);
       setMenuVisible(true);
-      setInGame(false);
     });
   };
 
@@ -477,37 +505,58 @@ export default function SandboxScreen() {
       {/* MENU */}
       {!cutsceneVisible && menuVisible && (
         <Menu
-          onStart={async (seedFromMenu) => {
-            resetMovementState();
-            setPaused(false);
-            if (blueMarkerRef.current) {
-              try {
-                blueMarkerRef.current?.remove();
-              } catch (err) { }
-              blueMarkerRef.current = null;
-              setMarkerCoords(null);
-            }
-            const seed = seedFromMenu?.trim()
-              ? seedFromMenu
-              : Math.floor(Math.random() * 999999999).toString();
+          onStart={async ({ mode, seed }) => {
 
-            setWorldSeed(seed);
-
-            if (chunkManagerRef.current) {
-              chunkManagerRef.current.dispose();
-            }
-
-            if (sceneRef.current) {
-              chunkManagerRef.current = new ChunkManager(sceneRef.current, seed);
-            }
-
-            // console.log("Seed do universo:", seed);
-            await transitionRef.current.start(async () => {
+            if (mode === "continue") {
+              setPaused(false);
+              setGameState(GameState.PLAYING);
               setMenuVisible(false);
-              setInGame(true);
-              await transitionToTrack(2);
-            });
+              return;
+            }
+            if (mode === "new") {
+              resetMovementState();
+              setPaused(false);
+              setEnergy(0);
+              setShipHP(maxHP);
+              setIsCritical(false);
+              setIsRecharging(false);
+              criticalRecoveryTriggeredRef.current = false;
+              setTutorialStep(0);
+              setIsTransitioning(true);
+
+              if (blueMarkerRef.current) {
+                try {
+                  blueMarkerRef.current?.remove();
+                } catch (err) { }
+                blueMarkerRef.current = null;
+                setMarkerCoords(null);
+              }
+
+              const finalSeed = seed?.trim()
+                ? seed
+                : Math.floor(Math.random() * 999999999).toString();
+
+              setWorldSeed(finalSeed);
+
+              if (chunkManagerRef.current) {
+                chunkManagerRef.current.dispose();
+              }
+
+              if (sceneRef.current) {
+                chunkManagerRef.current = new ChunkManager(sceneRef.current, finalSeed);
+              }
+
+              setHasSession(true);
+
+              await transitionRef.current.start(async () => {
+                setMenuVisible(false);
+                setGameState(GameState.PLAYING);
+                await transitionToTrack(2);
+                setIsTransitioning(false);
+              });
+            }
           }}
+          hasSession={hasSession}
           onConfig={() => setConfigVisible(true)}
           onHistory={() => setHistoryVisible(true)}
           onCredits={() => console.log("Mostrar Créditos")}
@@ -522,15 +571,15 @@ export default function SandboxScreen() {
           position: "absolute",
           width: "100%",
           height: "100%",
-          opacity: (!cutsceneVisible && !menuVisible && inGame) ? 1 : 0,
-          pointerEvents: (!cutsceneVisible && !menuVisible && inGame) ? "auto" : "none",
+          opacity: gameState === GameState.PLAYING ? 1 : 0,
+          pointerEvents: gameState === GameState.PLAYING ? "auto" : "none",
         }}
         onContextCreate={onContextCreate}
         ref={glRef}
       />
 
       {/* JOGO (GLView + HUD) */}
-      {!cutsceneVisible && !menuVisible && inGame && (
+      {!cutsceneVisible && !menuVisible && gameState === GameState.PLAYING && (
         <>
           <Hud
             shipHP={shipHP}
@@ -542,30 +591,17 @@ export default function SandboxScreen() {
             speed={speedship}
             onMenuPress={async () => {
               setPaused(true);
-              resetMovementState();
-              setEnergy(0);
-              setShipHP(maxHP);
-              setIsCritical(false);
-              setIsRecharging(false);
-              criticalRecoveryTriggeredRef.current = false;
-              setTutorialStep(0);
-              if (blueMarkerRef.current) {
-                try {
-                  blueMarkerRef.current?.remove();
-                } catch (err) { }
-                blueMarkerRef.current = null;
-                setMarkerCoords(null);
-              }
               setIsTransitioning(true);
 
               transitionRef.current.start(async () => {
-                setInGame(false);
                 setMenuVisible(true);
+                setGameState(GameState.MENU);
                 await transitionToTrack(0);
                 setIsTransitioning(false);
               });
             }}
             setTutorialStep={setTutorialStep}
+            initialTutorialStep={tutorialStep}
             markerCoords={markerCoords}
           />
           {Platform.OS !== "web" && (

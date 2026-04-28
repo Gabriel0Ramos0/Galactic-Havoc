@@ -3,7 +3,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Tutorial from "@/components/Tutorial";
 
-export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, markerCoords = null }) {
+export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, initialTutorialStep = 0, markerCoords = null }) {
   const hpPercent = (shipHP / maxHP) * 100;
   return (
     <>
@@ -43,8 +43,9 @@ export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, s
             )}
           </View>
           <Tutorial
-            onComplete={() => {}}
+            onComplete={() => { }}
             onStepChange={(s) => setTutorialStep(s)}
+            initialStep={initialTutorialStep}
           />
         </View>
 
