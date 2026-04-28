@@ -67,7 +67,7 @@ export default function SandboxScreen() {
   const [isRecharging, setIsRecharging] = useState(false);
   const [isCritical, setIsCritical] = useState(false);
   const [canControl, setCanControl] = useState(true);
-  const [currentScore] = useState(0);
+  const [currentScore, setCurrentScore] = useState(0);
   const [coords, setCoords] = useState({ x: 0, y: 0, z: 0 });
   const [markerCoords, setMarkerCoords] = useState(null);
   const hudTimerRef = useRef(0);
@@ -428,6 +428,7 @@ export default function SandboxScreen() {
               const effect = spawnAsteroidDestruction(scene, position, normal, size);
               effectsRef.current.push(effect);
               playSfx("explosion");
+              setCurrentScore(prev => prev + 10);
             }
           );
         }
@@ -441,6 +442,7 @@ export default function SandboxScreen() {
               const effect = spawnAsteroidDestruction(scene, position, normal, size);
               effectsRef.current.push(effect);
               playSfx("explosion");
+              setCurrentScore(prev => prev + 10);
             }
           );
         }
