@@ -1,10 +1,28 @@
 // app/components/Hud.jsx
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Tutorial from "@/components/Tutorial";
+import FloatingScoreBalloon from "@/components/effects/FloatingScoreBalloon";
 
 export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, initialTutorialStep = 0, markerCoords = null }) {
   const hpPercent = (shipHP / maxHP) * 100;
+  const [floatingBalloons, setFloatingBalloons] = useState([]);
+  const prevScoreRef = useRef(0);
+  const balloonIdRef = useRef(0);
+
+  useEffect(() => {
+    if (score > prevScoreRef.current) {
+      const scoreGain = score - prevScoreRef.current;
+      const balloonId = balloonIdRef.current++;
+
+      setFloatingBalloons(prev => [...prev, { id: balloonId, amount: scoreGain }]);
+    }
+    prevScoreRef.current = score;
+  }, [score]);
+
+  const handleBalloonComplete = (id) => {
+    setFloatingBalloons(prev => prev.filter(balloon => balloon.id !== id));
+  };
   return (
     <>
       <View style={styles.container}>
@@ -53,6 +71,17 @@ export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, s
         <View style={styles.centerPanelAbsolute}>
           <Text style={styles.panelTitle}>SCORE</Text>
           <Text style={styles.score}>{score}</Text>
+
+          {/* Container para balões flutuantes */}
+          <View style={styles.balloonsContainer}>
+            {floatingBalloons.map(balloon => (
+              <FloatingScoreBalloon
+                key={balloon.id}
+                amount={balloon.amount}
+                onComplete={() => handleBalloonComplete(balloon.id)}
+              />
+            ))}
+          </View>
         </View>
 
         {/* Coluna direita: Menu */}
@@ -301,5 +330,14 @@ const styles = StyleSheet.create({
     boxshadowColor: "#00ffff",
     boxshadowOpacity: 0.9,
     boxshadowRadius: 12,
+  },
+
+  balloonsContainer: {
+    position: "absolute",
+    top: 50,
+    left: -50,
+    width: 100,
+    height: 200,
+    alignItems: "center",
   },
 });
