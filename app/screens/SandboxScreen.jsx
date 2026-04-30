@@ -281,12 +281,16 @@ export default function SandboxScreen() {
     blueMarkerRef,
     controls,
     gameState,
+    lootPanelOpen,
     onNearbyChange: (isNearby) => {
       setIsNearbyInteraction(isNearby);
     },
     onInspect: () => { },
     onOpenLootPanel: () => {
       setLootPanelOpen(true);
+    },
+    onCloseLootPanel: () => {
+      setLootPanelOpen(false);
     },
   });
 

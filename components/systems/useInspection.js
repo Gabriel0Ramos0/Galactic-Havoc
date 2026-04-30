@@ -5,8 +5,10 @@ export default function useInspection({
     blueMarkerRef,
     controls,
     gameState,
+    lootPanelOpen = false,
     onNearbyChange = () => { },
     onOpenLootPanel = () => { },
+    onCloseLootPanel = () => { },
 }) {
     const inspectionStateRef = useRef({
         isNearby: false,
@@ -23,6 +25,10 @@ export default function useInspection({
                 inspectionStateRef.current.canInspect = false;
                 onNearbyChange(false);
             }
+            // Fechar o painel de loot quando o marcador desaparecer
+            if (lootPanelOpen) {
+                onCloseLootPanel();
+            }
             return;
         }
 
@@ -38,11 +44,14 @@ export default function useInspection({
             if (wasNearby !== inspectionStateRef.current.isNearby) {
                 onNearbyChange(inspectionStateRef.current.isNearby);
             }
+            if (wasNearby && !inspectionStateRef.current.isNearby && lootPanelOpen) {
+                onCloseLootPanel();
+            }
         };
 
         const interval = setInterval(checkProximity, 100);
         return () => clearInterval(interval);
-    }, [blueMarkerRef, shipRef, controls, onNearbyChange]);
+    }, [blueMarkerRef, shipRef, controls, onNearbyChange, lootPanelOpen, onCloseLootPanel]);
 
     useEffect(() => {
         if (gameState !== "playing") return;
@@ -50,7 +59,12 @@ export default function useInspection({
         const handleInspectionKey = (e) => {
             if ((e.key === "i" || e.key === "I") && inspectionStateRef.current.canInspect) {
                 e.preventDefault();
-                onOpenLootPanel();
+                
+                if (lootPanelOpen) {
+                    onCloseLootPanel();
+                } else {
+                    onOpenLootPanel();
+                }
             }
         };
 
@@ -59,7 +73,7 @@ export default function useInspection({
         return () => {
             window.removeEventListener("keydown", handleInspectionKey);
         };
-    }, [gameState, onOpenLootPanel]);
+    }, [gameState, lootPanelOpen, onOpenLootPanel, onCloseLootPanel]);
 
     return {
         isNearby: inspectionStateRef.current.isNearby,

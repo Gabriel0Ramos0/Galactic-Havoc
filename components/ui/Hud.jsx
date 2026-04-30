@@ -140,7 +140,7 @@ export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, s
       {/* Interação */}
       {isNearbyInteraction && (
         <View style={styles.interactionModule}>
-          <Text style={styles.interactionText}>[ i ] INTERAGIR</Text>
+          <Text style={styles.interactionText}>[ i ] INSPECIONAR</Text>
         </View>
       )}
       <LootPanel
@@ -355,8 +355,8 @@ const styles = StyleSheet.create({
 
   interactionModule: {
     position: "absolute",
-    bottom: 140,
-    left: "50%",
+    top: 100,
+    left: "70%",
     transform: [{ translateX: -70 }],
     backgroundColor: "rgba(5,20,30,0.95)",
     padding: 12,
