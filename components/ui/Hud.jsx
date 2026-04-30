@@ -1,9 +1,9 @@
 // app/components/Hud.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import Tutorial from "@/components/Tutorial";
-import FloatingScoreBalloon from "@/components/effects/FloatingScoreBalloon";
-import LootPanel from "@/components/LootPanel";
+import Tutorial from "@/components/ui/Tutorial";
+import FloatingScoreBalloon from "@/components/ui/FloatingScoreBalloon";
+import LootPanel from "@/components/ui/LootPanel";
 
 export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, initialTutorialStep = 0, markerCoords = null, lootItems = [], lootPanelOpen = false, onLootPanelClose = () => { }, isNearbyInteraction = false }) {
   const hpPercent = (shipHP / maxHP) * 100;

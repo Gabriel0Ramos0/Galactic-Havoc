@@ -1,7 +1,7 @@
 // app/components/Tutorial.jsx
 import React, { useState, useEffect } from "react";
 import { View } from "react-native";
-import MessageBox from "@/components/MessageBox";
+import MessageBox from "@/components/ui/MessageBox";
 
 export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) {
     const [step, setStep] = useState(initialStep);

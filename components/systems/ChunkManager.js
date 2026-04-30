@@ -1,7 +1,7 @@
 // app/components/ChunkManager.js
 import * as THREE from "three";
 import { createNoise3D } from "simplex-noise";
-import { createAsteroid } from "@/components/Asteroids";
+import { createAsteroid } from "@/components/systems/Asteroids";
 
 const CHUNK_SIZE = 1000;
 const VIEW_DISTANCE = 5500;
@@ -341,7 +341,7 @@ export default class ChunkManager {
             z * CHUNK_SIZE + offsetZ
         );
 
-        const { createSun } = await import("@/components/Sun");
+        const { createSun } = await import("@/components/systems/Sun");
 
         const sun = createSun({
             position,

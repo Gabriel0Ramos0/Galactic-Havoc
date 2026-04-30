@@ -6,25 +6,25 @@ import { Renderer } from "expo-three";
 import * as THREE from "three";
 import styles from "./style";
 
-import Hud from "@/components/Hud";
+import Hud from "@/components/ui/Hud";
 import useCameraController from "@/components/controllers/CameraController";
 import { transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/components/controllers/AudioController";
-import ChunkManager from "@/components/ChunkManager";
-import createStars from "@/components/Star";
+import ChunkManager from "@/components/systems/ChunkManager";
+import createStars from "@/components/systems/Star";
 import spawnAsteroidDestruction from "@/components/effects/AsteroidDestruction";
-import { createShip } from "@/components/Nave";
-import useProjectiles from "@/components/Projectiles";
-import useMovement from "@/components/Moviment";
-import Joystick from "@/components/Joystick";
-import Menu from "@/components/Menu";
-import Config from "@/components/Config";
+import { createShip } from "@/components/entities/Nave";
+import useProjectiles from "@/components/systems/Projectiles";
+import useMovement from "@/components/controllers/MovimentController";
+import Joystick from "@/components/controllers/JoystickController";
+import Menu from "@/components/ui/Menu";
+import Config from "@/components/ui/Config";
 import TransitionController from "@/components/controllers/TransitionController";
 import { setupShipLighting, animateShipStartup, animateShipShutdown } from "@/components/effects/lighting";
 import { createThrusterEffect } from "@/components/effects/Thrusters";
-import CutsceneScreen from "@/components/CutsceneScreen";
-import History from "@/components/History";
-import createBlueMarker from "@/components/BlueMarker";
-import useInspection from "@/components/useInspection";
+import CutsceneScreen from "@/components/ui/CutsceneScreen";
+import History from "@/components/ui/History";
+import createBlueMarker from "@/components/systems/BlueMarker";
+import useInspection from "@/components/systems/useInspection";
 
 // Game State Constants
 const GameState = {

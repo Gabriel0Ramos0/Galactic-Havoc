@@ -10,8 +10,8 @@ import {
   TextInput,
   Pressable,
 } from "react-native";
-import * as registros from "@/registros";
-import * as mensagens from "@/messages";
+import * as registros from "@/components/data/registros";
+import * as mensagens from "@/components/data/messages";
 
 export default function History({ visible, onClose }) {
   const scrollRef = useRef();

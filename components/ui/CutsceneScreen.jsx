@@ -32,7 +32,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const glow = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
 
-  const player = useVideoPlayer(require("../assets/videos/intro.mp4"));
+  const player = useVideoPlayer(require("../../assets/videos/intro.mp4"));
   const hasStartedVideo = useRef(false);
   const hasEnded = useRef(false);
 
