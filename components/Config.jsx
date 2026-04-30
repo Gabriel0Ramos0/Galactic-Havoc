@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet, FlatList, TextInput, ScrollView } from "react-native";
 import Slider from "@react-native-community/slider";
-import { getPlaylist, playTrack, getCurrentTrackIndex, setMusicVolume, getMusicVolume } from "@/components/AudioController";
+import { getPlaylist, playTrack, getCurrentTrackIndex, setMusicVolume, getMusicVolume } from "@/components/controllers/AudioController";
 
 export default function Config({ visible, onClose }) {
   const [activeTab, setActiveTab] = useState("audio");

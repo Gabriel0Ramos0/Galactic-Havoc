@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { playSfx } from "@/components/AudioController";
+import { playSfx } from "@/components/controllers/AudioController";
 import { OBJLoader, MTLLoader } from "three-stdlib";
 
 export default async function createBlueMarker({

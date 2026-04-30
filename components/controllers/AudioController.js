@@ -9,37 +9,37 @@ const playlist = [
   {
     id: 1,
     name: "Science",
-    file: require("../assets/sounds/science.mp3"),
+    file: require("../../assets/sounds/science.mp3"),
   },
   {
     id: 2,
     name: "Lost",
-    file: require("../assets/sounds/Background.mp3"),
+    file: require("../../assets/sounds/Background.mp3"),
   },
   {
     id: 3,
     name: "Space Intro",
-    file: require("../assets/sounds/SpaceIntro.mp3"),
+    file: require("../../assets/sounds/SpaceIntro.mp3"),
   },
   {
     id: 4,
     name: "Stellar",
-    file: require("../assets/sounds/stellar.mp3"),
+    file: require("../../assets/sounds/stellar.mp3"),
   },
   {
     id: 5,
     name: "Rizzlas C18",
-    file: require("../assets/sounds/rizzlas-c18.mp3"),
+    file: require("../../assets/sounds/rizzlas-c18.mp3"),
   },
   {
     id: 6,
     name: "Introfy",
-    file: require("../assets/sounds/emocao.mp3"),
+    file: require("../../assets/sounds/emocao.mp3"),
   },
   {
     id: 7,
     name: "Journey",
-    file: require("../assets/sounds/journey.mp3"),
+    file: require("../../assets/sounds/journey.mp3"),
   },
 ];
 
@@ -210,13 +210,13 @@ export async function loadSfx() {
     return sound;
   };
 
-  sfx.tutorial_intro = create(require("../assets/sounds/tutorial_intro.mp3"));
-  sfx.tutorial_alert = create(require("../assets/sounds/tutorial_alert.mp3"));
-  sfx.tutorial_marker = create(require("../assets/sounds/tutorial_marker.mp3"));
-  sfx.tutorial_combat = create(require("../assets/sounds/tutorial_combat.mp3"));
-  sfx.fire = create(require("../assets/sounds/fire.mp3"));
-  sfx.explosion = create(require("../assets/sounds/explosionast.mp3"));
-  sfx.marker_ping = create(require("../assets/sounds/marker_ping.mp3"));
+  sfx.tutorial_intro = create(require("../../assets/sounds/tutorial_intro.mp3"));
+  sfx.tutorial_alert = create(require("../../assets/sounds/tutorial_alert.mp3"));
+  sfx.tutorial_marker = create(require("../../assets/sounds/tutorial_marker.mp3"));
+  sfx.tutorial_combat = create(require("../../assets/sounds/tutorial_combat.mp3"));
+  sfx.fire = create(require("../../assets/sounds/fire.mp3"));
+  sfx.explosion = create(require("../../assets/sounds/explosionast.mp3"));
+  sfx.marker_ping = create(require("../../assets/sounds/marker_ping.mp3"));
 
   sfxLoaded = true;
 }
