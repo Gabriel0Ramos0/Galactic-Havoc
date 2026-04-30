@@ -24,6 +24,7 @@ import { createThrusterEffect } from "@/components/effects/Thrusters";
 import CutsceneScreen from "@/components/CutsceneScreen";
 import History from "@/components/History";
 import createBlueMarker from "@/components/BlueMarker";
+import useInspection from "@/components/useInspection";
 
 // Game State Constants
 const GameState = {
@@ -81,6 +82,17 @@ export default function SandboxScreen() {
   const [hasSession, setHasSession] = useState(false);
   const rafRef = useRef(null);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [lootPanelOpen, setLootPanelOpen] = useState(false);
+  const [lootItems, setLootItems] = useState([]);
+  const [isNearbyInteraction, setIsNearbyInteraction] = useState(false);
+
+  const addLootItem = (item) => {
+    setLootItems(prev => [...prev, item]);
+  };
+
+  const clearLootItems = () => {
+    setLootItems([]);
+  };
 
   useEffect(() => {
     return () => {
@@ -101,7 +113,7 @@ export default function SandboxScreen() {
   }, [gameState]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleDebugKey = (e) => {
       if (e.key === "-") {
         debugMode.current = !debugMode.current;
 
@@ -117,10 +129,10 @@ export default function SandboxScreen() {
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleDebugKey);
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleDebugKey);
     };
   }, []);
 
@@ -263,6 +275,21 @@ export default function SandboxScreen() {
   const blueMarkerRef = useRef(null);
   const shipLightsRef = useRef(null);
   const thrusterEffectRef = useRef(null);
+
+  useInspection({
+    shipRef,
+    blueMarkerRef,
+    controls,
+    gameState,
+    onNearbyChange: (isNearby) => {
+      setIsNearbyInteraction(isNearby);
+    },
+    onInspect: () => { },
+    onOpenLootPanel: () => {
+      setLootPanelOpen(true);
+    },
+  });
+
   const { updateProjectiles, projectiles, spawnProjectileParticles } = useProjectiles(shipRef, sceneRef, {
     energy,
     canControlRef,
@@ -607,6 +634,10 @@ export default function SandboxScreen() {
             setTutorialStep={setTutorialStep}
             initialTutorialStep={tutorialStep}
             markerCoords={markerCoords}
+            lootItems={lootItems}
+            lootPanelOpen={lootPanelOpen}
+            onLootPanelClose={() => setLootPanelOpen(false)}
+            isNearbyInteraction={isNearbyInteraction}
           />
           {Platform.OS !== "web" && (
             <Joystick

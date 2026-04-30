@@ -36,7 +36,7 @@ export default async function createBlueMarker({
 
     ctx.fillStyle = "#bfeeff";
     ctx.font = "22px monospace";
-    ctx.fillText("Nave Zefira", 16, 36);
+    ctx.fillText("Módulo de Defesa", 16, 36);
 
     const sprite = new THREE.Sprite(
         new THREE.SpriteMaterial({

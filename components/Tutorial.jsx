@@ -16,7 +16,7 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
         "Perfeito. Ative o BOOST! Segure W e pressione SHIFT.",
         "Um sinal desconhecido foi detectado… analisando origem. Aguarde um momento.",
         "Aproximando-se do ponto de energia. Vá até o objeto para identificá-lo.",
-        "É uma nave abandonada… use I para inspecionar.",
+        "É um módulo de defesa… use I para inspecionar.",
         "Suprimentos encontrados. Abra a Interface da Nave com TAB para equipar os módulos de disparo.",
         "Atenção… três naves piratas estão se aproximando!",
         "Prepare o sistema de armas. Pressione ESPAÇO para disparar.",
@@ -89,12 +89,18 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
 
         let up = false;
         let down = false;
+        let advanced = false;
 
         const handleKey = (e) => {
+            if (advanced) return;
+
             if (e.key === "ArrowUp") up = true;
             if (e.key === "ArrowDown") down = true;
 
-            if (up && down) setStep(6);
+            if (up && down) {
+                advanced = true;
+                setStep(6);
+            }
         };
 
         window.addEventListener("keydown", handleKey);
@@ -105,8 +111,13 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
     useEffect(() => {
         if (step !== 6) return;
 
+        let advanced = false;
+
         const handleKey = (e) => {
+            if (advanced) return;
+
             if (e.key === "Shift") {
+                advanced = true;
                 setStep(7);
             }
         };
@@ -139,8 +150,13 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
     useEffect(() => {
         if (step !== 9) return;
 
+        let advanced = false;
+
         const handleKey = (e) => {
+            if (advanced) return;
+
             if (e.key.toLowerCase() === "i") {
+                advanced = true;
                 setStep(10);
             }
         };
@@ -153,8 +169,13 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
     useEffect(() => {
         if (step !== 10) return;
 
+        let advanced = false;
+
         const handleKey = (e) => {
+            if (advanced) return;
+
             if (e.key === "Tab") {
+                advanced = true;
                 e.preventDefault();
                 setStep(11);
             }
@@ -175,9 +196,12 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
     // STEP 12 → SPACE
     useEffect(() => {
         if (step !== 12) return;
+        let advanced = false;
 
         const handleKey = (e) => {
+            if (advanced) return;
             if (e.code === "Space") {
+                advanced = true;
                 setStep(13);
             }
         };

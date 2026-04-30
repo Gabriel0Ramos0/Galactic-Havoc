@@ -3,8 +3,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Tutorial from "@/components/Tutorial";
 import FloatingScoreBalloon from "@/components/effects/FloatingScoreBalloon";
+import LootPanel from "@/components/LootPanel";
 
-export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, initialTutorialStep = 0, markerCoords = null }) {
+export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, score = 0, coords = { x: 0, y: 0, z: 0 }, speed = 0, onMenuPress, setTutorialStep, initialTutorialStep = 0, markerCoords = null, lootItems = [], lootPanelOpen = false, onLootPanelClose = () => { }, isNearbyInteraction = false }) {
   const hpPercent = (shipHP / maxHP) * 100;
   const [floatingBalloons, setFloatingBalloons] = useState([]);
   const prevScoreRef = useRef(0);
@@ -136,6 +137,17 @@ export default function Hud({ shipHP, maxHP = 500, energy = 100, isRecharging, s
           </View>
         </View>
       </View>
+      {/* Interação */}
+      {isNearbyInteraction && (
+        <View style={styles.interactionModule}>
+          <Text style={styles.interactionText}>[ i ] INTERAGIR</Text>
+        </View>
+      )}
+      <LootPanel
+        isOpen={lootPanelOpen}
+        lootItems={lootItems}
+        onClose={onLootPanelClose}
+      />
     </>
   );
 }
@@ -339,5 +351,26 @@ const styles = StyleSheet.create({
     width: 100,
     height: 200,
     alignItems: "center",
+  },
+
+  interactionModule: {
+    position: "absolute",
+    bottom: 140,
+    left: "50%",
+    transform: [{ translateX: -70 }],
+    backgroundColor: "rgba(5,20,30,0.95)",
+    padding: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "rgba(100,255,200,0.6)",
+    alignItems: "center",
+  },
+
+  interactionText: {
+    fontSize: 14,
+    color: "#64ffda",
+    fontWeight: "bold",
+    fontFamily: "monospace",
+    letterSpacing: 1,
   },
 });
