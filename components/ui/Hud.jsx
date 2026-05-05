@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   interactionModule: {
     position: "absolute",
     top: 100,
-    left: "70%",
+    left: "60%",
     transform: [{ translateX: -70 }],
     backgroundColor: "rgba(5,20,30,0.95)",
     padding: 12,

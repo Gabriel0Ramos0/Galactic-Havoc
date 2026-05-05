@@ -138,33 +138,61 @@ export default function LootPanel({
                 />
 
                 <View style={styles.innerContent}>
-                    <Text style={styles.title}>LOOT</Text>
+                    <Text style={styles.title}>ANÁLISE DE DESTROÇOS</Text>
 
-                    {lootItems && lootItems.length > 0 ? (
-                        <ScrollView
-                            style={styles.itemsScroll}
-                            scrollEnabled={lootItems.length > 4}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            {lootItems.map((item, index) => (
+                    <View style={styles.shipScanArea}>
+                        <View style={styles.scanPlaceholder}>
+                            <Text style={styles.scanText}>IMAGEM DA NAVE</Text>
+                        </View>
+
+                        <View style={styles.slotOverlay}>
+                            <View style={[styles.slot, styles.slotRare]}>
+                                <Text style={styles.slotLabel}>ARM</Text>
+                            </View>
+
+                            <View style={[styles.slot, styles.slotBroken]}>
+                                <Text style={styles.slotLabel}>ENG</Text>
+                            </View>
+
+                            <View style={[styles.slot, styles.slotEpic]}>
+                                <Text style={styles.slotLabel}>CORE</Text>
+                            </View>
+
+                            <View style={[styles.slot, styles.slotDamaged]}>
+                                <Text style={styles.slotLabel}>SHD</Text>
+                            </View>
+
+                            <View style={[styles.slot, styles.slotRecoverable]}>
+                                <Text style={styles.slotLabel}>AUX</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={styles.salvageBox}>
+                        <Text style={styles.sectionTitle}>COMPONENTES RESIDUAIS</Text>
+
+                        {lootItems?.length > 0 ? (
+                            lootItems.map((item, index) => (
                                 <View key={index} style={styles.lootItem}>
                                     <Text style={styles.itemName}>{item.name}</Text>
-                                    <Text style={[
-                                        styles.itemRarity,
-                                        {
-                                            color: getRarityColor(item.rarity),
-                                        }
-                                    ]}>
+                                    <Text
+                                        style={[
+                                            styles.itemRarity,
+                                            { color: getRarityColor(item.rarity) }
+                                        ]}
+                                    >
                                         {item.quantity ? `x${item.quantity}` : ""}
                                     </Text>
                                 </View>
-                            ))}
-                        </ScrollView>
-                    ) : (
-                        <Text style={styles.emptyText}>Nenhum item encontrado</Text>
-                    )}
+                            ))
+                        ) : (
+                            <Text style={styles.emptyText}>
+                                Nenhum recurso detectado
+                            </Text>
+                        )}
+                    </View>
 
-                    <Text style={styles.closeHint}>Pressione I para fechar</Text>
+                    <Text style={styles.closeHint}>[ I ] DESCONECTAR</Text>
                 </View>
             </Animated.View>
         </Animated.View>
@@ -198,10 +226,10 @@ const styles = StyleSheet.create({
 
     container: {
         position: "absolute",
-        top: "30%",
+        top: "10%",
         left: "70%",
         width: 360,
-        maxHeight: 500,
+        maxHeight: 680,
         transform: [{ translateX: -180 }, { translateY: -250 }],
     },
 
@@ -318,5 +346,90 @@ const styles = StyleSheet.create({
         marginTop: 12,
         fontFamily: "monospace",
         fontStyle: "italic",
+    },
+
+    shipScanArea: {
+        height: 260,
+        marginBottom: 18,
+        borderWidth: 1,
+        borderColor: "rgba(100,200,255,0.25)",
+        borderRadius: 8,
+        overflow: "hidden",
+        backgroundColor: "rgba(0,20,35,0.8)",
+    },
+
+    scanPlaceholder: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    scanText: {
+        color: "rgba(100,255,218,0.35)",
+        fontFamily: "monospace",
+        fontSize: 18,
+    },
+
+    slotOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    slot: {
+        position: "absolute",
+        width: 58,
+        height: 58,
+        borderWidth: 2,
+        borderRadius: 8,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(10,20,40,0.85)",
+    },
+
+    slotLabel: {
+        color: "#fff",
+        fontSize: 11,
+        fontFamily: "monospace",
+        fontWeight: "bold",
+    },
+
+    slotBroken: {
+        top: 80,
+        left: 40,
+        borderColor: "#ff3b3b",
+    },
+
+    slotDamaged: {
+        top: 80,
+        right: 40,
+        borderColor: "#ffd54a",
+    },
+
+    slotRare: {
+        top: 25,
+        borderColor: "#3cfaff",
+    },
+
+    slotEpic: {
+        top: 105,
+        borderColor: "#c478ff",
+    },
+
+    slotRecoverable: {
+        bottom: 25,
+        borderColor: "#3cff75",
+    },
+
+    salvageBox: {
+        minHeight: 140,
+    },
+
+    sectionTitle: {
+        color: "#7fcaff",
+        fontSize: 12,
+        marginBottom: 10,
+        fontFamily: "monospace",
+        letterSpacing: 1,
     },
 });
