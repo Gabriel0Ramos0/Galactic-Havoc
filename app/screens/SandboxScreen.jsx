@@ -23,7 +23,8 @@ import { setupShipLighting, animateShipStartup, animateShipShutdown } from "@/co
 import { createThrusterEffect } from "@/components/effects/Thrusters";
 import CutsceneScreen from "@/components/ui/CutsceneScreen";
 import History from "@/components/ui/History";
-import createBlueMarker from "@/components/systems/BlueMarker";
+import createScrap from "@/components/systems/Scrap";
+import createBlueMarker from "@/components/effects/BlueMarker";
 import useInspection from "@/components/systems/useInspection";
 
 // Game State Constants
@@ -210,13 +211,20 @@ export default function SandboxScreen() {
 
   useEffect(() => {
     if (tutorialStep === 8 && sceneRef.current && !blueMarkerRef.current) {
-      createBlueMarker({
-        scene: sceneRef.current,
-        spread: 10000,
-        minDistance: 5000,
-      }).then(marker => {
+      (async () => {
+        const scrap = await createScrap({
+          scene: sceneRef.current,
+          position: new THREE.Vector3(300, 0, 500)
+        });
+
+        const marker = await createBlueMarker({
+          scene: sceneRef.current,
+          target: scrap.group
+        });
+
+        scrapRef.current = scrap;
         blueMarkerRef.current = marker;
-      });
+      })();
     }
   }, [tutorialStep]);
 
@@ -255,7 +263,9 @@ export default function SandboxScreen() {
 
       case 11: // piratas
         blueMarkerRef.current?.remove();
+        scrapRef.current?.remove();
         blueMarkerRef.current = null;
+        scrapRef.current = null;
         setMarkerCoords(null);
         transitionToTrack(null);
         playSfx("tutorial_combat");
@@ -273,6 +283,7 @@ export default function SandboxScreen() {
 
   const sceneRef = useRef(null);
   const blueMarkerRef = useRef(null);
+  const scrapRef = useRef(null);
   const shipLightsRef = useRef(null);
   const thrusterEffectRef = useRef(null);
 
@@ -494,6 +505,10 @@ export default function SandboxScreen() {
               });
             }
           } catch { }
+        }
+
+        if (scrapRef.current && scrapRef.current.update) {
+          scrapRef.current.update(dt);
         }
       }
       if (!glReady) {
