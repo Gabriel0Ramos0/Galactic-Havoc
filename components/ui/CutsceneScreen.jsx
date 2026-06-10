@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from "react-native";
 import { VideoView, useVideoPlayer } from "expo-video";
+import Wall from "../effects/Wall";
 
 const { width, height } = Dimensions.get("window");
 const baseGreen = "rgba(0,255,170,1)";
@@ -32,7 +33,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const glow = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
 
-  const player = useVideoPlayer(require("../../assets/videos/intro.mp4"));
+  const player = null;
   const hasStartedVideo = useRef(false);
   const hasEnded = useRef(false);
 
@@ -259,6 +260,8 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
   return (
     <View style={styles.container}>
+      <Wall />
+      
       {!started && (
         <Animated.View
           style={[
@@ -530,7 +533,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
   },
 
   // START BUTTON

@@ -47,7 +47,7 @@ export default function Menu({ onStart, hasSession, onConfig, onCredits, onHisto
 
   return (
     <ImageBackground
-      source={require("@/assets/images/Game.png")}
+      source={require("@/assets/images/Game.jpg")}
       style={styles.container}
       resizeMode="cover"
     >
