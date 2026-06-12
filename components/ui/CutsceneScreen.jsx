@@ -10,13 +10,14 @@ import {
   Platform,
 } from "react-native";
 import Wall from "../effects/Wall";
+import { playSfx } from "@/components/controllers/AudioController";
 
 const { width, height } = Dimensions.get("window");
 const baseGreen = "rgba(0,255,170,1)";
+const lastSoundTime = useRef(0);
 
 const CINEMATIC_SCRIPTS = [
   { lines: ["INICIALIZANDO TRANSMISSÃO DA ORDEM ESTELAR..."], type: "system" },
-
   {
     lines: [
       "Os antigos Núcleos de Dobra abriram caminho para a era interestelar.",
@@ -24,7 +25,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "story"
   },
-
   {
     lines: [
       "A inteligência artificial ECLIPSER assumiu o controle da rede de saltos.",
@@ -32,7 +32,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "story"
   },
-
   {
     lines: [
       "Então algo aconteceu no Setor Havoc.",
@@ -40,7 +39,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "alert"
   },
-
   {
     lines: [
       "Rotas desapareceram.",
@@ -49,7 +47,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "alert"
   },
-
   {
     lines: [
       "O esquadrão do Capitão Rho foi enviado para investigar.",
@@ -57,7 +54,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "story"
   },
-
   {
     lines: [
       "Entre os desaparecidos estava Soren.",
@@ -65,7 +61,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "story"
   },
-
   {
     lines: [
       "Recentemente, sinais desconhecidos voltaram a surgir.",
@@ -73,7 +68,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "story"
   },
-
   {
     lines: [
       "Missão Primária:",
@@ -81,7 +75,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "ready"
   },
-
   {
     lines: [
       "Terminal MK-IV vinculado.",
@@ -90,7 +83,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "system"
   },
-
   {
     lines: [
       "ERRO DE NAVEGAÇÃO",
@@ -101,7 +93,6 @@ const CINEMATIC_SCRIPTS = [
     ],
     type: "alert"
   },
-
   {
     lines: [
       "Boa sorte, Piloto RS-07."
@@ -241,11 +232,11 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
     let targetWhiteoutValue = 0;
     if (currentIndex === totalScenes - 3) {
-      targetWhiteoutValue = 0.15; 
+      targetWhiteoutValue = 0.15;
     } else if (currentIndex === totalScenes - 2) {
-      targetWhiteoutValue = 0.35; 
+      targetWhiteoutValue = 0.35;
     } else if (currentIndex === totalScenes - 1) {
-      targetWhiteoutValue = 0.50; 
+      targetWhiteoutValue = 0.50;
     }
 
     Animated.timing(whiteoutOpacity, {
@@ -296,6 +287,15 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
           charIndex++;
           setTimeout(typeChar, 800);
           return;
+        }
+
+        // CONTROLE REPRODUÇÃO DO ÁUDIO 
+        if (char.trim() !== "") {
+          const now = Date.now();
+          if (now - lastSoundTime.current > 120) { 
+            playSfx("textDigital");
+            lastSoundTime.current = now;
+          }
         }
 
         currentString += char;
@@ -410,7 +410,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
                   style={[
                     styles.mainCinematicText,
                     getTextStyleType(CINEMATIC_SCRIPTS[currentIndex].type),
-                    idx > 0 && { marginTop: 14 } 
+                    idx > 0 && { marginTop: 14 }
                   ]}
                 >
                   {lineText}
