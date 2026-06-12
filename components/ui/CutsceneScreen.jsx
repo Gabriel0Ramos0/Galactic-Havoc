@@ -1,5 +1,4 @@
-// components/CutsceneScreen.jsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, memo, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,7 +13,6 @@ import { playSfx } from "@/components/controllers/AudioController";
 
 const { width, height } = Dimensions.get("window");
 const baseGreen = "rgba(0,255,170,1)";
-const lastSoundTime = useRef(0);
 
 const CINEMATIC_SCRIPTS = [
   { lines: ["INICIALIZANDO TRANSMISSÃO DA ORDEM ESTELAR..."], type: "system" },
@@ -103,7 +101,8 @@ const CINEMATIC_SCRIPTS = [
 
 const CIRCUIT_TYPES = ["+", "-", "○", "●"];
 
-function IndividualCircuitNode({ elem }) {
+// Componente de nó individual estritamente blindado contra re-renderizações do pai
+const IndividualCircuitNode = memo(({ elem }) => {
   const animatedOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -112,11 +111,12 @@ function IndividualCircuitNode({ elem }) {
     const runAnimationLoop = () => {
       if (!isMounted) return;
 
-      const delay = Math.random() * 2500;
-      const durationIn = Math.random() * 500 + 300;
-      const durationHold = Math.random() * 1200 + 400;
-      const durationOut = Math.random() * 500 + 300;
-      const maxOpacity = Math.random() * 0.5 + 0.2;
+      const isGlitch = elem.isGlitch;
+      const delay = isGlitch ? Math.random() * 400 : Math.random() * 2500;
+      const durationIn = isGlitch ? Math.random() * 150 + 50 : Math.random() * 500 + 300;
+      const durationHold = isGlitch ? Math.random() * 300 + 100 : Math.random() * 1200 + 400;
+      const durationOut = isGlitch ? Math.random() * 150 + 50 : Math.random() * 500 + 300;
+      const maxOpacity = isGlitch ? Math.random() * 0.8 + 0.2 : Math.random() * 0.5 + 0.2;
 
       Animated.sequence([
         Animated.delay(delay),
@@ -130,14 +130,25 @@ function IndividualCircuitNode({ elem }) {
 
     runAnimationLoop();
     return () => { isMounted = false; };
-  }, []);
+  }, [elem.isGlitch]);
+
+  const getGlitchStyle = () => {
+    if (elem.isGlitch) {
+      return {
+        color: elem.glitchColor,
+        textShadow: "0px 0px 8px rgba(255, 69, 58, 0.9)",
+        fontSize: elem.glitchSize,
+      };
+    }
+    return styles.circuitSymbol;
+  };
 
   return (
     <Animated.View style={[styles.circuitContainer, { top: elem.top, left: elem.left, opacity: animatedOpacity }]}>
-      <Text style={styles.circuitSymbol}>{elem.type}</Text>
+      <Text style={[styles.circuitSymbol, getGlitchStyle()]}>{elem.type}</Text>
     </Animated.View>
   );
-}
+});
 
 export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const [started, setStarted] = useState(false);
@@ -146,8 +157,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const [activeLineIndex, setActiveLineIndex] = useState(0);
   const [displayedTextLines, setDisplayedTextLines] = useState([]);
   const [showCursor, setShowCursor] = useState(true);
-
-  const [circuitElements, setCircuitElements] = useState([]);
 
   const startButtonFade = useRef(new Animated.Value(1)).current;
   const startButtonScale = useRef(new Animated.Value(1)).current;
@@ -160,6 +169,50 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const glowScale = useRef(new Animated.Value(1)).current;
 
   const whiteoutOpacity = useRef(new Animated.Value(0)).current;
+  const componentAudioTime = useRef(0);
+
+  // 1. Criação da malha estática de 180 pontos possíveis usando funções trigonométricas baseadas no ID.
+  // Isso impede uso de Math.random() no ciclo de render comum, travando as coordenadas para sempre.
+  const staticCircuitPool = useMemo(() => {
+    return Array.from({ length: 180 }).map((_, i) => {
+      const pseudoRandomTop = ((Math.sin(i * 4321.43) + 1) / 2) * 88 + 6;
+      const pseudoRandomLeft = ((Math.cos(i * 1234.56) + 1) / 2) * 88 + 6;
+
+      return {
+        id: i,
+        top: `${pseudoRandomTop}%`,
+        left: `${pseudoRandomLeft}%`,
+        type: CIRCUIT_TYPES[i % CIRCUIT_TYPES.length],
+        glitchColor: ((i * 7) % 10) > 4 ? "#ff453a" : "#64d2ff",
+        glitchSize: (i % 3 === 0) ? 18 : 13,
+      };
+    });
+  }, []);
+
+  // 2. Filtro de volumetria de glifos por cena. Apenas fatiamos a piscina estática existente.
+  const circuitElements = useMemo(() => {
+    if (!started) return [];
+
+    const totalScenes = CINEMATIC_SCRIPTS.length;
+    let visibleCount = 22;
+    let isGlitchActive = false;
+
+    if (currentIndex === totalScenes - 3) {
+      visibleCount = 50;
+      isGlitchActive = true;
+    } else if (currentIndex === totalScenes - 2) {
+      visibleCount = 100;
+      isGlitchActive = true;
+    } else if (currentIndex === totalScenes - 1) {
+      visibleCount = 180;
+      isGlitchActive = true;
+    }
+
+    return staticCircuitPool.slice(0, visibleCount).map(elem => ({
+      ...elem,
+      isGlitch: isGlitchActive
+    }));
+  }, [started, currentIndex, staticCircuitPool]);
 
   useEffect(() => {
     if (glReady && !started) {
@@ -174,13 +227,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
   useEffect(() => {
     if (!started) return;
-
-    const elements = Array.from({ length: 22 }).map(() => ({
-      top: `${Math.random() * 85 + 5}%`,
-      left: `${Math.random() * 88 + 5}%`,
-      type: CIRCUIT_TYPES[Math.floor(Math.random() * CIRCUIT_TYPES.length)]
-    }));
-    setCircuitElements(elements);
 
     Animated.loop(
       Animated.sequence([
@@ -221,29 +267,14 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
     if (currentIndex >= totalScenes) {
       Animated.timing(whiteoutOpacity, {
-        toValue: 0.80,
-        duration: 900,
+        toValue: 1.0,
+        duration: 700,
         useNativeDriver: true,
       }).start(() => {
         onFinish?.();
       });
       return;
     }
-
-    let targetWhiteoutValue = 0;
-    if (currentIndex === totalScenes - 3) {
-      targetWhiteoutValue = 0.15;
-    } else if (currentIndex === totalScenes - 2) {
-      targetWhiteoutValue = 0.35;
-    } else if (currentIndex === totalScenes - 1) {
-      targetWhiteoutValue = 0.50;
-    }
-
-    Animated.timing(whiteoutOpacity, {
-      toValue: targetWhiteoutValue,
-      duration: 1500,
-      useNativeDriver: true,
-    }).start();
 
     const currentScene = CINEMATIC_SCRIPTS[currentIndex];
 
@@ -289,12 +320,11 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
           return;
         }
 
-        // CONTROLE REPRODUÇÃO DO ÁUDIO 
         if (char.trim() !== "") {
           const now = Date.now();
-          if (now - lastSoundTime.current > 120) { 
+          if (now - componentAudioTime.current > 120) {
             playSfx("textDigital");
-            lastSoundTime.current = now;
+            componentAudioTime.current = now;
           }
         }
 
@@ -318,7 +348,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const getDynamicGlowStyle = () => {
     if (!started) return { backgroundColor: "rgba(0, 255, 170, 0.15)", filter: "blur(60px)" };
     if (currentIndex >= CINEMATIC_SCRIPTS.length - 3) {
-      return { backgroundColor: "rgba(130, 230, 255, 0.35)", filter: "blur(45px)" };
+      return { backgroundColor: "rgba(255, 69, 58, 0.25)", filter: "blur(50px)" };
     }
     if (CINEMATIC_SCRIPTS[currentIndex]?.type === "alert") {
       return { backgroundColor: "rgba(255, 69, 58, 0.20)", filter: "blur(60px)" };
@@ -339,9 +369,9 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     <View style={styles.container}>
       <Wall />
 
-      {/* Glifos Abstratos */}
-      {started && circuitElements.map((elem, idx) => (
-        <IndividualCircuitNode key={idx} elem={elem} />
+      {/* Glifos Estáveis — Mapeados pelo ID estável e único */}
+      {started && circuitElements.map((elem) => (
+        <IndividualCircuitNode key={elem.id} elem={elem} />
       ))}
 
       {/* Nebulosa */}
@@ -365,7 +395,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
         <Animated.View style={[styles.scanline, { transform: [{ translateY: scanlineY }] }]} pointerEvents="none" />
       )}
 
-      {/* Clarão Branco Progressivo controlado */}
+      {/* Clarão Branco Puramente na Mudança de Tela Final */}
       <Animated.View style={[styles.whiteoutOverlay, { opacity: whiteoutOpacity }]} pointerEvents="none" />
 
       {/* Tela de Entrada */}
@@ -446,7 +476,6 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     textShadow: "0px 0px 10px rgba(0, 255, 170, 0.6)",
   },
-
   circuitContainer: {
     position: "absolute",
     zIndex: 2,
@@ -460,7 +489,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textShadow: "0px 0px 5px rgba(0, 255, 170, 0.7)",
   },
-
   ambientGlow: {
     position: "absolute",
     width: width * 1.3,
@@ -500,8 +528,6 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     letterSpacing: 1.4,
   },
-
-  // Estilos de texto específicos por tipo de cena
   storyText: {
     color: "#ffffff",
     fontWeight: "300",
@@ -533,6 +559,6 @@ const styles = StyleSheet.create({
   whiteoutOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#ffffff",
-    zIndex: 5,
+    zIndex: 20,
   },
 });
