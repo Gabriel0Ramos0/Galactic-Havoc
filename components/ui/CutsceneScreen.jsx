@@ -11,7 +11,6 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { VideoView, useVideoPlayer } from "expo-video";
 import Wall from "../effects/Wall";
 
 const { width, height } = Dimensions.get("window");
@@ -24,7 +23,6 @@ const panelBg = Platform.select({
 export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const [started, setStarted] = useState(false);
   const [showBeforeText, setShowBeforeText] = useState(true);
-  const [showVideo, setShowVideo] = useState(false);
 
   const [showLoreText, setShowLoreText] = useState(false);
 
@@ -33,13 +31,8 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const glow = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
 
-  const player = null;
-  const hasStartedVideo = useRef(false);
-  const hasEnded = useRef(false);
-
   // animações
   const textFade = useRef(new Animated.Value(0)).current;
-  const videoFade = useRef(new Animated.Value(0)).current;
   const loreFade = useRef(new Animated.Value(0)).current;
   const loreTranslate = useRef(new Animated.Value(12)).current;
   const hudFade = useRef(new Animated.Value(0)).current;
@@ -66,7 +59,24 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
         }),
       ]).start(() => {
         setShowBeforeText(false);
-        setShowVideo(true);
+        setShowLoreText(true);
+
+        loreTranslate.setValue(12);
+        loreFade.setValue(0);
+
+        Animated.parallel([
+          Animated.timing(loreFade, {
+            toValue: 1,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+          Animated.timing(loreTranslate, {
+            toValue: 0,
+            duration: 700,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]).start();
       });
     }
   }, [started]);
@@ -97,24 +107,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
       ).start();
     }
   }, [glReady]);
-
-  useEffect(() => {
-    if (
-      showVideo &&
-      player &&
-      !hasStartedVideo.current
-    ) {
-      hasStartedVideo.current = true;
-
-      Animated.timing(videoFade, {
-        toValue: 1,
-        duration: 700,
-        useNativeDriver: true,
-      }).start(() => {
-        player.play();
-      });
-    }
-  }, [showVideo]);
 
   // HUD ambient loops
   useEffect(() => {
@@ -171,32 +163,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     setStarted(true);
   };
 
-  const handleVideoEnd = () => {
-    Animated.timing(videoFade, {
-      toValue: 0,
-      duration: 600,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowVideo(false);
-      setShowLoreText(true);
-      loreTranslate.setValue(12);
-      loreFade.setValue(0);
-      Animated.parallel([
-        Animated.timing(loreFade, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(loreTranslate, {
-          toValue: 0,
-          duration: 700,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-  };
-
   function handleLoreContinue() {
     Animated.timing(loreFade, {
       toValue: 0,
@@ -228,28 +194,8 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
       scanlineY.stopAnimation();
       glowAnim.stopAnimation();
       jitter.stopAnimation();
-
-      player?.pause();
     };
   }, []);
-
-  useEffect(() => {
-    if (!player) return;
-
-    const interval = setInterval(() => {
-      if (!player.duration) return;
-
-      const isEnding =
-        player.currentTime >= player.duration - 0.2;
-
-      if (isEnding && !hasEnded.current) {
-        hasEnded.current = true;
-        handleVideoEnd();
-      }
-    }, 200);
-
-    return () => clearInterval(interval);
-  }, [player]);
 
   const hudTranslate = {
     transform: [
@@ -261,7 +207,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   return (
     <View style={styles.container}>
       <Wall />
-      
+
       {!started && (
         <Animated.View
           style={[
@@ -287,21 +233,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
       {started && showBeforeText && (
         <Animated.View style={[styles.centerOverlay, { opacity: textFade }]}>
           <Text style={styles.beforeText}>Antes...</Text>
-        </Animated.View>
-      )}
-
-      {/* Video */}
-      {showVideo && (
-        <Animated.View style={[styles.videoWrapper, { opacity: videoFade }]}>
-          <VideoView
-            player={player}
-            style={styles.video}
-            contentFit="cover"
-            onLoad={() => setReady(true)}
-            allowsFullscreen={false}
-            allowsPictureInPicture={false}
-            nativeControls={false}
-          />
         </Animated.View>
       )}
 
