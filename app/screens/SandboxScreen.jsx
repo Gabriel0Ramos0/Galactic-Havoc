@@ -319,12 +319,13 @@ export default function SandboxScreen() {
     shipVelocityRef: velocity
   });
 
+  // Áudio desbloqueado na Custscene após iniciar.
   const unlockAudio = async () => {
     if (audioUnlocked.current) return;
     audioUnlocked.current = true;
 
     await loadSfx();
-    transitionToTrack(0);
+    transitionToTrack(8);
   };
 
   const onContextCreate = async (gl) => {

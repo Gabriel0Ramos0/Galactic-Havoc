@@ -41,6 +41,16 @@ const playlist = [
     name: "Journey",
     file: require("../../assets/sounds/journey.mp3"),
   },
+  {
+    id: 8,
+    name: "Space Harmony",
+    file: require("../../assets/sounds/SpaceHarmony.mp3"),
+  },
+  {
+    id: 9,
+    name: "Mystery Space",
+    file: require("../../assets/sounds/MysterySpace.mp3"),
+  },
 ];
 
 export function getPlaylist() {
@@ -217,6 +227,7 @@ export async function loadSfx() {
   sfx.fire = create(require("../../assets/sounds/fire.mp3"));
   sfx.explosion = create(require("../../assets/sounds/explosionast.mp3"));
   sfx.marker_ping = create(require("../../assets/sounds/marker_ping.mp3"));
+  sfx.textDigital = create(require("../../assets/sounds/textDigital.mp3"));
 
   sfxLoaded = true;
 }

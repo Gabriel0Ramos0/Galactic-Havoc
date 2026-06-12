@@ -152,7 +152,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const [started, setStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Controladores do efeito de máquina de escrever multi-linha
   const [activeLineIndex, setActiveLineIndex] = useState(0);
   const [displayedTextLines, setDisplayedTextLines] = useState([]);
   const [showCursor, setShowCursor] = useState(true);
@@ -171,7 +170,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
   const whiteoutOpacity = useRef(new Animated.Value(0)).current;
 
-  // Pulso do botão inicial
   useEffect(() => {
     if (glReady && !started) {
       Animated.loop(
@@ -183,7 +181,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     }
   }, [glReady, started]);
 
-  // Loops de ambientação pós-inicialização
   useEffect(() => {
     if (!started) return;
 
@@ -226,13 +223,11 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     });
   };
 
-  // Orquestrador de Cenas e Efeito de Máquina de Escrever Multi-Linha
   useEffect(() => {
     if (!started) return;
 
     const totalScenes = CINEMATIC_SCRIPTS.length;
 
-    // FIM DA TRANSMISSÃO: Transição final suave travando no limite solicitado de 0.80
     if (currentIndex >= totalScenes) {
       Animated.timing(whiteoutOpacity, {
         toValue: 0.80,
@@ -244,14 +239,13 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
       return;
     }
 
-    // CONTROLE DE BRANCO CONTROLADO (Baseado nos blocos de cena finais)
     let targetWhiteoutValue = 0;
     if (currentIndex === totalScenes - 3) {
-      targetWhiteoutValue = 0.15; // Antepenúltimo bloco
+      targetWhiteoutValue = 0.15; 
     } else if (currentIndex === totalScenes - 2) {
-      targetWhiteoutValue = 0.35; // Penúltimo bloco
+      targetWhiteoutValue = 0.35; 
     } else if (currentIndex === totalScenes - 1) {
-      targetWhiteoutValue = 0.50; // Último bloco estável enquanto digita
+      targetWhiteoutValue = 0.50; 
     }
 
     Animated.timing(whiteoutOpacity, {
@@ -262,11 +256,9 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
     const currentScene = CINEMATIC_SCRIPTS[currentIndex];
 
-    // Reseta o palco de linhas da cena atual
     setActiveLineIndex(0);
     setDisplayedTextLines(Array(currentScene.lines.length).fill(""));
 
-    // Fade-in do container de texto da cena
     textOpacity.setValue(0);
     textTranslateY.setValue(15);
     Animated.parallel([
@@ -274,17 +266,13 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
       Animated.timing(textTranslateY, { toValue: 0, duration: 700, useNativeDriver: true })
     ]).start();
 
-    // Inicia a digitação da primeira linha do bloco
     triggerTypewriterForLine(0, currentScene.lines);
 
   }, [started, currentIndex]);
 
-  // Função interna recursiva que digita linha por linha dentro do mesmo bloco
   const triggerTypewriterForLine = (lineIdx, allLines) => {
     if (lineIdx >= allLines.length) {
-      // Todo o bloco foi renderizado. Aguarda tempo de leitura confortável.
       setTimeout(() => {
-        // Transição de saída do bloco
         Animated.parallel([
           Animated.timing(textOpacity, { toValue: 0, duration: 600, useNativeDriver: true }),
           Animated.timing(textTranslateY, { toValue: -15, duration: 600, useNativeDriver: true })
@@ -320,7 +308,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
         charIndex++;
         setTimeout(typeChar, 40);
       } else {
-        // Linha atual concluída, passa para a próxima linha do bloco imediatamente
         triggerTypewriterForLine(lineIdx + 1, allLines);
       }
     };
@@ -423,7 +410,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
                   style={[
                     styles.mainCinematicText,
                     getTextStyleType(CINEMATIC_SCRIPTS[currentIndex].type),
-                    idx > 0 && { marginTop: 14 } // Espaçamento harmônico entre linhas
+                    idx > 0 && { marginTop: 14 } 
                   ]}
                 >
                   {lineText}
@@ -514,7 +501,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
   },
 
-  // Sombras pretas densas aplicadas abaixo para garantir contraste absoluto contra o clarão branco
+  // Estilos de texto específicos por tipo de cena
   storyText: {
     color: "#ffffff",
     fontWeight: "300",
