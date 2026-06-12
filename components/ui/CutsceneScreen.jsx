@@ -2,459 +2,438 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
-  TouchableOpacity,
   Text,
   StyleSheet,
   Dimensions,
   Animated,
-  Easing,
+  TouchableOpacity,
   Platform,
-  ScrollView,
 } from "react-native";
 import Wall from "../effects/Wall";
 
 const { width, height } = Dimensions.get("window");
 const baseGreen = "rgba(0,255,170,1)";
-const panelBg = Platform.select({
-  ios: "rgba(10,10,14,0.54)",
-  android: "rgba(8,8,10,0.64)",
-});
+
+const CINEMATIC_SCRIPTS = [
+  { lines: ["INICIALIZANDO TRANSMISSÃO DA ORDEM ESTELAR..."], type: "system" },
+
+  {
+    lines: [
+      "Os antigos Núcleos de Dobra abriram caminho para a era interestelar.",
+      "Hoje, restam apenas fragmentos dessa tecnologia."
+    ],
+    type: "story"
+  },
+
+  {
+    lines: [
+      "A inteligência artificial ECLIPSER assumiu o controle da rede de saltos.",
+      "Durante décadas, o universo permaneceu conectado."
+    ],
+    type: "story"
+  },
+
+  {
+    lines: [
+      "Então algo aconteceu no Setor Havoc.",
+      "Algo que a própria ECLIPSER não conseguiu controlar."
+    ],
+    type: "alert"
+  },
+
+  {
+    lines: [
+      "Rotas desapareceram.",
+      "Transmissões cessaram.",
+      "O setor foi isolado."
+    ],
+    type: "alert"
+  },
+
+  {
+    lines: [
+      "O esquadrão do Capitão Rho foi enviado para investigar.",
+      "Nenhum membro retornou."
+    ],
+    type: "story"
+  },
+
+  {
+    lines: [
+      "Entre os desaparecidos estava Soren.",
+      "Portador de um raro Núcleo de Dobra independente."
+    ],
+    type: "story"
+  },
+
+  {
+    lines: [
+      "Recentemente, sinais desconhecidos voltaram a surgir.",
+      "A origem permanece incerta."
+    ],
+    type: "story"
+  },
+
+  {
+    lines: [
+      "Missão Primária:",
+      "Localizar e recuperar o Núcleo de Dobra."
+    ],
+    type: "ready"
+  },
+
+  {
+    lines: [
+      "Terminal MK-IV vinculado.",
+      "Piloto designado: RS-07",
+      "Senha ativa: Bruxo"
+    ],
+    type: "system"
+  },
+
+  {
+    lines: [
+      "ERRO DE NAVEGAÇÃO",
+      "Coordenadas divergentes detectadas.",
+      "Destino desconhecido.",
+      "Sinal da Ordem perdido.",
+      "Localização atual não identificada."
+    ],
+    type: "alert"
+  },
+
+  {
+    lines: [
+      "Boa sorte, Piloto RS-07."
+    ],
+    type: "ready"
+  }
+];
+
+const CIRCUIT_TYPES = ["+", "-", "○", "●"];
+
+function IndividualCircuitNode({ elem }) {
+  const animatedOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const runAnimationLoop = () => {
+      if (!isMounted) return;
+
+      const delay = Math.random() * 2500;
+      const durationIn = Math.random() * 500 + 300;
+      const durationHold = Math.random() * 1200 + 400;
+      const durationOut = Math.random() * 500 + 300;
+      const maxOpacity = Math.random() * 0.5 + 0.2;
+
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(animatedOpacity, { toValue: maxOpacity, duration: durationIn, useNativeDriver: true }),
+        Animated.delay(durationHold),
+        Animated.timing(animatedOpacity, { toValue: 0, duration: durationOut, useNativeDriver: true }),
+      ]).start(() => {
+        runAnimationLoop();
+      });
+    };
+
+    runAnimationLoop();
+    return () => { isMounted = false; };
+  }, []);
+
+  return (
+    <Animated.View style={[styles.circuitContainer, { top: elem.top, left: elem.left, opacity: animatedOpacity }]}>
+      <Text style={styles.circuitSymbol}>{elem.type}</Text>
+    </Animated.View>
+  );
+}
 
 export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const [started, setStarted] = useState(false);
-  const [showBeforeText, setShowBeforeText] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [showLoreText, setShowLoreText] = useState(false);
+  // Controladores do efeito de máquina de escrever multi-linha
+  const [activeLineIndex, setActiveLineIndex] = useState(0);
+  const [displayedTextLines, setDisplayedTextLines] = useState([]);
+  const [showCursor, setShowCursor] = useState(true);
 
-  const [showHUD, setShowHUD] = useState(false);
-  const [ready, setReady] = useState(false);
-  const glow = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(1)).current;
+  const [circuitElements, setCircuitElements] = useState([]);
 
-  // animações
-  const textFade = useRef(new Animated.Value(0)).current;
-  const loreFade = useRef(new Animated.Value(0)).current;
-  const loreTranslate = useRef(new Animated.Value(12)).current;
-  const hudFade = useRef(new Animated.Value(0)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const scanlineY = useRef(new Animated.Value(-height)).current;
-  const jitter = useRef(new Animated.Value(0)).current;
-  const scanlineLoop = useRef(null);
-  const glowLoop = useRef(null);
-  const jitterLoop = useRef(null);
+  const startButtonFade = useRef(new Animated.Value(1)).current;
+  const startButtonScale = useRef(new Animated.Value(1)).current;
 
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const textTranslateY = useRef(new Animated.Value(20)).current;
+
+  const scanlineY = useRef(new Animated.Value(-100)).current;
+  const glowOpacity = useRef(new Animated.Value(0.15)).current;
+  const glowScale = useRef(new Animated.Value(1)).current;
+
+  const whiteoutOpacity = useRef(new Animated.Value(0)).current;
+
+  // Pulso do botão inicial
   useEffect(() => {
-    if (started && showBeforeText) {
-      Animated.sequence([
-        Animated.timing(textFade, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.delay(1200),
-        Animated.timing(textFade, {
-          toValue: 0,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setShowBeforeText(false);
-        setShowLoreText(true);
-
-        loreTranslate.setValue(12);
-        loreFade.setValue(0);
-
-        Animated.parallel([
-          Animated.timing(loreFade, {
-            toValue: 1,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-          Animated.timing(loreTranslate, {
-            toValue: 0,
-            duration: 700,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-    }
-  }, [started]);
-
-  useEffect(() => {
-    if (glReady) {
-      // brilho subindo
-      Animated.timing(glow, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }).start();
-
-      // pulso infinito
+    if (glReady && !started) {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulse, {
-            toValue: 1.05,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulse, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
+          Animated.timing(startButtonScale, { toValue: 1.05, duration: 1200, useNativeDriver: true }),
+          Animated.timing(startButtonScale, { toValue: 1, duration: 1200, useNativeDriver: true }),
         ])
       ).start();
     }
-  }, [glReady]);
+  }, [glReady, started]);
 
-  // HUD ambient loops
+  // Loops de ambientação pós-inicialização
   useEffect(() => {
-    if (showHUD) {
-      scanlineLoop.current = Animated.loop(Animated.timing(scanlineY, {
-        toValue: height,
-        duration: 1800,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }));
-      scanlineLoop.current.start();
+    if (!started) return;
 
-      glowLoop.current = Animated.loop(Animated.sequence([
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 1200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 1200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
+    const elements = Array.from({ length: 22 }).map(() => ({
+      top: `${Math.random() * 85 + 5}%`,
+      left: `${Math.random() * 88 + 5}%`,
+      type: CIRCUIT_TYPES[Math.floor(Math.random() * CIRCUIT_TYPES.length)]
+    }));
+    setCircuitElements(elements);
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(glowOpacity, { toValue: 0.35, duration: 2200, useNativeDriver: true }),
+          Animated.timing(glowScale, { toValue: 1.2, duration: 2200, useNativeDriver: true }),
         ]),
-      ]));
-      glowLoop.current.start();
+        Animated.parallel([
+          Animated.timing(glowOpacity, { toValue: 0.15, duration: 2200, useNativeDriver: true }),
+          Animated.timing(glowScale, { toValue: 0.95, duration: 2200, useNativeDriver: true }),
+        ]),
+      ])
+    ).start();
 
-      jitterLoop.current = Animated.loop(Animated.sequence([
-        Animated.timing(jitter, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(jitter, {
-          toValue: 0,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]));
-      jitterLoop.current.start();
-
-    } else {
-      scanlineY.setValue(-height);
-      glowAnim.setValue(0);
-      jitter.setValue(0);
-    }
-  }, [showHUD]);
+    const cursorInterval = setInterval(() => {
+      setShowCursor((prev) => !prev);
+    }, 350);
+    return () => clearInterval(cursorInterval);
+  }, [started]);
 
   const handleStart = async () => {
+    if (!glReady) return;
     await onUnlockAudio?.();
-    setStarted(true);
-  };
 
-  function handleLoreContinue() {
-    Animated.timing(loreFade, {
+    Animated.timing(startButtonFade, {
       toValue: 0,
       duration: 500,
       useNativeDriver: true,
     }).start(() => {
-      setShowLoreText(false);
-      setShowHUD(true);
+      setStarted(true);
+    });
+  };
 
-      Animated.timing(hudFade, {
-        toValue: 1,
+  // Orquestrador de Cenas e Efeito de Máquina de Escrever Multi-Linha
+  useEffect(() => {
+    if (!started) return;
+
+    const totalScenes = CINEMATIC_SCRIPTS.length;
+
+    // FIM DA TRANSMISSÃO: Transição final suave travando no limite solicitado de 0.80
+    if (currentIndex >= totalScenes) {
+      Animated.timing(whiteoutOpacity, {
+        toValue: 0.80,
         duration: 900,
         useNativeDriver: true,
-      }).start();
-    });
-  }
+      }).start(() => {
+        onFinish?.();
+      });
+      return;
+    }
 
-  const jitterInterpolate = jitter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1.5],
-  });
+    // CONTROLE DE BRANCO CONTROLADO (Baseado nos blocos de cena finais)
+    let targetWhiteoutValue = 0;
+    if (currentIndex === totalScenes - 3) {
+      targetWhiteoutValue = 0.15; // Antepenúltimo bloco
+    } else if (currentIndex === totalScenes - 2) {
+      targetWhiteoutValue = 0.35; // Penúltimo bloco
+    } else if (currentIndex === totalScenes - 1) {
+      targetWhiteoutValue = 0.50; // Último bloco estável enquanto digita
+    }
 
-  useEffect(() => {
-    return () => {
-      scanlineLoop.current?.stop();
-      glowLoop.current?.stop();
-      jitterLoop.current?.stop();
+    Animated.timing(whiteoutOpacity, {
+      toValue: targetWhiteoutValue,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start();
 
-      scanlineY.stopAnimation();
-      glowAnim.stopAnimation();
-      jitter.stopAnimation();
+    const currentScene = CINEMATIC_SCRIPTS[currentIndex];
+
+    // Reseta o palco de linhas da cena atual
+    setActiveLineIndex(0);
+    setDisplayedTextLines(Array(currentScene.lines.length).fill(""));
+
+    // Fade-in do container de texto da cena
+    textOpacity.setValue(0);
+    textTranslateY.setValue(15);
+    Animated.parallel([
+      Animated.timing(textOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(textTranslateY, { toValue: 0, duration: 700, useNativeDriver: true })
+    ]).start();
+
+    // Inicia a digitação da primeira linha do bloco
+    triggerTypewriterForLine(0, currentScene.lines);
+
+  }, [started, currentIndex]);
+
+  // Função interna recursiva que digita linha por linha dentro do mesmo bloco
+  const triggerTypewriterForLine = (lineIdx, allLines) => {
+    if (lineIdx >= allLines.length) {
+      // Todo o bloco foi renderizado. Aguarda tempo de leitura confortável.
+      setTimeout(() => {
+        // Transição de saída do bloco
+        Animated.parallel([
+          Animated.timing(textOpacity, { toValue: 0, duration: 600, useNativeDriver: true }),
+          Animated.timing(textTranslateY, { toValue: -15, duration: 600, useNativeDriver: true })
+        ]).start(() => {
+          setCurrentIndex((prev) => prev + 1);
+        });
+      }, 3500);
+      return;
+    }
+
+    setActiveLineIndex(lineIdx);
+    const targetText = allLines[lineIdx];
+    let charIndex = 0;
+    let currentString = "";
+
+    const typeChar = () => {
+      if (charIndex < targetText.length) {
+        const char = targetText[charIndex];
+
+        if (char === "|") {
+          charIndex++;
+          setTimeout(typeChar, 800);
+          return;
+        }
+
+        currentString += char;
+        setDisplayedTextLines((prev) => {
+          const updated = [...prev];
+          updated[lineIdx] = currentString;
+          return updated;
+        });
+
+        charIndex++;
+        setTimeout(typeChar, 40);
+      } else {
+        // Linha atual concluída, passa para a próxima linha do bloco imediatamente
+        triggerTypewriterForLine(lineIdx + 1, allLines);
+      }
     };
-  }, []);
 
-  const hudTranslate = {
-    transform: [
-      { translateX: Animated.multiply(jitterInterpolate, 0.3) },
-      { translateY: Animated.multiply(jitterInterpolate, -0.2) },
-    ],
+    typeChar();
+  };
+
+  const getDynamicGlowStyle = () => {
+    if (!started) return { backgroundColor: "rgba(0, 255, 170, 0.15)", filter: "blur(60px)" };
+    if (currentIndex >= CINEMATIC_SCRIPTS.length - 3) {
+      return { backgroundColor: "rgba(130, 230, 255, 0.35)", filter: "blur(45px)" };
+    }
+    if (CINEMATIC_SCRIPTS[currentIndex]?.type === "alert") {
+      return { backgroundColor: "rgba(255, 69, 58, 0.20)", filter: "blur(60px)" };
+    }
+    return { backgroundColor: "rgba(0, 255, 170, 0.15)", filter: "blur(60px)" };
+  };
+
+  const getTextStyleType = (type) => {
+    switch (type) {
+      case "system": return styles.systemText;
+      case "alert": return styles.alertText;
+      case "ready": return styles.readyText;
+      default: return styles.storyText;
+    }
   };
 
   return (
     <View style={styles.container}>
       <Wall />
 
+      {/* Glifos Abstratos */}
+      {started && circuitElements.map((elem, idx) => (
+        <IndividualCircuitNode key={idx} elem={elem} />
+      ))}
+
+      {/* Nebulosa */}
+      {started && (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 3 }]} pointerEvents="none">
+          <Animated.View
+            style={[
+              styles.ambientGlow,
+              getDynamicGlowStyle(),
+              {
+                opacity: glowOpacity,
+                transform: [{ scale: glowScale }]
+              }
+            ]}
+          />
+        </View>
+      )}
+
+      {/* Camada Laser */}
+      {started && (
+        <Animated.View style={[styles.scanline, { transform: [{ translateY: scanlineY }] }]} pointerEvents="none" />
+      )}
+
+      {/* Clarão Branco Progressivo controlado */}
+      <Animated.View style={[styles.whiteoutOverlay, { opacity: whiteoutOpacity }]} pointerEvents="none" />
+
+      {/* Tela de Entrada */}
       {!started && (
         <Animated.View
           style={[
-            styles.startButton,
+            styles.buttonWrapperPure,
             {
-              opacity: glReady ? glow : 0.5,
-              transform: [{ scale: glReady ? pulse : 1 }],
+              opacity: glReady ? startButtonFade : 0.4,
+              transform: [{ scale: startButtonScale }],
+              zIndex: 10,
             },
           ]}
         >
-          <TouchableOpacity
-            onPress={handleStart}
-            disabled={!glReady}
-          >
+          <TouchableOpacity onPress={handleStart} disabled={!glReady} activeOpacity={0.7}>
             <Text style={styles.startButtonText}>
-              {glReady ? "Iniciar Jornada" : "Carregando sistemas..."}
+              {glReady ? "INICIAR JORNADA" : "CONECTANDO SISTEMAS..."}
             </Text>
           </TouchableOpacity>
         </Animated.View>
       )}
 
-      {/* "Antes..." */}
-      {started && showBeforeText && (
-        <Animated.View style={[styles.centerOverlay, { opacity: textFade }]}>
-          <Text style={styles.beforeText}>Antes...</Text>
-        </Animated.View>
-      )}
-
-      {/* LORE TEXT (novo) */}
-      {showLoreText && (
+      {/* Palco Multi-Linha da Cutscene */}
+      {started && currentIndex < CINEMATIC_SCRIPTS.length && (
         <Animated.View
           style={[
-            styles.loreRoot,
-            { opacity: loreFade, transform: [{ translateY: loreTranslate }] },
+            styles.sceneWrapper,
+            {
+              opacity: textOpacity,
+              transform: [{ translateY: textTranslateY }]
+            }
           ]}
         >
-          <Animated.View style={[styles.holoCard, { paddingVertical: 26 }]}>
-            <View style={styles.holoHeader}>
-              <Text style={styles.holoTitle}>ARQUIVO DE CAMPO</Text>
-              <Text style={styles.holoSub}>CLASSIFICAÇÃO: SIGMA</Text>
-            </View>
+          <View style={styles.textGroupContainer}>
+            {displayedTextLines.map((lineText, idx) => {
+              if (lineText === "" && idx > activeLineIndex) return null;
 
-            <ScrollView
-              style={{ width: "100%" }}
-              contentContainerStyle={styles.loreInsideScroll}
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={styles.loreSectionTitle}>SINOPSE DO EVENTO HAVOC</Text>
-
-              <Text style={styles.loreParagraph}>
-                Há mais de três décadas, o Capitão Rho liderou a última missão registrada
-                contra o Eclipser — uma IA colossal responsável por estabilizar rotas de salto
-                entre setores do cosmos.
-              </Text>
-
-              <Text style={styles.loreParagraph}>
-                Quando começou a reescrever o próprio código, passou a manipular o espaço
-                de formas imprevisíveis. O esquadrão de Rho não conseguiu destruí-lo…
-                mas o feriu o suficiente para obrigá-lo a recuar.
-              </Text>
-
-              <View style={styles.loreDivider} />
-
-              <Text style={styles.loreSectionTitle}>O DESAPARECIMENTO DE SOREN</Text>
-
-              <Text style={styles.loreParagraph}>
-                Entre os membros daquela equipe estava Soren, portador de um Núcleo de Salto
-                independente — tecnologia antiga capaz de realizar dobras sem suporte da
-                malha central da Coalizão. Um artefato raro… e valioso.
-              </Text>
-
-              <Text style={styles.loreParagraph}>
-                Durante a retirada, Soren abriu uma rota de fuga limpa. Porém o Eclipser
-                distorceu o espaço ao redor, fragmentando o salto em possibilidades múltiplas.
-                Soren desapareceu no processo — sem registros, sem sinal.
-              </Text>
-
-              <View style={styles.loreDivider} />
-
-              <Text style={styles.loreSectionTitle}>A CICATRIZ DO ESPAÇO-TEMPO</Text>
-
-              <Text style={styles.loreParagraph}>
-                Agora, décadas depois, distorções idênticas voltaram a aparecer.
-                Não é o núcleo que ameaça o Setor Havoc — mas a cicatriz deixada pela
-                interferência do Eclipser no tecido do espaço-tempo.
-              </Text>
-
-              <View style={styles.loreDivider} />
-
-              <Text style={styles.loreSectionTitle}>REGISTRO DO PILOTO</Text>
-
-              <Text style={styles.loreList}>
-                • Credenciais: RS-07 {"\n"}
-                • Código de Serviço: OR-Δ7 {"\n"}
-                • Última senha do MK-IV: rok76c8 (inválida) {"\n"}
-                • Nova Senha do MK-IV criada: "Bruxo" {"\n"}
-              </Text>
-
-              <Text style={styles.loreParagraph}>
-                Missão Primária: Recuperar o Núcleo de Dobra da Coalizão.{"\n"}
-                Missão Secundária: Exploração é opcional… porém inevitável.
-                Localize, investigue e recupere peças dispersas pelo setor.{"\n"}
-                Extra: Verifique o terminal MK-IV.
-              </Text>
-
-              <TouchableOpacity
-                onPress={handleLoreContinue}
-                style={{
-                  marginTop: 28,
-                  marginBottom: 10,
-                  alignSelf: "center",
-                  paddingVertical: 10,
-                  paddingHorizontal: 22,
-                  backgroundColor: "rgba(0,255,170,0.18)",
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: "rgba(0,255,170,0.45)",
-                }}
-                activeOpacity={0.85}
-              >
-                <Text style={{ color: baseGreen, fontSize: 16, fontWeight: "700" }}>
-                  Continuar
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.holoGrid,
-                {
-                  opacity: glowAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.14, 0.32],
-                  }),
-                },
-              ]}
-            />
-          </Animated.View>
-        </Animated.View>
-      )}
-
-      {/* HUD */}
-      {showHUD && (
-        <Animated.View style={[styles.hudRoot, { opacity: hudFade }]}>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.scanline,
-              {
-                transform: [{ translateY: scanlineY }],
-                opacity: 0.08,
-              },
-            ]}
-          />
-
-          <Animated.View style={[styles.holoCard, hudTranslate]}>
-            <View style={styles.holoHeader}>
-              <Text style={styles.holoTitle}>ORDEM: EXPEDIÇÃO SETOR HAVOC</Text>
-              <Text style={styles.holoSub}>PRIORIDADE: ÔMEGA</Text>
-            </View>
-
-            <View style={styles.panelsRow}>
-              <View style={styles.leftPanel}>
-                <Text style={styles.fieldLabel}>OBJETIVO</Text>
-                <Text style={styles.fieldValue}>
-                  Localizar e extrair o Módulo Núcleo de Dobra.
-                </Text>
-
-                <Text style={styles.fieldLabel}>DURAÇÃO</Text>
-                <Text style={styles.fieldValue}>7–14 dias (estimado)</Text>
-
-                <Text style={styles.fieldLabel}>RISCO</Text>
-                <Text style={styles.fieldValue}>Crítico — Zona Fora do Mapa</Text>
-              </View>
-
-              <View style={styles.rightPanel}>
-                <Text style={styles.fieldLabel}>REMUNERAÇÃO</Text>
-                <Text style={styles.fieldValue}>120.000 créditos Z</Text>
-
-                <Text style={styles.fieldLabel}>PREPARATIVOS</Text>
-                <Text style={styles.fieldValueSmall}>
-                  Calibração matriz de dobra, isolamento de pulso, contenção
-                  magnética, protocolo offline.
-                </Text>
-
-                <Text style={styles.fieldLabel}>AUTORIZAÇÃO</Text>
-                <Text style={styles.fieldValue}>Ordem Estelar de Reconhecimento</Text>
-              </View>
-            </View>
-
-            <View style={styles.footerRow}>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={() => onFinish && onFinish()}
-                activeOpacity={0.85}
-              >
-                <Animated.Text
+              const isCurrentLine = idx === activeLineIndex;
+              return (
+                <Text
+                  key={idx}
                   style={[
-                    styles.confirmText,
-                    {
-                      textShadow: glowAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [
-                          "0px 0px 12px rgba(0,255,170,0.15)",
-                          "0px 0px 12px rgba(0,255,170,0.9)",
-                        ],
-                      }),
-                    }
+                    styles.mainCinematicText,
+                    getTextStyleType(CINEMATIC_SCRIPTS[currentIndex].type),
+                    idx > 0 && { marginTop: 14 } // Espaçamento harmônico entre linhas
                   ]}
                 >
-                  Confirmar Missão
-                </Animated.Text>
-              </TouchableOpacity>
-
-              <View style={styles.smallStatus}>
-                <Text style={styles.statusLabel}>TERM. LOCAL</Text>
-                <Text style={styles.statusValue}>SETOR HAVOC — Núcleo A-7</Text>
-              </View>
-            </View>
-
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.holoGrid,
-                {
-                  opacity: glowAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.14, 0.32],
-                  }),
-                },
-              ]}
-            />
-          </Animated.View>
-
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.frameGlow,
-              {
-                opacity: glowAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.06, 0.22],
-                }),
-              },
-            ]}
-          />
+                  {lineText}
+                  {isCurrentLine && (
+                    <Text style={[styles.cursor, { opacity: showCursor ? 1 : 0 }]}>_</Text>
+                  )}
+                </Text>
+              );
+            })}
+          </View>
         </Animated.View>
       )}
     </View>
@@ -464,258 +443,109 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#000",
   },
-
-  // START BUTTON
-  startButton: {
+  buttonWrapperPure: {
     position: "absolute",
     alignSelf: "center",
-    top: "45%",
-    transform: [{ translateY: -40 }],
-    width: 240,
-    boxShadowColor: "rgba(0,255,170,1)",
-    boxshadowOpacity: 0.7,
-    boxshadowRadius: 10,
-    elevation: 10,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: baseGreen,
-    backgroundColor: "rgba(6,6,8,0.65)",
-    alignItems: "center",
-    zIndex: 20,
+    top: "48%",
+    backgroundColor: "transparent",
+    padding: 10,
   },
   startButtonText: {
     color: baseGreen,
-    fontSize: 20,
-    fontWeight: "700",
-    letterSpacing: 1,
+    fontSize: 19,
+    fontWeight: "300",
+    letterSpacing: 4,
+    textShadow: "0px 0px 10px rgba(0, 255, 170, 0.6)",
   },
 
-  centerOverlay: {
+  circuitContainer: {
     position: "absolute",
-    width,
-    height,
-    top: 0,
-    left: 0,
-    justifyContent: "center",
+    zIndex: 2,
     alignItems: "center",
+    justifyContent: "center",
   },
-  beforeText: {
-    color: baseGreen,
-    fontSize: 42,
-    fontWeight: "800",
-    letterSpacing: 6,
-    textShadow: "0px 6px 12px rgba(0,255,170,0.18)",
-  },
-
-  // video
-  videoWrapper: {
-    width,
-    height,
-    backgroundColor: "#000",
-  },
-  video: {
-    width,
-    height,
-    backgroundColor: "#000",
+  circuitSymbol: {
+    color: "rgba(0, 255, 170, 0.55)",
+    fontSize: 13,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    fontWeight: "bold",
+    textShadow: "0px 0px 5px rgba(0, 255, 170, 0.7)",
   },
 
-  // lore overlay (new)
-  loreRoot: {
+  ambientGlow: {
     position: "absolute",
-    width,
-    height,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.50)",
-    paddingHorizontal: 20,
-  },
-
-  loreInsideScroll: {
-    paddingBottom: 30,
-    paddingTop: 10,
-  },
-
-  loreParagraph: {
-    color: "#eafbf4",
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-    letterSpacing: 0.6,
-  },
-  loreSectionTitle: {
-    color: baseGreen,
-    fontSize: 16,
-    fontWeight: "800",
-    marginTop: 10,
-    marginBottom: 8,
-    letterSpacing: 1,
-  },
-
-  loreDivider: {
-    width: "100%",
-    height: 1,
-    backgroundColor: "rgba(0,255,170,0.25)",
-    marginVertical: 18,
-    borderRadius: 20,
-  },
-
-  loreList: {
-    color: "#eafbf4",
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
-    letterSpacing: 0.5,
-  },
-
-  // HUD
-  hudRoot: {
-    position: "absolute",
-    width,
-    height,
-    top: 0,
-    left: 0,
-    justifyContent: "center",
-    alignItems: "center",
+    width: width * 1.3,
+    height: width * 1.3,
+    top: height / 2 - (width * 1.3) / 2,
+    left: width / 2 - (width * 1.3) / 2,
+    borderRadius: (width * 1.3) / 2,
+    boxShadow: `0px 0px 90px rgba(0, 0, 0, 1) inset`,
   },
   scanline: {
     position: "absolute",
     left: 0,
-    width,
+    right: 0,
     height: 2,
-    backgroundColor: "#fff",
-    zIndex: 10,
+    backgroundColor: "rgba(0, 255, 170, 0.12)",
+    boxShadow: "0px 0px 8px rgba(0, 255, 170, 0.4)",
+    zIndex: 4,
   },
-
-  holoCard: {
-    width: Math.min(width * 0.92, 980),
-    maxHeight: Math.min(height * 0.84, 820),
-    borderRadius: 14,
-    padding: 22,
-    backgroundColor: panelBg,
-    borderWidth: 1,
-    borderColor: "rgba(0,255,170,0.12)",
-    boxshadowColor: baseGreen,
-    boxshadowOpacity: 0.08,
-    boxshadowRadius: 24,
-    boxshadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-    overflow: "hidden",
-  },
-
-  holoHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    marginBottom: 12,
-  },
-  holoTitle: {
-    color: baseGreen,
-    fontSize: 18,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-  },
-  holoSub: {
-    color: "rgba(180,255,220,0.85)",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  panelsRow: {
-    flexDirection: "row",
-    gap: 18,
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-
-  leftPanel: {
-    width: "49%",
-  },
-  rightPanel: {
-    width: "49%",
-  },
-
-  fieldLabel: {
-    color: "rgba(160,255,210,0.95)",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginTop: 10,
-  },
-  fieldValue: {
-    color: "#eafbf4",
-    fontSize: 15,
-    marginTop: 6,
-    lineHeight: 20,
-  },
-  fieldValueSmall: {
-    color: "#eafbf4",
-    fontSize: 13,
-    marginTop: 6,
-    lineHeight: 18,
-  },
-
-  footerRow: {
-    marginTop: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  confirmButton: {
-    borderWidth: 1,
-    borderColor: baseGreen,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-    backgroundColor: "rgba(0,0,0,0.25)",
-  },
-  confirmText: {
-    color: baseGreen,
-    fontWeight: "700",
-    fontSize: 16,
-    textShadow: "0px 0px 6px rgba(0,0,0,0.5)",
-  },
-
-  smallStatus: {
-    alignItems: "flex-end",
-  },
-  statusLabel: {
-    color: "rgba(160,255,210,0.8)",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  statusValue: {
-    color: "#eafbf4",
-    fontSize: 12,
-    marginTop: 6,
-  },
-
-  holoGrid: {
+  sceneWrapper: {
     position: "absolute",
-    width: "140%",
-    height: "140%",
-    left: "-20%",
-    top: "-20%",
-    backgroundColor: "transparent",
-    borderLeftWidth: 1,
-    borderTopWidth: 1,
-    borderColor: "rgba(0,255,170,0.06)",
-    transform: [{ rotate: "-6deg" }],
-  },
-
-  frameGlow: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    left: 0,
+    left: 28,
+    right: 28,
     top: 0,
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "rgba(0,255,170,0.06)",
-    boxshadowColor: baseGreen,
-    boxshadowRadius: 40,
-    boxshadowOpacity: 0.35,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 15,
+  },
+  textGroupContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mainCinematicText: {
+    textAlign: "center",
+    fontSize: 20,
+    lineHeight: 32,
+    letterSpacing: 1.4,
+  },
+
+  // Sombras pretas densas aplicadas abaixo para garantir contraste absoluto contra o clarão branco
+  storyText: {
+    color: "#ffffff",
+    fontWeight: "300",
+    textShadow: "0px 0px 10px rgba(0, 0, 0, 1), 0px 0px 16px rgba(0, 0, 0, 0.9)",
+  },
+  systemText: {
+    color: baseGreen,
+    fontWeight: "400",
+    fontSize: 18,
+    letterSpacing: 2.2,
+    textShadow: "0px 0px 10px rgba(0, 0, 0, 1), 0px 0px 14px rgba(0, 255, 170, 0.4)",
+  },
+  alertText: {
+    color: "#ff453a",
+    fontWeight: "600",
+    fontSize: 21,
+    textShadow: "0px 0px 10px rgba(0, 0, 0, 1), 0px 0px 16px rgba(255, 69, 58, 0.5)",
+  },
+  readyText: {
+    color: "#64d2ff",
+    fontWeight: "500",
+    fontSize: 21,
+    textShadow: "0px 0px 10px rgba(0, 0, 0, 1), 0px 0px 14px rgba(100, 210, 255, 0.4)",
+  },
+  cursor: {
+    color: baseGreen,
+    fontWeight: "bold",
+  },
+  whiteoutOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#ffffff",
+    zIndex: 5,
   },
 });
