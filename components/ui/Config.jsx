@@ -1,7 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, FlatList, TextInput, ScrollView } from "react-native";
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  ScrollView,
+  Platform,
+  Dimensions
+} from "react-native";
 import Slider from "@react-native-community/slider";
-import { getPlaylist, playTrack, getCurrentTrackIndex, setMusicVolume, getMusicVolume } from "@/components/controllers/AudioController";
+import {
+  getPlaylist,
+  playTrack,
+  getCurrentTrackIndex,
+  setMusicVolume,
+  getMusicVolume,
+  playSfx
+} from "@/components/controllers/AudioController";
+
+const { width, height } = Dimensions.get("window");
+const baseGreen = "#00ffaa";
+const cyanNeon = "#00eaff";
+const redNeon = "#ff453a";
 
 export default function Config({ visible, onClose }) {
   const [activeTab, setActiveTab] = useState("audio");
@@ -31,6 +54,11 @@ export default function Config({ visible, onClose }) {
     return () => clearInterval(interval);
   }, [visible]);
 
+  const changeTab = (tab) => {
+    playSfx("textDigital");
+    setActiveTab(tab);
+  };
+
   const handleVolumeChange = async (value) => {
     setVolume(value);
     setVolumeInput(String(Math.round(value * 100)));
@@ -46,11 +74,17 @@ export default function Config({ visible, onClose }) {
   };
 
   const handlePlay = async (index) => {
+    playSfx("textDigital");
     await playTrack(index);
     setCurrent(index);
   };
 
-  const renderItem = ({ item, index }) => (
+  const handleClose = () => {
+    playSfx("textDigital");
+    onClose();
+  };
+
+  const renderTrackItem = ({ item, index }) => (
     <TouchableOpacity
       style={[
         styles.trackItem,
@@ -58,8 +92,8 @@ export default function Config({ visible, onClose }) {
       ]}
       onPress={() => handlePlay(index)}
     >
-      <Text style={styles.trackText}>
-        {current === index ? "▶ " : ""}{item.name}
+      <Text style={[styles.trackText, current === index && styles.activeTrackText]}>
+        {current === index ? "⬢ REPRODUZINDO // " : "⬡ CORRENTE // "}{item.name.toUpperCase()}
       </Text>
     </TouchableOpacity>
   );
@@ -68,24 +102,35 @@ export default function Config({ visible, onClose }) {
     switch (activeTab) {
       case "geral":
         return (
-          <>
-            <Text style={styles.sectionTitle}>Geral</Text>
+          <View style={styles.tabContentWrapper}>
+            <Text style={styles.sectionTitle}>SISTEMA // PARÂMETROS GERAIS</Text>
+
             <View style={styles.card}>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Idioma</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Notificações</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Salvar Automático</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>IDIOMA DO TERMINAL</Text>
+                <Text style={styles.hudOptionValue}>[ PT-BR ]</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>NOTIFICAÇÕES DE DIRETRIZ</Text>
+                <Text style={styles.hudOptionValue}>[ ATIVADO ]</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>REGISTRO AUTOMÁTICO (AUTOSAVE)</Text>
+                <Text style={styles.hudOptionValue}>[ NÚCLEO_ATIVO ]</Text>
+              </TouchableOpacity>
             </View>
-          </>
+          </View>
         );
       case "audio":
         return (
-          <>
-            <Text style={styles.sectionTitle}>Áudio</Text>
+          <View style={styles.tabContentWrapper}>
+            <Text style={styles.sectionTitle}>ÁUDIO // MATRIZ DE FREQUÊNCIA</Text>
 
             <View style={styles.card}>
               <View style={styles.rowBetween}>
-                <Text style={styles.label}>Volume</Text>
-
+                <Text style={styles.label}>VOLUME DO SINAL SÔNICO</Text>
                 <TextInput
                   style={styles.inputInline}
                   value={`${volumeInput}%`}
@@ -98,87 +143,119 @@ export default function Config({ visible, onClose }) {
               </View>
 
               <Slider
-                style={{ width: "100%", height: 40 }}
+                style={{ width: "100%", height: 40, marginTop: 10 }}
                 minimumValue={0}
                 maximumValue={1}
                 value={volume}
                 onValueChange={handleVolumeChange}
-                minimumTrackTintColor="#0ff"
-                maximumTrackTintColor="#222"
-                thumbTintColor="#0ff"
+                minimumTrackTintColor={cyanNeon}
+                maximumTrackTintColor="rgba(255, 255, 255, 0.1)"
+                thumbTintColor={cyanNeon}
               />
             </View>
 
-            <Text style={styles.sectionTitle}>Música</Text>
+            <Text style={styles.sectionTitle}>RECEPTOR // TRANSMISSÕES DE ÁUDIO</Text>
 
             <View style={styles.card}>
               <FlatList
                 data={playlist}
                 keyExtractor={(item) => item.id.toString()}
-                renderItem={renderItem}
-                style={{ maxHeight: 200 }}
+                renderItem={renderTrackItem}
+                style={{ maxHeight: 220 }}
+                showsVerticalScrollIndicator={true}
               />
             </View>
-          </>
+          </View>
         );
 
       case "gameplay":
         return (
-          <>
-            <Text style={styles.sectionTitle}>Controles</Text>
+          <View style={styles.tabContentWrapper}>
+            <Text style={styles.sectionTitle}>CONTROLES // MAPEAMENTO TELEMÉTRICO</Text>
 
             <View style={styles.card}>
               {[
-                ["Mover ↑", "W"],
-                ["Mover ↓", "S"],
-                ["Mover ←", "A"],
-                ["Mover →", "D"],
-                ["Disparo", "SPACE"],
-                ["Boost", "SHIFT"],
+                ["IMPULSO_DIRETRIZ ↑", "W"],
+                ["REVERSO_DIRETRIZ ↓", "S"],
+                ["ESTRUTURA_BORDA ←", "A"],
+                ["ESTRUTURA_BORDA →", "D"],
+                ["DISPARAR_CANHÃO", "SPACE"],
+                ["SOBRECARGA_DOBRA", "SHIFT"],
               ].map(([label, key]) => (
-                <View style={styles.row} key={label}>
-                  <Text style={styles.label}>{label}</Text>
-                  <TouchableOpacity style={styles.keyButton}>
+                <View style={styles.rowControl} key={label}>
+                  <Text style={styles.controlLabel}>{label}</Text>
+                  <View style={styles.keyContainer}>
                     <Text style={styles.keyText}>{key}</Text>
-                  </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </View>
 
-            <Text style={styles.sectionTitle}>Gameplay</Text>
+            <Text style={styles.sectionTitle}>DIRETRIZES DE FLUXO</Text>
 
             <View style={styles.card}>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Dificuldade</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Assistência de Mira</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>HUD Dinâmico</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>NÍVEL DE AMBIENTE (DIFICULDADE)</Text>
+                <Text style={styles.hudOptionValue}>[ HAVOC_CRÍTICO ]</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>TRAVAMENTO DE MIRA CINÉTICA</Text>
+                <Text style={styles.hudOptionValue}>[ ASSISTIDO ]</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>INTERFACE DINÂMICA DE CABINE</Text>
+                <Text style={styles.hudOptionValue}>[ GLOBAL_HUD ]</Text>
+              </TouchableOpacity>
             </View>
-          </>
+          </View>
         );
 
       case "video":
         return (
-          <>
-            <Text style={styles.sectionTitle}>Vídeo</Text>
+          <View style={styles.tabContentWrapper}>
+            <Text style={styles.sectionTitle}>VÍDEO // MATRIZ HOLOGRÁFICA</Text>
 
             <View style={styles.card}>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Resolução</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Modo Tela Cheia</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Qualidade Gráfica</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>VSync</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>RESOLUÇÃO DE PROJEÇÃO</Text>
+                <Text style={styles.hudOptionValue}>[ NATIVA ]</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>DIMENSÃO DO MONITOR</Text>
+                <Text style={styles.hudOptionValue}>[ TELA CHEIA ]</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>QUALIDADE DE RENDERIZADORES</Text>
+                <Text style={styles.hudOptionValue}>[ ULTRA_PROCESSO ]</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>SINCRONIZAÇÃO VERTICAL (VSYNC)</Text>
+                <Text style={styles.hudOptionValue}>[ BLOQUEADO ]</Text>
+              </TouchableOpacity>
             </View>
-          </>
+          </View>
         );
 
       case "outros":
         return (
-          <>
-            <Text style={styles.sectionTitle}>Outros</Text>
+          <View style={styles.tabContentWrapper}>
+            <Text style={styles.sectionTitle}>SISTEMAS AUXILIARES</Text>
+
             <View style={styles.card}>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Créditos</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Resetar Jogo</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.button}><Text style={styles.buttonText}>Logs do Sistema</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>CRÉDITOS DE DESENVOLVIMENTO</Text>
+                <Text style={styles.hudOptionValue}>// LER_</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={[styles.hudOptionText, { color: redNeon }]}>EXPURGAR DADOS (RESET COMPLETE)</Text>
+                <Text style={[styles.hudOptionValue, { color: redNeon }]}>[ PERIGO ]</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.hudOptionButton}>
+                <Text style={styles.hudOptionText}>REGISTROS CRIPTOGRAFADOS (LOGS)</Text>
+                <Text style={styles.hudOptionValue}>// COPIA_MK-IV</Text>
+              </TouchableOpacity>
             </View>
-          </>
+          </View>
         );
 
       default:
@@ -187,36 +264,60 @@ export default function Config({ visible, onClose }) {
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
+        <View style={styles.vignette} pointerEvents="none" />
+
         <View style={styles.container}>
 
-          <Text style={styles.title}>⚙️ CONFIGURAÇÕES</Text>
-
-          {/* TABS */}
-          <View style={styles.tabs}>
-            {["geral", "gameplay", "audio", "video", "outros"].map((tab) => (
-              <TouchableOpacity
-                key={tab}
-                style={[
-                  styles.tabButton,
-                  activeTab === tab && styles.activeTabButton
-                ]}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text style={styles.tabText}>{tab.toUpperCase()}</Text>
-              </TouchableOpacity>
-            ))}
+          {/* HEADER DO CAPACETE */}
+          <View style={styles.hudHeaderContainer}>
+            <Text style={styles.telemetryHeader}>SYS.CONFIG // PROTOCOLO_DE_SISTEMA_V.46</Text>
+            <Text style={styles.title}>CONFIGURAÇÕES_</Text>
+            <View style={styles.bracketLine} />
           </View>
 
-          <ScrollView>
-            {renderTabContent()}
-          </ScrollView>
+          {/* PAINEL DIVIDIDO: ABAS NA ESQUERDA, CONTEÚDO NA DIREITA */}
+          <View style={styles.panelBody}>
 
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>Fechar</Text>
-          </TouchableOpacity>
+            {/* ABAS INCLINADAS ESTILO HUD COCKPIT */}
+            <View style={styles.tabsSidebar}>
+              {["geral", "gameplay", "audio", "video", "outros"].map((tab) => {
+                const isActive = activeTab === tab;
+                return (
+                  <TouchableOpacity
+                    key={tab}
+                    style={[
+                      styles.tabButton,
+                      isActive && styles.activeTabButton
+                    ]}
+                    onPress={() => changeTab(tab)}
+                  >
+                    <View style={styles.unskewContent}>
+                      <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+                        {`// ${tab.toUpperCase()}`}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
 
+              {/* BOTÃO DE ABORTO/FECHAR INTEGRADO AO MENU LATERAL */}
+              <TouchableOpacity style={styles.abortButton} onPress={handleClose}>
+                <View style={styles.unskewContent}>
+                  <Text style={styles.abortText}>✕ DESCONECTAR</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* PAINEL DE CONTEÚDO OPERACIONAL */}
+            <View style={styles.contentPanel}>
+              <ScrollView contentContainerStyle={styles.scrollContent}>
+                {renderTabContent()}
+              </ScrollView>
+            </View>
+
+          </View>
         </View>
       </View>
     </Modal>
@@ -226,149 +327,238 @@ export default function Config({ visible, onClose }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: "rgba(2, 6, 12, 0.88)",
     justifyContent: "center",
     alignItems: "center",
   },
-
+  vignette: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 20,
+    borderColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "transparent",
+  },
   container: {
-    width: "70%",
-    maxHeight: "85%",
-    backgroundColor: "#0a0a0a",
-    borderRadius: 20,
-    padding: 20,
-    borderColor: "#0ff",
+    width: "85%",
+    height: "80%",
+    backgroundColor: "rgba(3, 14, 24, 0.9)",
+    borderColor: "rgba(0, 234, 255, 0.25)",
     borderWidth: 1,
+    padding: 25,
+    borderRadius: 2,
   },
-
+  /* TELEMETRIA HEADER */
+  hudHeaderContainer: {
+    marginBottom: 20,
+  },
+  telemetryHeader: {
+    color: cyanNeon,
+    fontSize: 9,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    letterSpacing: 1.5,
+    opacity: 0.6,
+  },
   title: {
-    color: "#0ff",
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 10,
+    color: "#fff",
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: 2,
+    marginTop: 2,
   },
-
-  tabs: {
+  bracketLine: {
+    width: "100%",
+    height: 1,
+    backgroundColor: "rgba(0, 234, 255, 0.2)",
+    marginTop: 8,
+  },
+  /* DIVISÃO DE PAINEL */
+  panelBody: {
+    flex: 1,
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 10,
   },
-
-  tabButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    backgroundColor: "#111",
-  },
-
-  activeTabButton: {
-    backgroundColor: "#0ff33",
-  },
-
-  tabText: {
-    color: "#0ff",
-    fontWeight: "bold",
-  },
-
-  sectionTitle: {
-    color: "#0ff",
-    fontSize: 18,
+  /* MENU DE ABAS LATERAL (SKEWED HUD) */
+  tabsSidebar: {
+    width: "25%",
+    paddingRight: 15,
+    justifyContent: "flex-start",
     marginTop: 15,
-    marginBottom: 5,
   },
-
+  tabButton: {
+    backgroundColor: "rgba(0, 25, 40, 0.4)",
+    borderColor: "rgba(0, 234, 255, 0.15)",
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    marginVertical: 5,
+    transform: [{ skewX: "-8deg" }],
+    borderLeftWidth: 4,
+    borderLeftColor: "rgba(0, 234, 255, 0.3)",
+  },
+  activeTabButton: {
+    backgroundColor: "rgba(0, 234, 255, 0.12)",
+    borderColor: cyanNeon,
+    borderLeftColor: cyanNeon,
+    borderLeftWidth: 6,
+  },
+  unskewContent: {
+    transform: [{ skewX: "8deg" }],
+  },
+  tabText: {
+    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  activeTabText: {
+    color: "#fff",
+    textShadowColor: "rgba(0, 234, 255, 0.5)",
+    textShadowRadius: 6,
+  },
+  abortButton: {
+    backgroundColor: "rgba(255, 69, 58, 0.05)",
+    borderColor: "rgba(255, 69, 58, 0.2)",
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginTop: "auto",
+    transform: [{ skewX: "-8deg" }],
+    borderLeftWidth: 4,
+    borderLeftColor: redNeon,
+  },
+  abortText: {
+    color: redNeon,
+    fontSize: 11,
+    fontWeight: "bold",
+    letterSpacing: 1,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  /* PAINEL CONTEÚDO */
+  contentPanel: {
+    flex: 1,
+    backgroundColor: "rgba(1, 8, 15, 0.5)",
+    borderLeftWidth: 1,
+    borderLeftColor: "rgba(0, 234, 255, 0.1)",
+    paddingLeft: 20,
+  },
+  scrollContent: {
+    paddingVertical: 10,
+    paddingRight: 10,
+  },
+  sectionTitle: {
+    color: baseGreen,
+    fontSize: 12,
+    fontWeight: "bold",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  card: {
+    backgroundColor: "rgba(0, 18, 30, 0.4)",
+    padding: 14,
+    borderRadius: 2,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(0, 234, 255, 0.1)",
+    borderLeftWidth: 3,
+    borderLeftColor: "rgba(0, 234, 255, 0.4)",
+  },
+  label: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+    letterSpacing: 1,
+    fontWeight: "600",
+  },
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
-  card: {
-    backgroundColor: "#111",
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#0ff22",
-  },
-
-  label: {
-    color: "#0ff",
-    marginBottom: 5,
-  },
-
   inputInline: {
-    backgroundColor: "#000",
-    color: "#0ff",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    color: cyanNeon,
     borderWidth: 1,
-    borderColor: "#0ff",
-    borderRadius: 6,
+    borderColor: "rgba(0, 234, 255, 0.4)",
+    borderRadius: 3,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    width: 60,
+    paddingVertical: 3,
+    width: 65,
     textAlign: "center",
     fontWeight: "bold",
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    fontSize: 12,
   },
-
+  /* LISTA DE MÚSICAS ESTILIZADA */
   trackItem: {
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#222",
+    borderBottomColor: "rgba(255, 255, 255, 0.05)",
   },
-
   activeTrack: {
-    backgroundColor: "#0ff33",
-    borderRadius: 6,
+    backgroundColor: "rgba(0, 234, 255, 0.08)",
+    borderLeftWidth: 2,
+    borderLeftColor: cyanNeon,
   },
-
   trackText: {
-    color: "#0ff",
+    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: 11,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    letterSpacing: 1,
   },
-
-  row: {
+  activeTrackText: {
+    color: cyanNeon,
+    fontWeight: "bold",
+  },
+  /* LINHAS DE BOTÕES ESTILO TERMINAL SCI-FI */
+  hudOptionButton: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.03)",
   },
-
-  keyButton: {
-    backgroundColor: "#000",
-    borderColor: "#0ff",
+  hudOptionText: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 12,
+    letterSpacing: 1,
+  },
+  hudOptionValue: {
+    color: cyanNeon,
+    fontWeight: "bold",
+    fontSize: 12,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  /* CONTROLES / TECLADO DE BOTÕES */
+  rowControl: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.03)",
+  },
+  controlLabel: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 12,
+    letterSpacing: 1.5,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  keyContainer: {
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderColor: "rgba(0, 234, 255, 0.3)",
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 3,
+    minWidth: 60,
+    alignItems: "center",
   },
-
   keyText: {
-    color: "#0ff",
+    color: cyanNeon,
     fontWeight: "bold",
-  },
-
-  button: {
-    backgroundColor: "#0ff22",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-
-  buttonText: {
-    color: "#0ff",
-    textAlign: "center",
-  },
-
-  closeButton: {
-    marginTop: 10,
-    padding: 12,
-    backgroundColor: "#0ff",
-    borderRadius: 10,
-  },
-
-  closeText: {
-    textAlign: "center",
-    color: "#000",
-    fontWeight: "bold",
+    fontSize: 11,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
 });

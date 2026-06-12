@@ -1,48 +1,62 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Animated } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ImageBackground,
+  Animated,
+  Dimensions,
+  Platform
+} from "react-native";
+import { playSfx } from "@/components/controllers/AudioController";
+
+const { width, height } = Dimensions.get("window");
+const cyanNeon = "#00eaff";
+const redNeon = "#ff453a";
 
 export default function Menu({ onStart, hasSession, onConfig, onCredits, onHistory, onExit, onLogin }) {
-  // Animação do título
-  const titleAnim = useRef(new Animated.Value(0)).current;
   const [open, setOpen] = useState(false);
-  const animHeight = useRef(new Animated.Value(40)).current;
   const [seed, setSeed] = useState("");
 
+  // Animações de HUD
+  const hudFade = useRef(new Animated.Value(0)).current;
+  const glitchAnim = useRef(new Animated.Value(0)).current;
+  const leaderboardHeight = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
+    // Entrada cinematográfica dos elementos do HUD
+    Animated.timing(hudFade, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+
+    // Loop sutil de ruído/brilho no fundo
     Animated.loop(
       Animated.sequence([
-        Animated.timing(titleAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.timing(titleAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
+        Animated.timing(glitchAnim, { toValue: 1, duration: 2000, useNativeDriver: false }),
+        Animated.timing(glitchAnim, { toValue: 0, duration: 1500, useNativeDriver: false }),
       ])
     ).start();
   }, []);
 
-  const toggleOpen = () => {
-    const finalHeight = open ? 40 : 160;
-    Animated.timing(animHeight, {
-      toValue: finalHeight,
-      duration: 300,
+  const toggleLeaderboard = () => {
+    playSfx("textDigital");
+    const toValue = open ? 0 : 130;
+    setOpen(!open);
+
+    Animated.timing(leaderboardHeight, {
+      toValue,
+      duration: 250,
       useNativeDriver: false,
     }).start();
-    setOpen(!open);
   };
 
-  const titleStyle = {
-    transform: [
-      {
-        scale: titleAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [1, 1.05],
-        }),
-      },
-    ],
-    textShadow: titleAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [
-        "0px 0px 10px rgba(0,255,170,0.5)",
-        "0px 0px 20px rgba(0,255,170,0.5)",
-      ],
-    }),
+  const handleButtonPress = (action) => {
+    playSfx("textDigital");
+    action();
   };
 
   return (
@@ -52,80 +66,117 @@ export default function Menu({ onStart, hasSession, onConfig, onCredits, onHisto
       resizeMode="cover"
     >
       <View style={styles.overlay} />
+      <View style={styles.vignette} pointerEvents="none" />
 
-      {/* Título com efeito neon */}
-      <Animated.Text style={[styles.title, titleStyle]}>GALACTIC HAVOC</Animated.Text>
+      {/* RENDER DO HUD PRINCIPAL (ESTILO NO MAN'S SKY) */}
+      <Animated.View style={[styles.hudContainer, { opacity: hudFade }]}>
 
-      {/* Input de seed */}
-      <TextInput
-        style={styles.input}
-        placeholder="Seed do universo (opcional)"
-        placeholderTextColor="#888"
-        value={seed}
-        onChangeText={setSeed}
-      />
+        {/* TOPO ESQUERDO: INFOBAR E TÍTULO INTEGRADO AO HUD */}
+        <View style={styles.headerTelemetry}>
+          <Text style={styles.telemetryText}>SYS.LOC // SECTOR_HAVOC_MK4 // ONLINE</Text>
+          <Text style={styles.gameTitle}>GALACTIC HAVOC</Text>
+          <View style={styles.bracketLine} />
+        </View>
 
-      {/* Botões centrais */}
-      <View style={styles.buttonContainer}>
-        <View style={styles.buttonRow}>
-          {hasSession ? (
-            <>
-              <TouchableOpacity style={styles.button} onPress={() => onStart({ mode: "continue" })}>
-                <Text style={styles.buttonText}>Continuar</Text>
-              </TouchableOpacity>
+        {/* CANTO ESQUERDO CENTRAL: O MENU DIAGONAL (SKEWED INTERFACE) */}
+        <View style={styles.diagonalMenuContainer}>
 
-              <TouchableOpacity style={styles.button} onPress={() => onStart({ mode: "new", seed })}>
-                <Text style={styles.buttonText}>Novo Jogo</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <TouchableOpacity style={styles.button} onPress={() => onStart({ mode: "new", seed })}>
-              <Text style={styles.buttonText}>Iniciar</Text>
+          {hasSession && (
+            <TouchableOpacity
+              style={[styles.skewButton, styles.buttonContinue]}
+              onPress={() => handleButtonPress(() => onStart({ mode: "continue" }))}
+            >
+              <View style={styles.unskewContent}>
+                <Text style={styles.skewButtonText}>REASSUMIR COMANDO</Text>
+                <Text style={styles.buttonSubText}>CONTINUE SESSÃO</Text>
+              </View>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.button} onPress={onConfig}>
-            <Text style={styles.buttonText}>Configurações</Text>
+          <TouchableOpacity
+            style={[styles.skewButton, !hasSession && styles.buttonContinue]}
+            onPress={() => handleButtonPress(() => onStart({ mode: "new", seed }))}
+          >
+            <View style={styles.unskewContent}>
+              <Text style={styles.skewButtonText}>INICIAR DIRETRIZ HIPERESPAÇO</Text>
+              <Text style={styles.buttonSubText}>NOVO COMEÇO</Text>
+            </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={onHistory}>
-            <Text style={styles.buttonText}>Terminal MK-IV</Text>
+          <TouchableOpacity style={styles.skewButton} onPress={() => handleButtonPress(onHistory)}>
+            <View style={styles.unskewContent}>
+              <Text style={styles.skewButtonText}>TERMINAL DE DADOS MK-IV</Text>
+              <Text style={styles.buttonSubText}>ARQUIVOS E GRAVAÇÕES</Text>
+            </View>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.skewButton} onPress={() => handleButtonPress(onConfig)}>
+            <View style={styles.unskewContent}>
+              <Text style={styles.skewButtonText}>PARÂMETROS DO SISTEMA</Text>
+              <Text style={styles.buttonSubText}>CONFIGURAÇÕES</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* BOTÕES SECUNDÁRIOS COMPACTOS */}
+          <View style={styles.compactRow}>
+            <TouchableOpacity style={styles.flatTextButton} onPress={() => handleButtonPress(onLogin)}>
+              <Text style={styles.flatTextButtonText}>// AUTENTICAR PILOTO</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.flatTextButton} onPress={() => handleButtonPress(onCredits)}>
+              <Text style={styles.flatTextButtonText}>// CRÉDITOS</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
 
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.button} onPress={onCredits}>
-            <Text style={styles.buttonText}>Créditos</Text>
-          </TouchableOpacity>
+        {/* RODAPÉ DO HUD: INPUT ESTILIZADO COMO INJETOR DE COORDENADAS */}
+        <View style={styles.bottomHudBar}>
+          <View style={styles.seedInjectorContainer}>
+            <View style={styles.injectorTag}>
+              <Text style={styles.injectorTagText}>HYPERDRIVE SEED CORE</Text>
+            </View>
+            <TextInput
+              style={styles.seedInput}
+              placeholder="[ INSIRA UMA SEED MANUAL DO UNIVERSO ]"
+              placeholderTextColor="rgba(0, 234, 255, 0.3)"
+              value={seed}
+              onChangeText={setSeed}
+              autoCapitalize="characters"
+            />
+          </View>
 
-          <TouchableOpacity style={styles.button} onPress={onLogin}>
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
+          {onExit && (
+            <TouchableOpacity style={styles.abortButton} onPress={() => handleButtonPress(onExit)}>
+              <Text style={styles.abortText}>DESCONECTAR_</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </View>
 
-      {/* Placar animado com colunas */}
-      <View style={styles.topRight}>
-        <TouchableOpacity onPress={toggleOpen}>
-          <Text style={styles.scoreTitle}>
-            Melhores Jogadores {open ? "▲" : "▼"}
-          </Text>
+      </Animated.View>
+
+      {/* CANTO SUPERIOR DIREITO: WIDGET HOLOGRÁFICO DE PILOTOS */}
+      <View style={styles.leaderboardWidget}>
+        <TouchableOpacity onPress={toggleLeaderboard} style={styles.leaderboardHeader} activeOpacity={0.8}>
+          <View style={styles.pulseDot} />
+          <Text style={styles.scoreTitle}>SINAIS_DE_PILOTOS.LOG</Text>
+          <Text style={styles.scoreArrow}>{open ? " [-]" : " [+]"}</Text>
         </TouchableOpacity>
 
-        {open && (
-          <View style={styles.items}>
+        <Animated.View style={[styles.itemsContainer, { height: leaderboardHeight }]}>
+          <View style={styles.itemsInner}>
             {[
               { name: "Gabriel Ramos", score: 1200 },
               { name: "Gu", score: 980 },
               { name: "PlayerX", score: 730 },
             ].map((player, index) => (
               <View key={index} style={styles.scoreRow}>
-                <Text style={styles.scoreName}>{`${index + 1}. ${player.name}`}</Text>
-                <Text style={styles.scoreValue}>{player.score}</Text>
+                <Text style={styles.scoreName}>{`ID_0${index + 1} // ${player.name.toUpperCase()}`}</Text>
+                <Text style={styles.scoreValue}>{player.score} LY</Text>
               </View>
             ))}
           </View>
-        )}
+        </Animated.View>
       </View>
     </ImageBackground>
   );
@@ -134,102 +185,225 @@ export default function Menu({ onStart, hasSession, onConfig, onCredits, onHisto
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     height: "",
     width: "",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    pointerEvents: "none",
+    backgroundColor: "rgba(2, 6, 12, 0.65)",
   },
-  title: {
-    fontSize: 48,
-    color: "#0ff",
-    fontWeight: "bold",
-    marginBottom: 50,
-    textShadow: "2px 2px 15px #0ff",
+  vignette: {
+    ...StyleSheet.absoluteFillObject,
+    // Efeito de escurecimento de borda clássico de cockpit/capacete
+    borderWidth: 24,
+    borderColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "transparent",
   },
-  buttonContainer: {
-    alignItems: "center",
-    marginTop: 50,
+  hudContainer: {
+    flex: 1,
+    paddingHorizontal: 50,
+    paddingVertical: 40,
+    justifyContent: "space-between",
   },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 5,
+  /* TELEMETRIA SUPERIOR */
+  headerTelemetry: {
+    alignSelf: "flex-start",
+    marginTop: 20,
   },
-  button: {
-    backgroundColor: "#111",
-    paddingVertical: 10,
+  telemetryText: {
+    color: cyanNeon,
+    fontSize: 10,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    letterSpacing: 2,
+    opacity: 0.6,
+  },
+  gameTitle: {
+    color: "#fff",
+    fontSize: 44,
+    fontWeight: "900",
+    letterSpacing: 4,
+    marginTop: 5,
+    textShadowColor: "rgba(0, 234, 255, 0.6)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+  },
+  bracketLine: {
+    width: 200,
+    height: 1,
+    backgroundColor: cyanNeon,
+    marginTop: 8,
+    opacity: 0.4,
+  },
+  /* MENU DIAGONAL ESTILO SCI-FI HUD */
+  diagonalMenuContainer: {
+    alignSelf: "flex-start",
+    width: 360,
+    marginLeft: 10,
+    marginVertical: 30,
+  },
+  skewButton: {
+    backgroundColor: "rgba(0, 35, 50, 0.4)",
+    borderColor: "rgba(0, 234, 255, 0.3)",
+    borderWidth: 1,
+    paddingVertical: 12,
     paddingHorizontal: 25,
-    borderRadius: 12,
-    marginHorizontal: 8,
-    borderWidth: 1,
-    borderColor: "#0ff",
+    marginVertical: 6,
+    // ESSA PROPRIEDADE FAZ A CAIXA FICAR INCLINADA NA DIAGONAL ÉPICA
+    transform: [{ skewX: "-12deg" }],
+    borderLeftWidth: 5,
+    borderLeftColor: "rgba(0, 234, 255, 0.6)",
   },
-  buttonText: {
-    color: "#0ff",
-    fontSize: 16,
+  buttonContinue: {
+    backgroundColor: "rgba(0, 234, 255, 0.15)",
+    borderColor: cyanNeon,
+    borderLeftColor: cyanNeon,
+    borderLeftWidth: 7,
+  },
+  unskewContent: {
+    // Desfaz o skew no texto para ele não ficar deformado/ilegível
+    transform: [{ skewX: "12deg" }],
+  },
+  skewButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 2,
+  },
+  buttonSubText: {
+    color: cyanNeon,
+    fontSize: 8,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    letterSpacing: 1.5,
+    opacity: 0.6,
+    marginTop: 2,
+  },
+  /* SUBMENUS PLANOS */
+  compactRow: {
+    flexDirection: "row",
+    marginTop: 15,
+    marginLeft: 10,
+  },
+  flatTextButton: {
+    marginRight: 25,
+    paddingVertical: 5,
+  },
+  flatTextButtonText: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 11,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    letterSpacing: 1.5,
+  },
+  /* BARRA INFERIOR DE COMANDO */
+  bottomHudBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0, 234, 255, 0.15)",
+    paddingTop: 20,
+  },
+  seedInjectorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 15, 25, 0.8)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 234, 255, 0.2)",
+    borderRadius: 4,
+    flex: 1,
+    maxWidth: 500,
+    height: 38,
+  },
+  injectorTag: {
+    backgroundColor: "rgba(0, 234, 255, 0.15)",
+    height: "100%",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: "rgba(0, 234, 255, 0.2)",
+  },
+  injectorTagText: {
+    color: cyanNeon,
+    fontSize: 9,
     fontWeight: "bold",
+    letterSpacing: 1,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
-  exitButton: {
-    borderColor: "#f00",
+  seedInput: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 11,
+    paddingHorizontal: 12,
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
-  topRight: {
+  abortButton: {
+    paddingHorizontal: 15,
+  },
+  abortText: {
+    color: redNeon,
+    fontSize: 11,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    letterSpacing: 2,
+    fontWeight: "bold",
+    opacity: 0.8,
+  },
+  /* WIDGET RANKING HOLOGRÁFICO */
+  leaderboardWidget: {
     position: "absolute",
-    right: 20,
-    top: 20,
-    alignItems: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 10,
-    borderRadius: 10,
+    right: 40,
+    top: 55,
+    width: 240,
+    backgroundColor: "rgba(0, 8, 12, 0.8)",
     borderWidth: 1,
-    borderColor: "rgba(0, 200, 255, 0.4)",
-    boxshadowColor: "#00eaff",
-    boxshadowOpacity: 0.3,
-    boxshadowOffset: { width: 0, height: 2 },
-    boxshadowRadius: 5,
+    borderColor: "rgba(0, 234, 255, 0.2)",
+  },
+  leaderboardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    backgroundColor: "rgba(0, 234, 255, 0.05)",
+  },
+  pulseDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: redNeon,
+    marginRight: 8,
   },
   scoreTitle: {
-    color: "#00eaff",
-    fontSize: 18,
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 10,
     fontWeight: "bold",
-    marginBottom: 5,
+    letterSpacing: 1,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    flex: 1,
   },
-  items: {
-    width: 180,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    borderRadius: 8,
-    padding: 5,
+  scoreArrow: {
+    color: cyanNeon,
+    fontSize: 10,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  },
+  itemsContainer: {
+    overflow: "hidden",
+  },
+  itemsInner: {
+    padding: 10,
+    backgroundColor: "rgba(0, 5, 10, 0.5)",
   },
   scoreRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   scoreName: {
-    color: "#fff",
-    fontSize: 14,
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 10,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
   scoreValue: {
-    color: "#00eaff",
-    fontSize: 14,
+    color: cyanNeon,
+    fontSize: 10,
     fontWeight: "bold",
-  },
-  input: {
-    width: 260,
-    height: 40,
-    borderColor: "#0ff",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    color: "#0ff",
-    marginBottom: 20,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    textAlign: "center",
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
 });

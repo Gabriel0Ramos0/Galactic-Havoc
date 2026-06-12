@@ -1,4 +1,3 @@
-// components/History.jsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -9,35 +8,57 @@ import {
   ScrollView,
   TextInput,
   Pressable,
+  Platform,
+  Dimensions
 } from "react-native";
 import * as registros from "@/components/data/registros";
 import * as mensagens from "@/components/data/messages";
+import { playSfx } from "@/components/controllers/AudioController";
+
+const { width, height } = Dimensions.get("window");
+const baseGreen = "#00ffaa";
+const cyanNeon = "#00eaff";
+const redNeon = "#ff453a";
 
 export default function History({ visible, onClose }) {
   const scrollRef = useRef();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scanlineAnim = useRef(new Animated.Value(-20)).current;
   const inputRef = useRef();
 
-  // terminal
+  // Terminal
   const [lines, setLines] = useState([]);
-  const [current, setCurrent] = useState(""); // linha sendo digitada
+  const [current, setCurrent] = useState("");
   const [cursorVisible, setCursorVisible] = useState(true);
   const [messagesMode, setMessagesMode] = useState(false);
   const [prompt, setPrompt] = useState("$ MK-IV>");
 
-  // login
+  // Login
   const [logged, setLogged] = useState(false);
   const [step, setStep] = useState("user");
 
-  // cursor piscando
+  // Cursor piscando
   useEffect(() => {
     const timer = setInterval(() => {
       setCursorVisible((v) => !v);
-    }, 530);
+    }, 450);
     return () => clearInterval(timer);
   }, []);
 
-  // boot
+  // Linha de varredura CRT animada em loop
+  useEffect(() => {
+    if (visible) {
+      Animated.loop(
+        Animated.timing(scanlineAnim, {
+          toValue: height * 0.85,
+          duration: 4000,
+          useNativeDriver: true,
+        })
+      ).start();
+    }
+  }, [visible]);
+
+  // Boot sequence
   useEffect(() => {
     if (visible) {
       setLines([]);
@@ -50,7 +71,7 @@ export default function History({ visible, onClose }) {
 
       let delay = 0;
       bootHeader.forEach((line) => {
-        delay += 400;
+        delay += 250; // Um pouco mais rápido para não entediar o jogador
         setTimeout(() => {
           setLines((prev) => [...prev, line]);
           scrollRef.current?.scrollToEnd({ animated: true });
@@ -63,41 +84,36 @@ export default function History({ visible, onClose }) {
     fadeAnim.setValue(0);
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 600,
+      duration: 450,
       useNativeDriver: true,
     }).start();
   }
 
-  // enviar comando
   function handleSubmit() {
     const cmd = current.trim();
     if (!cmd) return;
 
+    playSfx("textDigital");
     setLines((p) => [...p, `${prompt} ${cmd}`]);
-
     processCommand(cmd);
     setCurrent("");
-    if (messagesMode) {
-      setPrompt("$ messages>");
-    } else {
-      setPrompt("$ MK-IV>");
-    }
 
-    setTimeout(
-      () => scrollRef.current?.scrollToEnd({ animated: true }),
-      60
-    );
+    setTimeout(() => {
+      if (messagesMode) {
+        setPrompt("$ messages>");
+      } else {
+        setPrompt("$ MK-IV>");
+      }
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 60);
   }
 
-  // login + comandos
   function processCommand(cmd) {
     if (!logged) return handleLogin(cmd);
 
-    // abrir registros
     if (cmd.startsWith("abrirRegistro-")) {
       const num = cmd.replace("abrirRegistro-", "");
       const index = parseInt(num, 10) - 1;
-
       const keys = Object.keys(registros);
       const fileKey = keys[index];
       setLines([]);
@@ -108,18 +124,17 @@ export default function History({ visible, onClose }) {
 
         print([
           "",
-          `>>> ABRINDO REGISTRO ${num} — ${data.titulo}`,
-          "----------------------------------------------",
+          `=== ABRINDO REGISTRO ${num} — ${data.titulo} ===`,
+          "--------------------------------------------------",
           ...data.conteudo,
           "",
         ]);
       } catch {
-        print([`> Registro ${num} não encontrado.`]);
+        print([`[ERRO] Registro ${num} não mapeado ou corrompido.`]);
       }
       return;
     }
 
-    // Se estivermos no modo messages
     if (messagesMode) {
       switch (cmd.toLowerCase()) {
         case "group()":
@@ -133,10 +148,10 @@ export default function History({ visible, onClose }) {
           break;
         case "exit()":
           setMessagesMode(false);
-          print(["> Saindo de messages()."]);
+          print([">>> Retornando à raiz do sistema terminal MK-IV."]);
           break;
         default:
-          print([`> Comando não reconhecido no modo messages(): ${cmd}`]);
+          print([`[ERRO] Comando inválido no canal de comunicações: ${cmd}`]);
       }
       return;
     }
@@ -158,15 +173,15 @@ export default function History({ visible, onClose }) {
       case "help()":
         print([
           "",
-          "Comandos disponíveis:",
-          "  mission()    → Detalhes da missão",
-          "  records()    → Arquivos recuperados",
-          "  echo()       → Transmissão fragmentada",
-          "  messages()   → Seção de mensagens internas",
-          "      group()  → Chat do grupo",
-          "      system() → Logs do núcleo",
-          "      order()  → Comunicados da Ordem",
-          "  clear()      → Limpar terminal",
+          "=== DIRETÓRIO DE PROTOCOLOS MK-IV ===",
+          "  mission()    -> Diretrizes e contratos da missão ativa.",
+          "  records()    -> Banco de dados de arquivos criptografados.",
+          "  echo()       -> Escuta de sinais de rádio residuais.",
+          "  messages()   -> Acesso aos subcanais de mensagens integradas.",
+          "     group()   -> Canal seguro: Amizades do Barulho.",
+          "     system()  -> Diagnóstico da nave Sirius Marrow.",
+          "     order()   -> Despachos imperiais da Ordem.",
+          "  clear()      -> Expurgar buffer do terminal.",
           "",
         ]);
         break;
@@ -174,30 +189,29 @@ export default function History({ visible, onClose }) {
         setLines([]);
         break;
       case "exit()":
-        print(["> Nenhum modo especial ativo."]);
+        print([">>> Nenhum subsetor de comando ativo no momento."]);
         break;
       default:
-        print([`Comando não reconhecido: ${cmd}`]);
+        print([`[ERRO] Comando desconhecido: "${cmd}". Digite help() para assistência.`]);
     }
   }
 
-  // login flow
   function handleLogin(cmd) {
     if (step === "user") {
       if (cmd === "RS-07") {
         print([
-          "> Código de piloto reconhecido.",
-          "> Estabelecendo handshake criptografado...",
-          ">>> Validação bem-sucedida.",
+          ">>> Identificador reconhecido pela Ordem Estelar.",
+          ">>> Iniciando handshake de segurança quântica...",
+          "=== AUTENTICAÇÃO INICIAL CONFIRMADA ===",
           "",
-          "Insira a senha de acesso para continuar:",
+          "INSIRA A CHAVE DE ACESSO CRIPTOGRAFADA:",
           "",
         ]);
         setStep("pass");
       } else {
         print([
-          "> [ERRO 41-A] Código de piloto não reconhecido.",
-          "> Dica: utilize o identificador oficial designado pela Ordem.",
+          "[ERRO] CÓDIGO DE PILOTO REJEITADO.",
+          "> Verifique sua ID na documentação do Terminal MK-IV.",
           "",
         ]);
       }
@@ -210,32 +224,26 @@ export default function History({ visible, onClose }) {
         setStep("logged");
 
         print([
-          "> Senha aceita.",
-          ">>> Validando criptografia da credencial...",
-          ">>> Handshake com o núcleo MK-IV estabelecido.",
-          ">>> Autorização nível TÁLAMO concedida.",
-          ">>> Permissões para o piloto RS-07 liberadas.",
+          ">>> Assinatura digital verificada.",
+          "=== PERMISSÃO CONCEDIDA // AUTORIZAÇÃO NÍVEL TÁLAMO ===",
           "",
-          "==============================================",
-          "   ACESSO CONCEDIDO // PILOTO RS-07",
-          "   Setor de Operações: HAVOC — Ameaça Ativa",
-          "   Status do Terminal: ONLINE",
-          "==============================================",
+          "====================================================",
+          " PILOTO RS-07 CONECTADO AO SISTEMA DE FLUXO HAVOC ",
+          " STATUS DA MATRIZ: TOTALMENTE OPERACIONAL",
+          "====================================================",
           "",
-          "Bem-vindo de volta, Piloto RS-07.",
-          "Último login registrado: 2237.03.17 – Setor Sigma.",
-          "Status do terminal: MK-IV operacional",
-          "O sistema está operacional e aguardando comandos.",
+          "Bem-vindo de volta à rede, Operador.",
+          "Último salto registrado: Estação Espacial Sigma, 2237.03.17.",
+          "Pronto para receber novos parâmetros de dados.",
           "",
-          "Digite help() para visualizar protocolos disponíveis.",
+          "Digite help() para descriptografar os comandos da missão.",
           "",
         ]);
-
       } else {
         print([
-          "> Falha de autenticação.",
-          ">>> Código incorreto. Tentativa arquivada nos registros da Ordem.",
-          ">>> Tente inserir o código de piloto novamente:",
+          "[ERRO] CHAVE ACESSO INCORRETA.",
+          "> Tentativa de força bruta registrada. Alerta de segurança enviado.",
+          "> Insira o código novamente:",
           "",
         ]);
       }
@@ -246,116 +254,109 @@ export default function History({ visible, onClose }) {
     setLines((prev) => [...prev, ...block]);
   }
 
-  // BOOT SEQUENCE
+  // Função mágica que intercepta e colore cada linha baseado no contexto
+  function getLineStyle(line) {
+    if (line.startsWith("[ERRO]")) return styles.textError;
+    if (line.startsWith(">>>")) return styles.textSystem;
+    if (line.startsWith("===") || line.startsWith("  ")) return styles.textAccent;
+    if (line.includes("->") || line.includes("→")) return styles.textSubtleHelp;
+    return styles.textDefault;
+  }
+
   const bootHeader = [
-    ">>> Iniciando Terminal da Ordem MK-IV...",
-    ">>> Carregando módulos do sistema...",
-    ">>> Módulos carregados!",
-    ">>> Sessão iniciada.",
-    "============ Bem Vindo ao Sistema MK-IV ============",
-    "Últimas atualizações instaladas: 12.03.2237",
-    ">>> Verificando credenciais de usuário...",
-    ">>> Nenhum usuário encontrado.",
-    ">>> Autenticação de usuário requerida.",
+    ">>> Inicializando Terminal de Operações Estelares MK-IV...",
+    ">>> Montando partições de arquivos locais...",
+    ">>> Conexões estáveis estabelecidas.",
+    "=== PROTOCOLO COMPILADO COM SUCESSO ===",
+    "Última telemetria síncrona: 12.03.2237",
+    ">>> Alerta: Nenhuma credencial ativa no cockpit.",
     "",
-    "Digite seu código de piloto:",
+    "POR FAVOR, INFORME SEU CÓDIGO DE IDENTIFICAÇÃO DE PILOTO:",
     "",
   ];
 
-  // MISSION
   const missionBlock = [
     "",
-    "================ MISSÃO ================",
-    "ORDEM: EXPEDIÇÃO SETOR HAVOC",
-    "PRIORIDADE: ÔMEGA",
+    "==================== FILTRO DE MISSÃO ====================",
+    "CONTRATO: EXTRAÇÃO NO SETOR HAVOC",
+    "NÍVEL DE PERIGO: CATASTRÓFICO (ÔMEGA)",
     "",
-    "OBJETIVO:",
-    "  Localizar e extrair o Módulo Núcleo de Dobra.",
+    "OBJETIVO CENTRAL:",
+    "  Localizar e resgatar o Módulo de Núcleo de Dobra Independente.",
     "",
-    "DURAÇÃO:",
-    "  7–14 dias (estimado)",
+    "PREVISÃO DE OPERAÇÃO:",
+    "  07 a 14 ciclos planetários padrão.",
     "",
-    "RISCO:",
-    "  Crítico — Zona Fora do Mapa",
+    "RECOMPENSA DE EXTRAÇÃO:",
+    "  120.000 Créditos Líquidos da Federação Z",
     "",
-    "REMUNERAÇÃO:",
-    "  120.000 créditos Z",
+    "LOGÍSTICA EXIGIDA:",
+    "  - Calibração fina da matriz de dobra quântica",
+    "  - Isolamento de pulsos magnéticos térmicos",
+    "  - Ativação do protocolo de rádio fantasma (Offline Mode)",
     "",
-    "PREPARATIVOS:",
-    "  - Calibração matriz de dobra",
-    "  - Isolamento de pulso",
-    "  - Contenção magnética",
-    "  - Protocolo offline",
-    "",
-    "AUTORIZAÇÃO:",
-    "  Ordem Estelar de Reconhecimento",
-    "========================================",
+    "EMISSOR DA DIRETRIZ: Alto Conselho de Reconhecimento Estelar",
+    "==========================================================",
     "",
   ];
 
-  // RECORDS
   function getRecordsList() {
     const keys = Object.keys(registros);
-    if (keys.length === 0) return ["Nenhum registro encontrado."];
+    if (keys.length === 0) return ["[ERRO] Banco de dados de registros vazio."];
 
     const list = [
       "",
-      "============== REGISTROS MK-IV ==============",
-      "Arquivos recuperados da Rota Estelar:",
+      "=== ARQUIVOS RECUPERADOS DA ROTA ESTELAR ===",
       "",
     ];
 
     keys.forEach((key, index) => {
       const reg = registros[key];
       const num = String(index + 1).padStart(2, "0");
-      list.push(` [${num}] ${reg.titulo}`);
+      list.push(`  [FILE_${num}] -> ${reg.titulo.toUpperCase()}`);
     });
 
     list.push(
       "",
-      "Para abrir um registro, use:",
-      "  abrirRegistro-00",
+      "Para descriptografar e ler, execute o comando:",
+      "  abrirRegistro-X (Ex: abrirRegistro-1)",
       ""
     );
 
     return list;
   }
 
-  // MESSAGES ROOT
   const messagesBlock = [
     "",
-    "=========== MENSAGENS MK-IV ===========",
-    "Subcomandos disponíveis:",
-    "  group()   → Mensagens do grupo: Amizades do Barulho",
-    "  system()  → Logs da Nave Sirius Marrow",
-    "  order()   → Comunicados oficiais da Ordem",
-    "  exit()    → Sair do modo mensagens",
+    "=== CENTRAL DE COMUNICAÇÃO DE BORDO ===",
+    "Canais disponíveis para escuta:",
+    "  group()   -> Mensagens da tripulação local.",
+    "  system()  -> Logs de telemetria da Sirius Marrow.",
+    "  order()   -> Despachos criptografados de comando superior.",
+    "  exit()    -> Fechar módulo de mensagens.",
     "",
-    "Digite um subcomando.",
+    "Aguardando a seleção do canal...",
     "",
   ];
 
-  // GROUP
   function getMessageBlock(key) {
     const data = mensagens[key];
-    if (!data) return ["> Nenhum arquivo de mensagem encontrado."];
+    if (!data) return ["[ERRO] Dados indisponíveis neste setor de rádio."];
     return data;
   }
 
-  // ECO
   const echoBlock = [
     "",
-    ">>> Recebendo transmissão fragmentada:",
+    ">>> Interceptando ondas de rádio residuais na área:",
     "",
-    "...qui é ... pitão Rho ...",
-    "...não Confi... naaaa ... rot ...",
-    "...Ecli..er ... vai acord...",
+    "   \"...aqui é o Ca...pitão Rho ... não...\"",
+    "   \"...NÃO CONFIE ... naaa ... rot... de sa...\"",
+    "   \"...A Ecli...er está acord... fuj...\"",
     "",
-    ">>> Fim do eco.",
+    ">>> Sinal perdido. Varredura finalizada.",
     "",
   ];
 
-  // UI
   return (
     <Animated.View
       style={[
@@ -364,32 +365,43 @@ export default function History({ visible, onClose }) {
         !visible && { display: "none" },
       ]}
     >
+      {/* Barra de título estilo HUD militar */}
       <View style={styles.topBar}>
-        <Text style={styles.topTitle}>TERMINAL da ORDEM // MK-IV</Text>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.closeBtn}>✕</Text>
+        <View style={styles.statusGroup}>
+          <View style={styles.pulseNode} />
+          <Text style={styles.topTitle}>SECURE_LOG // TERMINAL MK-IV</Text>
+        </View>
+        <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Text style={styles.closeBtn}>[X_ABORT]</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Caixa do Terminal */}
       <Pressable
         style={styles.terminalBox}
         onPress={() => inputRef.current?.focus()}
       >
-        <ScrollView ref={scrollRef}>
+        {/* Linha CRT Horizontal Animada */}
+        <Animated.View style={[styles.scanline, { transform: [{ translateY: scanlineAnim }] }]} />
+
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+        >
           {lines.map((line, i) => (
-            <Text key={i} style={styles.terminalText}>
+            <Text key={i} style={[styles.terminalText, getLineStyle(line)]}>
               {line}
             </Text>
           ))}
 
-          {/* Linha atual com cursor */}
-          <Text style={styles.terminalText}>
-            {prompt} {current}
-            {cursorVisible ? "|" : " "}
+          {/* Prompt de comando atual */}
+          <Text style={[styles.terminalText, styles.textPrompt]}>
+            {prompt} <Text style={styles.inputText}>{current}</Text>
+            {cursorVisible ? <Text style={styles.cursor}>█</Text> : <Text style={{ opacity: 0 }}>█</Text>}
           </Text>
         </ScrollView>
 
-        {/* Input invisível */}
         <TextInput
           ref={inputRef}
           style={styles.hiddenInput}
@@ -405,59 +417,114 @@ export default function History({ visible, onClose }) {
   );
 }
 
-// ----------------------------------------------------------
-// STYLES
-// ----------------------------------------------------------
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
     width: "100%",
     height: "100%",
     top: 0,
-    backgroundColor: "rgba(0,0,0,0.92)",
-    paddingTop: 30,
-    paddingHorizontal: 15,
+    left: 0,
+    backgroundColor: "#02070d", // Azul espacial ultra profundo
+    paddingTop: 25,
+    paddingHorizontal: 20,
+    zIndex: 99,
   },
-
   topBar: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderColor: "#0ff4",
-    paddingBottom: 6,
-    marginBottom: 15,
+    borderColor: "rgba(0, 255, 170, 0.25)",
+    paddingBottom: 8,
+    marginBottom: 12,
   },
-
+  statusGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  pulseNode: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: baseGreen,
+    marginRight: 8,
+  },
   topTitle: {
-    color: "#0ff",
-    fontSize: 20,
-    letterSpacing: 1,
+    color: baseGreen,
+    fontSize: 12,
+    fontWeight: "bold",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
-
   closeBtn: {
-    fontSize: 26,
-    color: "#0ff",
+    fontSize: 11,
+    color: redNeon,
+    fontWeight: "bold",
+    letterSpacing: 1,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
-
   terminalBox: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#0ff4",
-    backgroundColor: "rgba(0,12,20,0.75)",
-    borderRadius: 6,
-    padding: 10,
+    borderColor: "rgba(0, 234, 255, 0.25)",
+    backgroundColor: "rgba(1, 10, 18, 0.85)",
+    borderRadius: 4,
+    padding: 15,
+    overflow: "hidden",
   },
-
+  scanline: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 1.5,
+    backgroundColor: "rgba(0, 234, 255, 0.12)",
+    zIndex: 10,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
   terminalText: {
-    color: "#8ff",
-    fontSize: 16,
-    fontFamily: "monospace",
-    marginBottom: 4,
+    fontSize: 14,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    lineHeight: 20,
+    marginBottom: 2,
   },
-
+  /* ESTILOS DE CORES POR LINHA CONTEXTUAL */
+  textDefault: {
+    color: "rgba(160, 220, 255, 0.85)", // Texto padrão azul claro fosco
+  },
+  textSystem: {
+    color: baseGreen, // Logs de boot / carregamento com verde militar
+    fontWeight: "600",
+  },
+  textAccent: {
+    color: cyanNeon, // Caixas divisórias de título e headers em Ciano brilhante
+    fontWeight: "bold",
+  },
+  textError: {
+    color: redNeon, // Mensagens de bloqueio ou chaves incorretas
+    fontWeight: "bold",
+  },
+  textSubtleHelp: {
+    color: "rgba(0, 234, 255, 0.6)", // Explicações do menu de ajuda
+  },
+  textPrompt: {
+    color: cyanNeon,
+    fontWeight: "bold",
+    marginTop: 6,
+  },
+  inputText: {
+    color: "#fff",
+    fontWeight: "normal",
+  },
+  cursor: {
+    color: cyanNeon,
+    fontSize: 14,
+  },
   hiddenInput: {
     height: 0,
     width: 0,
     opacity: 0,
+    position: "absolute",
   },
 });

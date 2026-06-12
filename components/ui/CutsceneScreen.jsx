@@ -13,6 +13,7 @@ import { playSfx } from "@/components/controllers/AudioController";
 
 const { width, height } = Dimensions.get("window");
 const baseGreen = "rgba(0,255,170,1)";
+const cyanNeon = "#00eaff";
 
 const CINEMATIC_SCRIPTS = [
   { lines: ["INICIALIZANDO TRANSMISSÃO DA ORDEM ESTELAR..."], type: "system" },
@@ -101,7 +102,6 @@ const CINEMATIC_SCRIPTS = [
 
 const CIRCUIT_TYPES = ["+", "-", "○", "●"];
 
-// Componente de nó individual estritamente blindado contra re-renderizações do pai
 const IndividualCircuitNode = memo(({ elem }) => {
   const animatedOpacity = useRef(new Animated.Value(0)).current;
 
@@ -170,9 +170,11 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
   const whiteoutOpacity = useRef(new Animated.Value(0)).current;
   const componentAudioTime = useRef(0);
+  
+  const skipTimer = useRef(null);
+  const skipAnimWidth = useRef(new Animated.Value(0)).current;
+  const [isSkipping, setIsSkipping] = useState(false);
 
-  // 1. Criação da malha estática de 180 pontos possíveis usando funções trigonométricas baseadas no ID.
-  // Isso impede uso de Math.random() no ciclo de render comum, travando as coordenadas para sempre.
   const staticCircuitPool = useMemo(() => {
     return Array.from({ length: 180 }).map((_, i) => {
       const pseudoRandomTop = ((Math.sin(i * 4321.43) + 1) / 2) * 88 + 6;
@@ -189,7 +191,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     });
   }, []);
 
-  // 2. Filtro de volumetria de glifos por cena. Apenas fatiamos a piscina estática existente.
   const circuitElements = useMemo(() => {
     if (!started) return [];
 
@@ -266,13 +267,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     const totalScenes = CINEMATIC_SCRIPTS.length;
 
     if (currentIndex >= totalScenes) {
-      Animated.timing(whiteoutOpacity, {
-        toValue: 1.0,
-        duration: 700,
-        useNativeDriver: true,
-      }).start(() => {
-        onFinish?.();
-      });
+      executeForceQuit();
       return;
     }
 
@@ -291,6 +286,39 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     triggerTypewriterForLine(0, currentScene.lines);
 
   }, [started, currentIndex]);
+
+  useEffect(() => {
+    if (!started) return;
+
+    const handleKeyDown = (e) => {
+      
+      if (e.repeat) return;
+
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        startSkipPress();
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        cancelSkipPress();
+      }
+    };
+
+    if (typeof window !== "undefined" && window.addEventListener) {
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+    }
+
+    return () => {
+      if (typeof window !== "undefined" && window.removeEventListener) {
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+      }
+    };
+  }, [started]);
 
   const triggerTypewriterForLine = (lineIdx, allLines) => {
     if (lineIdx >= allLines.length) {
@@ -343,6 +371,47 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     };
 
     typeChar();
+  };
+  
+  const executeForceQuit = () => {
+    Animated.timing(whiteoutOpacity, {
+      toValue: 1.0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => {
+      onFinish?.();
+    });
+  };
+
+  
+  const startSkipPress = () => {
+    setIsSkipping(true);
+    playSfx("textDigital");
+
+    
+    Animated.timing(skipAnimWidth, {
+      toValue: 90,
+      duration: 3000,
+      useNativeDriver: false, 
+    }).start();
+
+    
+    skipTimer.current = setTimeout(() => {
+      executeForceQuit();
+    }, 3000);
+  };
+
+  const cancelSkipPress = () => {
+    setIsSkipping(false);
+    if (skipTimer.current) {
+      clearTimeout(skipTimer.current);
+    }
+    
+    Animated.timing(skipAnimWidth, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: false,
+    }).start();
   };
 
   const getDynamicGlowStyle = () => {
@@ -453,6 +522,26 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
           </View>
         </Animated.View>
       )}
+
+      {/* BOTÃO ÉPICO: HOLD TO SKIP (CANTO INFERIOR DIREITO) */}
+      {started && (
+        <View
+          style={styles.skipContainer}
+          onTouchStart={startSkipPress}
+          onTouchEnd={cancelSkipPress}
+          
+          onMouseDown={startSkipPress}
+          onMouseUp={cancelSkipPress}
+          onMouseLeave={cancelSkipPress} 
+        >
+          <Text style={[styles.skipText, isSkipping && styles.skipTextActive]}>
+            {isSkipping ? "IGNORANDO..." : "SEGURE PARA PULAR"}
+          </Text>
+          <View style={styles.skipBarTrack}>
+            <Animated.View style={[styles.skipBarFill, { width: skipAnimWidth }]} />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -560,5 +649,42 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#ffffff",
     zIndex: 20,
+  },
+  /* ESTILOS DO SKIP BUTTON HUD */
+  skipContainer: {
+    position: "absolute",
+    bottom: 45,
+    right: 40,
+    zIndex: 30,
+    alignItems: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    padding: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 170, 0.15)",
+  },
+  skipText: {
+    color: "rgba(0, 255, 170, 0.45)",
+    fontSize: 10,
+    fontWeight: "600",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    marginBottom: 5,
+  },
+  skipTextActive: {
+    color: cyanNeon,
+    textShadow: "0px 0px 8px rgba(0, 234, 255, 0.6)",
+  },
+  skipBarTrack: {
+    width: 90,
+    height: 3,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  skipBarFill: {
+    height: "100%",
+    backgroundColor: cyanNeon,
+    boxShadow: "0px 0px 5px rgba(0, 234, 255, 0.8)",
   },
 });
