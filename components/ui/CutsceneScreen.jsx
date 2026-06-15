@@ -170,7 +170,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
   const whiteoutOpacity = useRef(new Animated.Value(0)).current;
   const componentAudioTime = useRef(0);
-  
+
   const skipTimer = useRef(null);
   const skipAnimWidth = useRef(new Animated.Value(0)).current;
   const [isSkipping, setIsSkipping] = useState(false);
@@ -291,7 +291,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     if (!started) return;
 
     const handleKeyDown = (e) => {
-      
+
       if (e.repeat) return;
 
       if (e.key === " " || e.key === "Enter") {
@@ -372,7 +372,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
     typeChar();
   };
-  
+
   const executeForceQuit = () => {
     Animated.timing(whiteoutOpacity, {
       toValue: 1.0,
@@ -383,19 +383,19 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     });
   };
 
-  
+
   const startSkipPress = () => {
     setIsSkipping(true);
     playSfx("textDigital");
 
-    
+
     Animated.timing(skipAnimWidth, {
-      toValue: 90,
+      toValue: 130,
       duration: 3000,
-      useNativeDriver: false, 
+      useNativeDriver: false,
     }).start();
 
-    
+
     skipTimer.current = setTimeout(() => {
       executeForceQuit();
     }, 3000);
@@ -406,7 +406,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     if (skipTimer.current) {
       clearTimeout(skipTimer.current);
     }
-    
+
     Animated.timing(skipAnimWidth, {
       toValue: 0,
       duration: 150,
@@ -529,10 +529,10 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
           style={styles.skipContainer}
           onTouchStart={startSkipPress}
           onTouchEnd={cancelSkipPress}
-          
+
           onMouseDown={startSkipPress}
           onMouseUp={cancelSkipPress}
-          onMouseLeave={cancelSkipPress} 
+          onMouseLeave={cancelSkipPress}
         >
           <Text style={[styles.skipText, isSkipping && styles.skipTextActive]}>
             {isSkipping ? "IGNORANDO..." : "SEGURE PARA PULAR"}
@@ -655,6 +655,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 45,
     right: 40,
+    width: 150,
     zIndex: 30,
     alignItems: "flex-end",
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
     textShadow: "0px 0px 8px rgba(0, 234, 255, 0.6)",
   },
   skipBarTrack: {
-    width: 90,
+    width: 130,
     height: 3,
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 2,
