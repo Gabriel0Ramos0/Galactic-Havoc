@@ -10,16 +10,16 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
         "",
         "Piloto… o campo gravitacional local distorceu os eixos da nave! Precisamos recalibrar manualmente.",
         "Prepare-se. Vamos executar o protocolo de Estabilização Primária.",
-        "Reinicie os propulsores na seguinte ordem: S → T → A → R → T.",
-        "Bom trabalho, propulsores restaurados! Agora mova-se com W, A, S e D.",
-        "Excelente. Ajuste a altitude com ↑ e ↓.",
-        "Perfeito. Ative o BOOST! Segure W e pressione SHIFT.",
+        "Reinicie os propulsores na seguinte ordem: [S] → [T] → [A] → [R] → [T].",
+        "Bom trabalho, propulsores restaurados! Agora mova-se com [W], [A], [S] e [D].",
+        "Excelente. Ajuste a altitude com [↑] e [↓].",
+        "Perfeito. Ative o BOOST! Segure [W] e pressione [SHIFT].",
         "Um sinal desconhecido foi detectado… analisando origem. Aguarde um momento.",
         "Aproximando-se do ponto de energia. Vá até o objeto para identificá-lo.",
-        "É um módulo de defesa… use I para inspecionar.",
-        "Suprimentos encontrados. Abra a Interface da Nave com TAB para equipar os módulos de disparo.",
+        "É um módulo de defesa… use [E] para inspecionar.",
+        "Suprimentos encontrados. Abra a Interface da Nave com [TAB] para equipar os módulos de disparo.",
         "Atenção… três naves piratas estão se aproximando!",
-        "Prepare o sistema de armas. Pressione ESPAÇO para disparar.",
+        "Prepare o sistema de armas. Pressione [ESPAÇO] para disparar.",
         "Ótimo trabalho, piloto! Os piratas foram neutralizados.",
         "Restauração completa. O sistema de navegação está online. Siga para o próximo destino e continue sua aventura!",
     ];
@@ -155,7 +155,7 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
         const handleKey = (e) => {
             if (advanced) return;
 
-            if (e.key.toLowerCase() === "i") {
+            if (e.key.toLowerCase() === "e") {
                 advanced = true;
                 setStep(10);
             }
@@ -232,7 +232,7 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
     if (step > steps.length - 1) return null;
 
     return (
-        <View pointerEvents="none">
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
             <MessageBox
                 message={steps[step]}
                 position="bottom-left"

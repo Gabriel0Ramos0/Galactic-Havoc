@@ -57,7 +57,7 @@ export default function useInspection({
         if (gameState !== "playing") return;
 
         const handleInspectionKey = (e) => {
-            if ((e.key === "i" || e.key === "I") && inspectionStateRef.current.canInspect) {
+            if ((e.key === "e" || e.key === "E") && inspectionStateRef.current.canInspect) {
                 e.preventDefault();
                 
                 if (lootPanelOpen) {

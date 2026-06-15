@@ -73,7 +73,6 @@ export default function Menu({ onStart, hasSession, onConfig, onCredits, onHisto
 
         {/* TOPO ESQUERDO: INFOBAR E TÍTULO INTEGRADO AO HUD */}
         <View style={styles.headerTelemetry}>
-          <Text style={styles.telemetryText}>SYS.LOC // SECTOR_HAVOC_MK4 // ONLINE</Text>
           <Text style={styles.gameTitle}>GALACTIC HAVOC</Text>
           <View style={styles.bracketLine} />
         </View>

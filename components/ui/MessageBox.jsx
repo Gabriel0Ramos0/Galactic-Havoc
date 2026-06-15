@@ -1,92 +1,69 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, Animated, StyleSheet, Dimensions } from "react-native";
+import { View, Text, Animated, StyleSheet, Platform, Dimensions } from "react-native";
+
+const cianoNeon = "#00eaff";
+const verdeBase = "#00ffaa";
 
 export default function MessageBox({
     message = "",
     position = "bottom-left",
-    duration = 10000, // tempo visível
+    duration = 8000,
     onHidden = () => { },
 }) {
-    const slide = useRef(new Animated.Value(60)).current;
+    const slide = useRef(new Animated.Value(40)).current;
     const opacity = useRef(new Animated.Value(0)).current;
+    const pulse = useRef(new Animated.Value(0.3)).current;
 
-    const glow = useRef(new Animated.Value(1)).current;
-    const pulse = useRef(new Animated.Value(0)).current;
-
-    const glowLoop = useRef(null);
-    const pulseLoop = useRef(null);
-
-    // POSIÇÃO
+    // Ancoragem pelo topo top
     const getPositionStyle = () => {
-        const pos = {
-            "bottom-left": { top: 25, left: -110 },
-            "bottom-right": { bottom: 25, right: 25 },
-            "top-left": { top: 25, left: 25 },
-            "top-right": { top: 25, right: 25 },
+        return {
+            position: "absolute",
+            top: 20,
+            left: 0
         };
-        return pos[position] || pos["bottom-left"];
     };
 
-    // ANIMAÇÕES
     useEffect(() => {
         if (!message) return;
 
-        // entrada
+        // Resetar valores para reiniciar a animação a cada nova string de texto
+        slide.setValue(40);
+        opacity.setValue(0);
+
         Animated.parallel([
             Animated.timing(slide, {
                 toValue: 0,
-                duration: 400,
+                duration: 350,
                 useNativeDriver: true,
             }),
             Animated.timing(opacity, {
                 toValue: 1,
-                duration: 400,
+                duration: 300,
                 useNativeDriver: true,
             }),
         ]).start();
 
-        // iniciar loops
-        glowLoop.current = Animated.loop(
-            Animated.sequence([
-                Animated.timing(glow, {
-                    toValue: 0,
-                    duration: 1500,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(glow, {
-                    toValue: 1,
-                    duration: 1500,
-                    useNativeDriver: false,
-                }),
-            ])
-        );
-        glowLoop.current.start();
-
-        pulseLoop.current = Animated.loop(
+        const pulseLoop = Animated.loop(
             Animated.sequence([
                 Animated.timing(pulse, {
                     toValue: 1,
-                    duration: 900,
-                    useNativeDriver: false,
+                    duration: 1200,
+                    useNativeDriver: true,
                 }),
                 Animated.timing(pulse, {
-                    toValue: 0,
-                    duration: 900,
-                    useNativeDriver: false,
+                    toValue: 0.3,
+                    duration: 1200,
+                    useNativeDriver: true,
                 }),
             ])
         );
-        pulseLoop.current.start();
+        pulseLoop.start();
 
-        // auto-hide
         const timer = setTimeout(() => hideBox(), duration);
 
-        // cleanup
         return () => {
             clearTimeout(timer);
-
-            if (glowLoop.current) glowLoop.current.stop();
-            if (pulseLoop.current) pulseLoop.current.stop();
+            pulseLoop.stop();
         };
     }, [message]);
 
@@ -94,29 +71,18 @@ export default function MessageBox({
         Animated.parallel([
             Animated.timing(opacity, {
                 toValue: 0,
-                duration: 350,
+                duration: 300,
                 useNativeDriver: true,
             }),
             Animated.timing(slide, {
-                toValue: 80,
-                duration: 350,
+                toValue: -20,
+                duration: 300,
                 useNativeDriver: true,
             }),
         ]).start(() => onHidden());
     };
 
-    const glowColor = glow.interpolate({
-        inputRange: [0, 1],
-        outputRange: [
-            "rgba(130,0,255,0.25)",
-            "rgba(255,0,190,0.85)",
-        ],
-    });
-
-    const pulseOpacity = pulse.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.15, 0.45],
-    });
+    if (!message) return null;
 
     return (
         <Animated.View
@@ -129,31 +95,18 @@ export default function MessageBox({
                 },
             ]}
         >
-            {/* BASE */}
             <View style={styles.layerBase} />
+            <View style={styles.cornerBracketTopLeft} />
+            <View style={styles.cornerBracketBottomRight} />
 
-            {/* CORTES SOLO-LEVELING */}
-            <View style={styles.layerCutsTop} />
-            <View style={styles.layerCutsBottom} />
-
-            {/* BORDA DE ENERGIA */}
-            <Animated.View
-                style={[
-                    styles.energyBorder,
-                    { borderColor: glowColor },
-                ]}
-            />
-
-            {/* LUZ INTERNA */}
-            <Animated.View
-                style={[
-                    styles.innerPulse,
-                    { opacity: pulseOpacity },
-                ]}
-            />
+            <Animated.View style={[styles.energyBorderGlow, { opacity: pulse }]} />
 
             <View style={styles.innerContent}>
-                <Text style={styles.text}>{message}</Text>
+                <View style={styles.headerRow}>
+                    <Text style={styles.headerTitle}>COM_LINK // CANAL_REDE</Text>
+                    <Animated.View style={[styles.blinkDot, { opacity: pulse }]} />
+                </View>
+                <Text style={styles.messageText}>{message}</Text>
             </View>
         </Animated.View>
     );
@@ -161,72 +114,71 @@ export default function MessageBox({
 
 const styles = StyleSheet.create({
     container: {
-        position: "absolute",
-        width: 300,
-        minHeight: 80,
+        width: 280,
+        minHeight: 75,
+        zIndex: 999,
     },
-
     layerBase: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: "rgba(5,5,20,0.95)",
-        borderRadius: 6,
-        borderWidth: 1.5,
-        borderColor: "rgba(120,0,255,0.35)",
+        backgroundColor: "rgba(1, 10, 18, 0.95)",
+        borderColor: "rgba(0, 234, 255, 0.25)",
+        borderWidth: 1,
+        borderLeftWidth: 3,
+        borderLeftColor: cianoNeon,
     },
-
-    layerCutsTop: {
-        position: "absolute",
-        top: -6,
-        left: 18,
-        right: 18,
-        height: 12,
-        backgroundColor: "rgba(120,0,255,0.6)",
-        transform: [{ skewX: "-25deg" }],
-        borderRadius: 2,
-        opacity: 0.35,
-    },
-
-    layerCutsBottom: {
-        position: "absolute",
-        bottom: -6,
-        left: 18,
-        right: 18,
-        height: 12,
-        backgroundColor: "rgba(120,0,255,0.6)",
-        transform: [{ skewX: "25deg" }],
-        borderRadius: 2,
-        opacity: 0.35,
-    },
-
-    energyBorder: {
+    energyBorderGlow: {
         ...StyleSheet.absoluteFillObject,
-        top: -4,
-        left: -4,
-        right: -4,
-        bottom: -4,
-        borderWidth: 2,
-        borderRadius: 8,
+        borderColor: "rgba(0, 234, 255, 0.4)",
+        borderWidth: 1,
+        margin: -2,
     },
-
-    innerPulse: {
+    cornerBracketTopLeft: {
         position: "absolute",
-        top: 4,
-        left: 4,
-        right: 4,
-        bottom: 4,
-        backgroundColor: "rgba(255,0,200,0.15)",
-        borderRadius: 5,
+        top: 0,
+        left: 0,
+        width: 8,
+        height: 2,
+        backgroundColor: verdeBase,
     },
-
+    cornerBracketBottomRight: {
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        width: 2,
+        height: 8,
+        backgroundColor: cianoNeon,
+    },
     innerContent: {
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        zIndex: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
     },
-
-    text: {
-        color: "#fff",
-        fontSize: 16,
+    headerRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(255, 255, 255, 0.08)",
+        paddingBottom: 3,
+    },
+    headerTitle: {
+        fontSize: 9,
+        color: cianoNeon,
+        fontWeight: "bold",
+        letterSpacing: 1,
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    blinkDot: {
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: verdeBase,
+    },
+    messageText: {
+        color: "#dfefff",
+        fontSize: 13,
         fontWeight: "500",
+        lineHeight: 18,
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     },
 });

@@ -661,6 +661,7 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 4,
     borderWidth: 1,
+    cursor: "pointer",
     borderColor: "rgba(0, 255, 170, 0.15)",
   },
   skipText: {

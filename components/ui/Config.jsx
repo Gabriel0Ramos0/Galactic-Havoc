@@ -305,7 +305,7 @@ export default function Config({ visible, onClose }) {
               {/* BOTÃO DE ABORTO/FECHAR INTEGRADO AO MENU LATERAL */}
               <TouchableOpacity style={styles.abortButton} onPress={handleClose}>
                 <View style={styles.unskewContent}>
-                  <Text style={styles.abortText}>✕ DESCONECTAR</Text>
+                  <Text style={styles.abortText}>✕ FECHAR</Text>
                 </View>
               </TouchableOpacity>
             </View>

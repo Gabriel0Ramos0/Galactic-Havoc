@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Animated, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, Animated, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
+
+const cianoNeon = "#00eaff";
+const verdeBase = "#00ffaa";
+const vermelhoNeon = "#ff453a";
+const amareloNeon = "#ffd54a";
 
 export default function LootPanel({
     isOpen = false,
@@ -8,86 +13,105 @@ export default function LootPanel({
 }) {
     const opacity = useRef(new Animated.Value(0)).current;
     const scale = useRef(new Animated.Value(0.95)).current;
-    const scaleY = useRef(new Animated.Value(0)).current;
+    const pulse = useRef(new Animated.Value(0.4)).current;
 
-    const glow = useRef(new Animated.Value(1)).current;
-    const glowLoop = useRef(null);
+    // Estados para simulação do Escâner Tático
+    const [isScanning, setIsScanning] = useState(true);
+    const [scanProgress, setScanProgress] = useState(0);
 
-    // ANIMAÇÕES
+    // Fallback padrão exigido: Arma Laser com 32% de durabilidade se a lista vier vazia
+    const activeLoot = lootItems.length > 0 ? lootItems : [
+        { name: "CANHÃO LASER DE PLASMA // SÉRIE-VX", rarity: "rare", durability: 32, quantity: 1, type: "ARM" }
+    ];
+
     useEffect(() => {
+        let interval;
         if (isOpen) {
-            // Entrada com fade vertical
+            // Entrada limpa e performática
             Animated.parallel([
                 Animated.timing(opacity, {
                     toValue: 1,
-                    duration: 400,
+                    duration: 300,
                     useNativeDriver: true,
                 }),
                 Animated.timing(scale, {
                     toValue: 1,
-                    duration: 400,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(scaleY, {
-                    toValue: 1,
-                    duration: 450,
+                    duration: 300,
                     useNativeDriver: true,
                 }),
             ]).start();
 
-            // Iniciar loop de glow
-            glowLoop.current = Animated.loop(
+            // Loop de Pulso de Energia 100% nativo na GPU
+            const pulseLoop = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(glow, {
-                        toValue: 0,
-                        duration: 1500,
-                        useNativeDriver: false,
-                    }),
-                    Animated.timing(glow, {
+                    Animated.timing(pulse, {
                         toValue: 1,
-                        duration: 1500,
-                        useNativeDriver: false,
+                        duration: 1000,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulse, {
+                        toValue: 0.4,
+                        duration: 1000,
+                        useNativeDriver: true,
                     }),
                 ])
             );
-            glowLoop.current.start();
+            pulseLoop.start();
+
+            // Inicializa sequência de varredura de dados
+            setIsScanning(true);
+            setScanProgress(0);
+            let progress = 0;
+            interval = setInterval(() => {
+                progress += 4;
+                if (progress >= 100) {
+                    setScanProgress(100);
+                    setIsScanning(false);
+                    clearInterval(interval);
+                } else {
+                    setScanProgress(progress);
+                }
+            }, 50);
+
+            return () => {
+                pulseLoop.stop();
+                clearInterval(interval);
+            };
         } else {
-            // Saída com fade vertical
+            // Saída do painel
             Animated.parallel([
                 Animated.timing(opacity, {
                     toValue: 0,
-                    duration: 300,
+                    duration: 250,
                     useNativeDriver: true,
                 }),
                 Animated.timing(scale, {
                     toValue: 0.95,
-                    duration: 300,
+                    duration: 250,
                     useNativeDriver: true,
                 }),
-                Animated.timing(scaleY, {
-                    toValue: 0,
-                    duration: 350,
-                    useNativeDriver: true,
-                }),
-            ]).start(() => {
-                if (glowLoop.current) glowLoop.current.stop();
-            });
+            ]).start();
         }
-
-        return () => {
-            if (glowLoop.current) glowLoop.current.stop();
-        };
     }, [isOpen]);
 
-    const glowColor = glow.interpolate({
-        inputRange: [0, 1],
-        outputRange: [
-            "rgba(130,200,255,0.25)",
-            "rgba(100,255,218,0.85)",
-        ],
-    });
+    if (!isOpen) return null;
 
-    if (!isOpen && opacity._value === 0) return null;
+    const getRarityColor = (rarity) => {
+        const colors = {
+            common: "#a0a0a0",
+            uncommon: verdeBase,
+            rare: cianoNeon,
+            epic: "#c478ff",
+            legendary: "#ff9d00",
+        };
+        return colors[rarity] || "#ffffff";
+    };
+
+    const getDurabilityColor = (pct) => {
+        if (pct < 35) return vermelhoNeon;
+        if (pct < 70) return amareloNeon;
+        return verdeBase;
+    };
 
     return (
         <Animated.View
@@ -99,6 +123,7 @@ export default function LootPanel({
                 },
             ]}
         >
+            {/* Área externa de fechamento */}
             <TouchableOpacity
                 style={styles.closeArea}
                 onPress={onClose}
@@ -109,105 +134,116 @@ export default function LootPanel({
                 style={[
                     styles.container,
                     {
-                        opacity,
-                        transform: [
-                            { scale },
-                            { scaleY }
-                        ],
+                        transform: [{ scale }],
                     },
                 ]}
             >
-                {/* BASE */}
+                {/* Camadas Estruturais do Cockpit */}
                 <View style={styles.layerBase} />
                 <View style={styles.layerCutsTop} />
                 <View style={styles.layerCutsBottom} />
-
-                {/* BORDA DE ENERGIA */}
-                <Animated.View
-                    style={[
-                        styles.energyBorder,
-                        { borderColor: glowColor },
-                    ]}
-                />
-
-                {/* LUZ INTERNA */}
-                <Animated.View
-                    style={[
-                        styles.innerPulse,
-                    ]}
-                />
+                <Animated.View style={[styles.energyBorderGlow, { opacity: pulse }]} />
 
                 <View style={styles.innerContent}>
-                    <Text style={styles.title}>ANÁLISE DE DESTROÇOS</Text>
 
+                    {/* Cabeçalho do Módulo */}
+                    <View style={styles.headerRow}>
+                        <Text style={styles.title}>MÓDULO // EXTRATOR_SALVAGEM</Text>
+                        <Text style={[styles.statusTag, { color: isScanning ? amareloNeon : verdeBase }]}>
+                            {isScanning ? "VARRENDO..." : "PRONTO"}
+                        </Text>
+                    </View>
+
+                    {/* Área de Diagnóstico e Janela de Matriz */}
                     <View style={styles.shipScanArea}>
-                        <View style={styles.scanPlaceholder}>
-                            <Text style={styles.scanText}>IMAGEM DA NAVE</Text>
-                        </View>
+                        <View style={styles.gridOverlay} />
 
-                        <View style={styles.slotOverlay}>
-                            <View style={[styles.slot, styles.slotRare]}>
-                                <Text style={styles.slotLabel}>ARM</Text>
-                            </View>
-
-                            <View style={[styles.slot, styles.slotBroken]}>
-                                <Text style={styles.slotLabel}>ENG</Text>
-                            </View>
-
-                            <View style={[styles.slot, styles.slotEpic]}>
-                                <Text style={styles.slotLabel}>CORE</Text>
-                            </View>
-
-                            <View style={[styles.slot, styles.slotDamaged]}>
-                                <Text style={styles.slotLabel}>SHD</Text>
-                            </View>
-
-                            <View style={[styles.slot, styles.slotRecoverable]}>
-                                <Text style={styles.slotLabel}>AUX</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={styles.salvageBox}>
-                        <Text style={styles.sectionTitle}>COMPONENTES RESIDUAIS</Text>
-
-                        {lootItems?.length > 0 ? (
-                            lootItems.map((item, index) => (
-                                <View key={index} style={styles.lootItem}>
-                                    <Text style={styles.itemName}>{item.name}</Text>
-                                    <Text
-                                        style={[
-                                            styles.itemRarity,
-                                            { color: getRarityColor(item.rarity) }
-                                        ]}
-                                    >
-                                        {item.quantity ? `x${item.quantity}` : ""}
-                                    </Text>
+                        {isScanning ? (
+                            <View style={styles.scannerCenter}>
+                                <Text style={styles.scanPercentage}>{scanProgress}%</Text>
+                                <Text style={styles.scanSubText}>RESOLVENDO ESTRUTURA DE COMPONENTES...</Text>
+                                <View style={styles.progressFrame}>
+                                    <View style={[styles.progressBarFill, { width: `${scanProgress}%` }]} />
                                 </View>
-                            ))
+                            </View>
                         ) : (
-                            <Text style={styles.emptyText}>
-                                Nenhum recurso detectado
-                            </Text>
+                            <View style={styles.analysisSuccessContainer}>
+                                <Text style={styles.successTitle}>ANÁLISE DE CAMPO CONCLUÍDA</Text>
+
+                                {/* Display Visual das Categorias Encontradas */}
+                                <View style={styles.matrixRow}>
+                                    {activeLoot.map((item, idx) => (
+                                        <View key={idx} style={[styles.specChip, { borderColor: getRarityColor(item.rarity) }]}>
+                                            <Text style={[styles.specChipText, { color: getRarityColor(item.rarity) }]}>
+                                                {item.type || "GEN"}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                    <View style={styles.specChipDisabled}><Text style={styles.specChipTextDisabled}>ENG</Text></View>
+                                    <View style={styles.specChipDisabled}><Text style={styles.specChipTextDisabled}>CORE</Text></View>
+                                </View>
+
+                                <Text style={styles.hardwareSpecsText}>SINAL ESTÁVEL // ASSINATURA REGISTRADA</Text>
+                            </View>
                         )}
+
+                        {/* Linha Laser Horizontal de Varredura */}
+                        {isScanning && <View style={styles.laserScanLine} />}
                     </View>
 
-                    <Text style={styles.closeHint}>[ I ] DESCONECTAR</Text>
+                    {/* Lista de Recursos Extraídos */}
+                    <View style={styles.salvageBox}>
+                        <Text style={styles.sectionTitle}>COMPONENTES IDENTIFICADOS</Text>
+
+                        <ScrollView style={styles.itemsScroll} showsVerticalScrollIndicator={false}>
+                            {!isScanning ? (
+                                activeLoot.map((item, index) => (
+                                    <View key={index} style={[styles.lootItem, { borderLeftColor: getRarityColor(item.rarity) }]}>
+                                        <View style={styles.itemMainInfo}>
+                                            <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+
+                                            {/* Barra de Durabilidade Física */}
+                                            {item.durability !== undefined && (
+                                                <View style={styles.durabilityWrapper}>
+                                                    <Text style={styles.durabilityLabel}>INTEGRIDADE_ESTRUTURAL:</Text>
+                                                    <View style={styles.durabilityTrack}>
+                                                        <View
+                                                            style={[
+                                                                styles.durabilityFill,
+                                                                {
+                                                                    width: `${item.durability}%`,
+                                                                    backgroundColor: getDurabilityColor(item.durability)
+                                                                }
+                                                            ]}
+                                                        />
+                                                    </View>
+                                                    <Text style={[styles.durabilityPct, { color: getDurabilityColor(item.durability) }]}>
+                                                        {item.durability}%
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+
+                                        <Text style={[styles.itemQuantity, { color: getRarityColor(item.rarity) }]}>
+                                            {item.quantity ? `x${item.quantity}` : "x1"}
+                                        </Text>
+                                    </View>
+                                ))
+                            ) : (
+                                <View style={styles.loadingItemsRow}>
+                                    <Text style={styles.interceptText}>AGUARDANDO LIBERAÇÃO DO HARDWARE...</Text>
+                                </View>
+                            )}
+                        </ScrollView>
+                    </View>
+
+                    <TouchableOpacity style={styles.collectButton} onPress={onClose}>
+                        <Text style={styles.collectButtonText}>[ COLETAR E ARMAZENAR ]</Text>
+                    </TouchableOpacity>
                 </View>
             </Animated.View>
         </Animated.View>
     );
-}
-
-function getRarityColor(rarity) {
-    const colors = {
-        common: "#a0a0a0",
-        uncommon: "#3cff75",
-        rare: "#3cfaff",
-        epic: "#c478ff",
-        legendary: "#ff9d00",
-    };
-    return colors[rarity] || "#ffffff";
 }
 
 const styles = StyleSheet.create({
@@ -217,219 +253,266 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 100,
+        backgroundColor: "rgba(0, 5, 10, 0.4)",
+        zIndex: 200,
+        justifyContent: "center",
+        alignItems: "center",
     },
-
     closeArea: {
         ...StyleSheet.absoluteFillObject,
     },
-
     container: {
         position: "absolute",
-        top: "10%",
-        left: "70%",
-        width: 360,
-        maxHeight: 680,
-        transform: [{ translateX: -180 }, { translateY: -250 }],
+        right: 100,
+        width: 380,
+        backgroundColor: "rgba(1, 12, 22, 0.96)",
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: "rgba(0, 234, 255, 0.2)",
+        paddingBottom: 2,
     },
-
     layerBase: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: "rgba(5,10,30,0.97)",
-        borderRadius: 8,
-        borderWidth: 2,
-        borderColor: "rgba(100,200,255,0.35)",
+        backgroundColor: "rgba(1, 10, 18, 0.95)",
+        borderLeftWidth: 3,
+        borderLeftColor: cianoNeon,
     },
-
     layerCutsTop: {
         position: "absolute",
-        top: -8,
-        left: 20,
-        right: 20,
-        height: 14,
-        backgroundColor: "rgba(100,200,255,0.5)",
-        transform: [{ skewX: "-25deg" }],
-        borderRadius: 2,
-        opacity: 0.4,
+        top: -6,
+        left: 25,
+        right: 25,
+        height: 12,
+        backgroundColor: "rgba(0, 234, 255, 0.4)",
+        transform: [{ skewX: "-20deg" }],
+        opacity: 0.2,
     },
-
     layerCutsBottom: {
         position: "absolute",
-        bottom: -8,
-        left: 20,
-        right: 20,
-        height: 14,
-        backgroundColor: "rgba(100,200,255,0.5)",
-        transform: [{ skewX: "25deg" }],
-        borderRadius: 2,
-        opacity: 0.4,
+        bottom: -6,
+        left: 25,
+        right: 25,
+        height: 12,
+        backgroundColor: "rgba(0, 234, 255, 0.4)",
+        transform: [{ skewX: "20deg" }],
+        opacity: 0.2,
     },
-
-    energyBorder: {
+    energyBorderGlow: {
         ...StyleSheet.absoluteFillObject,
-        top: -5,
-        left: -5,
-        right: -5,
-        bottom: -5,
-        borderWidth: 2,
-        borderRadius: 10,
+        borderColor: "rgba(0, 234, 255, 0.3)",
+        borderWidth: 1,
+        margin: -2,
     },
-
-    innerPulse: {
-        position: "absolute",
-        top: 4,
-        left: 4,
-        right: 4,
-        bottom: 4,
-        backgroundColor: "rgba(100,255,218,0.08)",
-        borderRadius: 6,
-    },
-
     innerContent: {
-        paddingHorizontal: 24,
-        paddingVertical: 20,
-        zIndex: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 18,
     },
-
+    headerRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 14,
+    },
     title: {
-        color: "#64ffda",
-        fontSize: 16,
+        color: "#ffffff",
+        fontSize: 12,
         fontWeight: "bold",
-        marginBottom: 16,
-        fontFamily: "monospace",
-        letterSpacing: 2,
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+        letterSpacing: 1,
     },
-
-    itemsScroll: {
-        maxHeight: 280,
+    statusTag: {
+        fontSize: 10,
+        fontWeight: "bold",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    shipScanArea: {
+        height: 130,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: "rgba(0, 234, 255, 0.15)",
+        backgroundColor: "rgba(0, 8, 15, 0.9)",
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        overflow: "hidden",
+    },
+    gridOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        opacity: 0.05,
+        backgroundColor: "transparent",
+        borderWidth: 1,
+        borderColor: cianoNeon,
+    },
+    laserScanLine: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        height: 2,
+        backgroundColor: cianoNeon,
+        top: "50%", // Idealmente controlado por animação, mas estático centralizado atende bem o clima
+    },
+    scannerCenter: {
+        alignItems: "center",
+        paddingHorizontal: 30,
+    },
+    scanPercentage: {
+        fontSize: 26,
+        color: cianoNeon,
+        fontWeight: "900",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    scanSubText: {
+        fontSize: 8,
+        color: "rgba(255,255,255,0.4)",
+        marginTop: 4,
+        textAlign: "center",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    progressFrame: {
+        width: 180,
+        height: 3,
+        backgroundColor: "rgba(255,255,255,0.05)",
+        marginTop: 8,
+        overflow: "hidden",
+    },
+    progressBarFill: {
+        height: "100%",
+        backgroundColor: cianoNeon,
+    },
+    analysisSuccessContainer: {
+        alignItems: "center",
+    },
+    successTitle: {
+        fontSize: 11,
+        color: verdeBase,
+        fontWeight: "bold",
+        letterSpacing: 1,
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
         marginBottom: 12,
     },
-
+    matrixRow: {
+        flexDirection: "row",
+        gap: 8,
+        marginBottom: 10,
+    },
+    specChip: {
+        borderWidth: 1,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        backgroundColor: "rgba(0,0,0,0.3)",
+    },
+    specChipDisabled: {
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.08)",
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+    },
+    specChipText: {
+        fontSize: 9,
+        fontWeight: "bold",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    specChipTextDisabled: {
+        fontSize: 9,
+        color: "rgba(255,255,255,0.15)",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    hardwareSpecsText: {
+        fontSize: 8,
+        color: "rgba(255,255,255,0.3)",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    salvageBox: {
+        minHeight: 110,
+    },
+    sectionTitle: {
+        color: "rgba(255,255,255,0.3)",
+        fontSize: 9,
+        marginBottom: 8,
+        fontWeight: "bold",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+        letterSpacing: 0.5,
+    },
+    itemsScroll: {
+        maxHeight: 160,
+    },
     lootItem: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        paddingVertical: 8,
+        paddingVertical: 10,
         paddingHorizontal: 12,
         marginBottom: 6,
-        backgroundColor: "rgba(100,200,255,0.1)",
-        borderRadius: 4,
+        backgroundColor: "rgba(0, 234, 255, 0.03)",
+        borderWidth: 1,
+        borderColor: "rgba(0, 234, 255, 0.08)",
         borderLeftWidth: 3,
-        borderLeftColor: "rgba(100,255,218,0.6)",
     },
-
+    itemMainInfo: {
+        flex: 1,
+        marginRight: 10,
+    },
     itemName: {
         color: "#ffffff",
-        fontSize: 14,
-        fontWeight: "500",
-        flex: 1,
-    },
-
-    itemRarity: {
-        fontSize: 12,
-        fontWeight: "bold",
-        fontFamily: "monospace",
-    },
-
-    emptyText: {
-        color: "#888888",
-        fontSize: 14,
-        textAlign: "center",
-        paddingVertical: 40,
-        fontStyle: "italic",
-    },
-
-    closeHint: {
-        color: "#666666",
         fontSize: 11,
-        textAlign: "center",
-        marginTop: 12,
-        fontFamily: "monospace",
-        fontStyle: "italic",
+        fontWeight: "bold",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     },
-
-    shipScanArea: {
-        height: 260,
-        marginBottom: 18,
-        borderWidth: 1,
-        borderColor: "rgba(100,200,255,0.25)",
-        borderRadius: 8,
+    durabilityWrapper: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 5,
+    },
+    durabilityLabel: {
+        fontSize: 8,
+        color: "rgba(255,255,255,0.3)",
+        marginRight: 6,
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    durabilityTrack: {
+        flex: 1,
+        height: 4,
+        backgroundColor: "rgba(255,255,255,0.05)",
+        maxWidth: 100,
         overflow: "hidden",
-        backgroundColor: "rgba(0,20,35,0.8)",
     },
-
-    scanPlaceholder: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
+    durabilityFill: {
+        height: "100%",
     },
-
-    scanText: {
-        color: "rgba(100,255,218,0.35)",
-        fontFamily: "monospace",
-        fontSize: 18,
-    },
-
-    slotOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-
-    slot: {
-        position: "absolute",
-        width: 58,
-        height: 58,
-        borderWidth: 2,
-        borderRadius: 8,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(10,20,40,0.85)",
-    },
-
-    slotLabel: {
-        color: "#fff",
-        fontSize: 11,
-        fontFamily: "monospace",
+    durabilityPct: {
+        fontSize: 8,
         fontWeight: "bold",
+        marginLeft: 6,
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     },
-
-    slotBroken: {
-        top: 80,
-        left: 40,
-        borderColor: "#ff3b3b",
-    },
-
-    slotDamaged: {
-        top: 80,
-        right: 40,
-        borderColor: "#ffd54a",
-    },
-
-    slotRare: {
-        top: 25,
-        borderColor: "#3cfaff",
-    },
-
-    slotEpic: {
-        top: 105,
-        borderColor: "#c478ff",
-    },
-
-    slotRecoverable: {
-        bottom: 25,
-        borderColor: "#3cff75",
-    },
-
-    salvageBox: {
-        minHeight: 140,
-    },
-
-    sectionTitle: {
-        color: "#7fcaff",
+    itemQuantity: {
         fontSize: 12,
-        marginBottom: 10,
-        fontFamily: "monospace",
+        fontWeight: "900",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    loadingItemsRow: {
+        paddingVertical: 25,
+        alignItems: "center",
+    },
+    interceptText: {
+        fontSize: 10,
+        color: "rgba(255,255,255,0.25)",
+        fontStyle: "italic",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    },
+    collectButton: {
+        backgroundColor: "rgba(0, 234, 255, 0.12)",
+        borderColor: cianoNeon,
+        borderWidth: 1,
+        paddingVertical: 10,
+        alignItems: "center",
+        marginTop: 8,
+    },
+    collectButtonText: {
+        color: cianoNeon,
+        fontSize: 11,
+        fontWeight: "bold",
         letterSpacing: 1,
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     },
 });

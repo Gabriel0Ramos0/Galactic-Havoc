@@ -372,7 +372,7 @@ export default function History({ visible, onClose }) {
           <Text style={styles.topTitle}>SECURE_LOG // TERMINAL MK-IV</Text>
         </View>
         <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Text style={styles.closeBtn}>[X_ABORT]</Text>
+          <Text style={styles.closeBtn}>[X FECHAR]</Text>
         </TouchableOpacity>
       </View>
 
