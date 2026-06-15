@@ -18,6 +18,7 @@ import useMovement from "@/components/controllers/MovimentController";
 import Joystick from "@/components/controllers/JoystickController";
 import Menu from "@/components/ui/Menu";
 import Config from "@/components/ui/Config";
+import Credits from "@/components/ui/Credits";
 import TransitionController from "@/components/controllers/TransitionController";
 import { setupShipLighting, animateShipStartup, animateShipShutdown } from "@/components/effects/lighting";
 import { createThrusterEffect } from "@/components/effects/Thrusters";
@@ -76,6 +77,7 @@ export default function SandboxScreen() {
   const markerTimerRef = useRef(0);
   const [menuVisible, setMenuVisible] = useState(true);
   const [configVisible, setConfigVisible] = useState(false);
+  const [creditsVisible, setCreditsVisible] = useState(false);
   const [cutsceneVisible, setCutsceneVisible] = useState(true);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [gameState, setGameState] = useState(GameState.MENU);
@@ -610,7 +612,7 @@ export default function SandboxScreen() {
           hasSession={hasSession}
           onConfig={() => setConfigVisible(true)}
           onHistory={() => setHistoryVisible(true)}
-          onCredits={() => console.log("Mostrar Créditos")}
+          onCredits={() => setCreditsVisible(true)}
           onExit={() => console.log("Sair do jogo")}
           onLogin={() => console.log("Abrir tela de Login")}
         />
@@ -670,6 +672,7 @@ export default function SandboxScreen() {
       )}
       <Config visible={configVisible} onClose={() => setConfigVisible(false)} />
       <History visible={historyVisible} onClose={() => setHistoryVisible(false)} />
+      <Credits visible={creditsVisible} onClose={() => setCreditsVisible(false)} />
     </View>
   );
 }

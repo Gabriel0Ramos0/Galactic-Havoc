@@ -128,26 +128,26 @@ const IndividualCircuitNode = memo(({ elem }) => {
       });
     };
 
-    runAnimationLoop();
-    return () => { isMounted = false; };
+runAnimationLoop();
+return () => { isMounted = false; };
   }, [elem.isGlitch]);
 
-  const getGlitchStyle = () => {
-    if (elem.isGlitch) {
-      return {
-        color: elem.glitchColor,
-        textShadow: "0px 0px 8px rgba(255, 69, 58, 0.9)",
-        fontSize: elem.glitchSize,
-      };
-    }
-    return styles.circuitSymbol;
-  };
+const getGlitchStyle = () => {
+  if (elem.isGlitch) {
+    return {
+      color: elem.glitchColor,
+      textShadow: "0px 0px 8px rgba(255, 69, 58, 0.9)",
+      fontSize: elem.glitchSize,
+    };
+  }
+  return styles.circuitSymbol;
+};
 
-  return (
-    <Animated.View style={[styles.circuitContainer, { top: elem.top, left: elem.left, opacity: animatedOpacity }]}>
-      <Text style={[styles.circuitSymbol, getGlitchStyle()]}>{elem.type}</Text>
-    </Animated.View>
-  );
+return (
+  <Animated.View style={[styles.circuitContainer, { top: elem.top, left: elem.left, opacity: animatedOpacity }]}>
+    <Text style={[styles.circuitSymbol, getGlitchStyle()]}>{elem.type}</Text>
+  </Animated.View>
+);
 });
 
 export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
@@ -172,6 +172,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const componentAudioTime = useRef(0);
 
   const skipTimer = useRef(null);
+  const typewriterTimerRef = useRef(null); // Ref adicionada para controlar o timer da digitação
   const skipAnimWidth = useRef(new Animated.Value(0)).current;
   const [isSkipping, setIsSkipping] = useState(false);
 
@@ -248,6 +249,14 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     return () => clearInterval(cursorInterval);
   }, [started]);
 
+  // Limpa os timers pendentes caso o componente seja desmontado inesperadamente
+  useEffect(() => {
+    return () => {
+      if (skipTimer.current) clearTimeout(skipTimer.current);
+      if (typewriterTimerRef.current) clearTimeout(typewriterTimerRef.current);
+    };
+  }, []);
+
   const handleStart = async () => {
     if (!glReady) return;
     await onUnlockAudio?.();
@@ -322,7 +331,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
   const triggerTypewriterForLine = (lineIdx, allLines) => {
     if (lineIdx >= allLines.length) {
-      setTimeout(() => {
+      typewriterTimerRef.current = setTimeout(() => {
         Animated.parallel([
           Animated.timing(textOpacity, { toValue: 0, duration: 600, useNativeDriver: true }),
           Animated.timing(textTranslateY, { toValue: -15, duration: 600, useNativeDriver: true })
@@ -344,7 +353,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
 
         if (char === "|") {
           charIndex++;
-          setTimeout(typeChar, 800);
+          typewriterTimerRef.current = setTimeout(typeChar, 800);
           return;
         }
 
@@ -364,7 +373,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
         });
 
         charIndex++;
-        setTimeout(typeChar, 40);
+        typewriterTimerRef.current = setTimeout(typeChar, 40);
       } else {
         triggerTypewriterForLine(lineIdx + 1, allLines);
       }
@@ -374,6 +383,11 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   };
 
   const executeForceQuit = () => {
+    // CRUCIAL: Cancela qualquer loop de digitação pendente imediatamente ao pular
+    if (typewriterTimerRef.current) {
+      clearTimeout(typewriterTimerRef.current);
+    }
+
     Animated.timing(whiteoutOpacity, {
       toValue: 1.0,
       duration: 500,
@@ -383,18 +397,15 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     });
   };
 
-
   const startSkipPress = () => {
     setIsSkipping(true);
     playSfx("textDigital");
-
 
     Animated.timing(skipAnimWidth, {
       toValue: 130,
       duration: 3000,
       useNativeDriver: false,
     }).start();
-
 
     skipTimer.current = setTimeout(() => {
       executeForceQuit();
@@ -529,7 +540,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
           style={styles.skipContainer}
           onTouchStart={startSkipPress}
           onTouchEnd={cancelSkipPress}
-
           onMouseDown={startSkipPress}
           onMouseUp={cancelSkipPress}
           onMouseLeave={cancelSkipPress}
@@ -650,6 +660,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     zIndex: 20,
   },
+  
   /* ESTILOS DO SKIP BUTTON HUD */
   skipContainer: {
     position: "absolute",

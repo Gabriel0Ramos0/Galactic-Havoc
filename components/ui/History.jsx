@@ -228,7 +228,7 @@ export default function History({ visible, onClose }) {
           "=== PERMISSÃO CONCEDIDA // AUTORIZAÇÃO NÍVEL TÁLAMO ===",
           "",
           "====================================================",
-          " PILOTO RS-07 CONECTADO AO SISTEMA DE FLUXO HAVOC ",
+          " PILOTO RS-07 CONECTADO AO SISTEMA",
           " STATUS DA MATRIZ: TOTALMENTE OPERACIONAL",
           "====================================================",
           "",

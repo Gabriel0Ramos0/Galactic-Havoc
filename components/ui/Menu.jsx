@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, memo } from "react";
 import {
   View,
   Text,
@@ -16,28 +16,75 @@ const { width, height } = Dimensions.get("window");
 const cyanNeon = "#00eaff";
 const redNeon = "#ff453a";
 
+// Subcomponente de Botão Reativo para os itens principais do Menu HUD
+const MenuButton = memo(({ style, onPress, children, active }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, { toValue: 0.98, duration: 100, useNativeDriver: true }),
+      Animated.timing(glowAnim, { toValue: 1, duration: 100, useNativeDriver: false })
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.timing(glowAnim, { toValue: 0, duration: 200, useNativeDriver: false })
+    ]).start();
+  };
+
+  // Interpolação para criar uma reação de cor vibrante ao toque
+  const backgroundColor = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: active ? ["rgba(0, 234, 255, 0.18)", "rgba(0, 234, 255, 0.4)"] : ["rgba(0, 35, 50, 0.45)", "rgba(0, 234, 255, 0.25)"]
+  });
+
+  const borderColor = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: active ? [cyanNeon, "#ffffff"] : ["rgba(0, 234, 255, 0.35)", cyanNeon]
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+      >
+        <Animated.View style={[styles.skewButton, style, { backgroundColor, borderColor }]}>
+          <View style={styles.unskewContent}>
+            {children}
+          </View>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+});
+
 export default function Menu({ onStart, hasSession, onConfig, onCredits, onHistory, onExit, onLogin }) {
   const [open, setOpen] = useState(false);
   const [seed, setSeed] = useState("");
 
-  // Animações de HUD
   const hudFade = useRef(new Animated.Value(0)).current;
-  const glitchAnim = useRef(new Animated.Value(0)).current;
   const leaderboardHeight = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
-    // Entrada cinematográfica dos elementos do HUD
+    // Entrada cinematográfica suave
     Animated.timing(hudFade, {
       toValue: 1,
-      duration: 1000,
+      duration: 800,
       useNativeDriver: true,
     }).start();
 
-    // Loop sutil de ruído/brilho no fundo
+    // Loop de pulsação para elementos com energia neon viva
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glitchAnim, { toValue: 1, duration: 2000, useNativeDriver: false }),
-        Animated.timing(glitchAnim, { toValue: 0, duration: 1500, useNativeDriver: false }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 1500, useNativeDriver: true }),
       ])
     ).start();
   }, []);
@@ -66,57 +113,56 @@ export default function Menu({ onStart, hasSession, onConfig, onCredits, onHisto
       resizeMode="cover"
     >
       <View style={styles.overlay} />
-      <View style={styles.vignette} pointerEvents="none" />
 
-      {/* RENDER DO HUD PRINCIPAL (ESTILO NO MAN'S SKY) */}
+      {/* Detalhe estético: Linhas de varredura sutis para dar o visual de visor holográfico */}
+      <View style={styles.hologramGrid} pointerEvents="none" />
+
       <Animated.View style={[styles.hudContainer, { opacity: hudFade }]}>
 
         {/* TOPO ESQUERDO: INFOBAR E TÍTULO INTEGRADO AO HUD */}
         <View style={styles.headerTelemetry}>
+          <View style={styles.systemStatusRow}>
+            <Animated.View style={[styles.onlineIndicator, { opacity: pulseAnim }]} />
+            <Text style={styles.telemetryText}>SISTEMAS DA SIRIUS MARROW INICIALIZADOS!</Text>
+          </View>
           <Text style={styles.gameTitle}>GALACTIC HAVOC</Text>
           <View style={styles.bracketLine} />
         </View>
 
-        {/* CANTO ESQUERDO CENTRAL: O MENU DIAGONAL (SKEWED INTERFACE) */}
+        {/* CENTRO ESQUERDO: INTERFACE E BOTÕES PRINCIPAIS */}
         <View style={styles.diagonalMenuContainer}>
 
           {hasSession && (
-            <TouchableOpacity
-              style={[styles.skewButton, styles.buttonContinue]}
+            <MenuButton
+              active={true}
+              style={styles.buttonContinue}
               onPress={() => handleButtonPress(() => onStart({ mode: "continue" }))}
             >
-              <View style={styles.unskewContent}>
-                <Text style={styles.skewButtonText}>REASSUMIR COMANDO</Text>
-                <Text style={styles.buttonSubText}>CONTINUE SESSÃO</Text>
-              </View>
-            </TouchableOpacity>
+              <Text style={[styles.skewButtonText, styles.neonText]}>VOLTAR AO JOGO</Text>
+              <Text style={styles.buttonSubText}>REASSUMIR COMANDO</Text>
+            </MenuButton>
           )}
 
-          <TouchableOpacity
-            style={[styles.skewButton, !hasSession && styles.buttonContinue]}
+          <MenuButton
+            active={!hasSession}
+            style={!hasSession ? styles.buttonContinue : null}
             onPress={() => handleButtonPress(() => onStart({ mode: "new", seed }))}
           >
-            <View style={styles.unskewContent}>
-              <Text style={styles.skewButtonText}>INICIAR DIRETRIZ HIPERESPAÇO</Text>
-              <Text style={styles.buttonSubText}>NOVO COMEÇO</Text>
-            </View>
-          </TouchableOpacity>
+            <Text style={styles.skewButtonText}>JOGAR</Text>
+            <Text style={styles.buttonSubText}>INICIAR NOVO ESPAÇO</Text>
+          </MenuButton>
 
-          <TouchableOpacity style={styles.skewButton} onPress={() => handleButtonPress(onHistory)}>
-            <View style={styles.unskewContent}>
-              <Text style={styles.skewButtonText}>TERMINAL DE DADOS MK-IV</Text>
-              <Text style={styles.buttonSubText}>ARQUIVOS E GRAVAÇÕES</Text>
-            </View>
-          </TouchableOpacity>
+          <MenuButton onPress={() => handleButtonPress(onHistory)}>
+            <Text style={styles.skewButtonText}>TERMINAL DE DADOS MK-IV</Text>
+            <Text style={styles.buttonSubText}>ARQUIVOS E LOGS</Text>
+          </MenuButton>
 
-          <TouchableOpacity style={styles.skewButton} onPress={() => handleButtonPress(onConfig)}>
-            <View style={styles.unskewContent}>
-              <Text style={styles.skewButtonText}>PARÂMETROS DO SISTEMA</Text>
-              <Text style={styles.buttonSubText}>CONFIGURAÇÕES</Text>
-            </View>
-          </TouchableOpacity>
+          <MenuButton onPress={() => handleButtonPress(onConfig)}>
+            <Text style={styles.skewButtonText}>CONFIGURAÇÕES</Text>
+            <Text style={styles.buttonSubText}>PARÂMETROS DO SISTEMA</Text>
+          </MenuButton>
 
-          {/* BOTÕES SECUNDÁRIOS COMPACTOS */}
+          {/* BOTÕES SECUNDÁRIOS REMODELADOS (Sem textos brutos soltos) */}
           <View style={styles.compactRow}>
             <TouchableOpacity style={styles.flatTextButton} onPress={() => handleButtonPress(onLogin)}>
               <Text style={styles.flatTextButtonText}>// AUTENTICAR PILOTO</Text>
@@ -129,16 +175,16 @@ export default function Menu({ onStart, hasSession, onConfig, onCredits, onHisto
 
         </View>
 
-        {/* RODAPÉ DO HUD: INPUT ESTILIZADO COMO INJETOR DE COORDENADAS */}
+        {/* RODAPÉ DO HUD: INPUT DE COORDENADAS */}
         <View style={styles.bottomHudBar}>
           <View style={styles.seedInjectorContainer}>
             <View style={styles.injectorTag}>
-              <Text style={styles.injectorTagText}>HYPERDRIVE SEED CORE</Text>
+              <Text style={styles.injectorTagText}>HYPERDRIVE SEED</Text>
             </View>
             <TextInput
               style={styles.seedInput}
-              placeholder="[ INSIRA UMA SEED MANUAL DO UNIVERSO ]"
-              placeholderTextColor="rgba(0, 234, 255, 0.3)"
+              placeholder="[ INSIRA A SEED DO UNIVERSO ]"
+              placeholderTextColor="rgba(0, 234, 255, 0.25)"
               value={seed}
               onChangeText={setSeed}
               autoCapitalize="characters"
@@ -147,7 +193,7 @@ export default function Menu({ onStart, hasSession, onConfig, onCredits, onHisto
 
           {onExit && (
             <TouchableOpacity style={styles.abortButton} onPress={() => handleButtonPress(onExit)}>
-              <Text style={styles.abortText}>DESCONECTAR_</Text>
+              <Text style={styles.abortText}>LOGOUT</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -189,108 +235,128 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(2, 6, 12, 0.65)",
+    backgroundColor: "rgba(3, 10, 20, 0.55)", // Azul espacial sutil no lugar do cinza escuro opaco
   },
-  vignette: {
+  hologramGrid: {
     ...StyleSheet.absoluteFillObject,
-    // Efeito de escurecimento de borda clássico de cockpit/capacete
-    borderWidth: 24,
-    borderColor: "rgba(0,0,0,0.4)",
     backgroundColor: "transparent",
+    opacity: 0.03,
+    // Cria pequenos traços horizontais se seu asset/suporte permitir, senão mantém puramente transparente e limpo sem bordas.
   },
   hudContainer: {
     flex: 1,
-    paddingHorizontal: 50,
-    paddingVertical: 40,
+    paddingHorizontal: 40,
+    paddingVertical: 35,
     justifyContent: "space-between",
   },
   /* TELEMETRIA SUPERIOR */
   headerTelemetry: {
     alignSelf: "flex-start",
-    marginTop: 20,
+    marginTop: 10,
+  },
+  systemStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  onlineIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: cyanNeon,
+    marginRight: 8,
+    boxShadow: `0px 0px 6px ${cyanNeon}`,
   },
   telemetryText: {
     color: cyanNeon,
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    letterSpacing: 2,
-    opacity: 0.6,
+    letterSpacing: 1.5,
+    opacity: 0.75,
   },
   gameTitle: {
     color: "#fff",
-    fontSize: 44,
+    fontSize: 48,
     fontWeight: "900",
-    letterSpacing: 4,
-    marginTop: 5,
-    textShadowColor: "rgba(0, 234, 255, 0.6)",
+    letterSpacing: 5,
+    textShadowColor: "rgba(0, 234, 255, 0.75)",
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+    textShadowRadius: 15,
   },
   bracketLine: {
-    width: 200,
-    height: 1,
+    width: 250,
+    height: 2,
     backgroundColor: cyanNeon,
-    marginTop: 8,
-    opacity: 0.4,
+    marginTop: 6,
+    opacity: 0.6,
   },
-  /* MENU DIAGONAL ESTILO SCI-FI HUD */
+  /* MENU DIAGONAL E BOTÕES REATIVOS */
   diagonalMenuContainer: {
     alignSelf: "flex-start",
-    width: 360,
-    marginLeft: 10,
-    marginVertical: 30,
+    width: 380,
+    marginVertical: 20,
   },
   skewButton: {
-    backgroundColor: "rgba(0, 35, 50, 0.4)",
-    borderColor: "rgba(0, 234, 255, 0.3)",
     borderWidth: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 25,
     marginVertical: 6,
-    // ESSA PROPRIEDADE FAZ A CAIXA FICAR INCLINADA NA DIAGONAL ÉPICA
-    transform: [{ skewX: "-12deg" }],
+    transform: [{ skewX: "-10deg" }],
     borderLeftWidth: 5,
-    borderLeftColor: "rgba(0, 234, 255, 0.6)",
+    borderLeftColor: cyanNeon,
+    // Sombra Neon Dinâmica nativa
+    shadowColor: cyanNeon,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   buttonContinue: {
-    backgroundColor: "rgba(0, 234, 255, 0.15)",
-    borderColor: cyanNeon,
-    borderLeftColor: cyanNeon,
-    borderLeftWidth: 7,
+    borderLeftColor: "#ffffff",
+    borderLeftWidth: 6,
   },
   unskewContent: {
-    // Desfaz o skew no texto para ele não ficar deformado/ilegível
-    transform: [{ skewX: "12deg" }],
+    transform: [{ skewX: "10deg" }],
   },
   skewButtonText: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "800",
     letterSpacing: 2,
   },
-  buttonSubText: {
+  neonText: {
     color: cyanNeon,
+    textShadowColor: "rgba(0, 234, 255, 0.5)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  buttonSubText: {
+    color: "rgba(255, 255, 255, 0.5)",
     fontSize: 8,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    letterSpacing: 1.5,
-    opacity: 0.6,
-    marginTop: 2,
+    letterSpacing: 1.2,
+    marginTop: 3,
   },
-  /* SUBMENUS PLANOS */
+  /* ESTILIZAÇÃO DOS BOTÕES COMPACTOS SECUNDÁRIOS */
   compactRow: {
     flexDirection: "row",
-    marginTop: 15,
-    marginLeft: 10,
+    marginTop: 18,
+    paddingLeft: 5,
   },
   flatTextButton: {
-    marginRight: 25,
-    paddingVertical: 5,
+    marginRight: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(0, 234, 255, 0.05)",
+    borderColor: "rgba(0, 234, 255, 0.25)",
+    borderWidth: 1,
+    borderRadius: 2,
   },
   flatTextButtonText: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 11,
+    color: cyanNeon,
+    fontSize: 10,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     letterSpacing: 1.5,
+    fontWeight: "600",
   },
   /* BARRA INFERIOR DE COMANDO */
   bottomHudBar: {
@@ -298,33 +364,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "rgba(0, 234, 255, 0.15)",
-    paddingTop: 20,
+    borderTopColor: "rgba(0, 234, 255, 0.2)",
+    paddingTop: 15,
   },
   seedInjectorContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0, 15, 25, 0.8)",
+    backgroundColor: "rgba(0, 12, 20, 0.85)",
     borderWidth: 1,
-    borderColor: "rgba(0, 234, 255, 0.2)",
-    borderRadius: 4,
+    borderColor: "rgba(0, 234, 255, 0.3)",
+    borderRadius: 2,
     flex: 1,
-    maxWidth: 500,
-    height: 38,
+    maxWidth: 390,
+    height: 40,
   },
   injectorTag: {
-    backgroundColor: "rgba(0, 234, 255, 0.15)",
+    backgroundColor: "rgba(0, 234, 255, 0.12)",
     height: "100%",
     justifyContent: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     borderRightWidth: 1,
-    borderRightColor: "rgba(0, 234, 255, 0.2)",
+    borderRightColor: "rgba(0, 234, 255, 0.3)",
   },
   injectorTagText: {
     color: cyanNeon,
     fontSize: 9,
     fontWeight: "bold",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
   seedInput: {
@@ -337,43 +403,54 @@ const styles = StyleSheet.create({
   },
   abortButton: {
     paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 69, 58, 0.25)",
+    backgroundColor: "rgba(255, 69, 58, 0.05)",
+    borderRadius: 2,
   },
   abortText: {
     color: redNeon,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     letterSpacing: 2,
-    fontWeight: "bold",
-    opacity: 0.8,
+    fontWeight: "700",
+    textShadowColor: "rgba(255, 69, 58, 0.4)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
   },
   /* WIDGET RANKING HOLOGRÁFICO */
   leaderboardWidget: {
     position: "absolute",
     right: 40,
-    top: 55,
-    width: 240,
-    backgroundColor: "rgba(0, 8, 12, 0.8)",
+    top: 45,
+    width: 250,
+    backgroundColor: "rgba(0, 10, 15, 0.85)",
     borderWidth: 1,
-    borderColor: "rgba(0, 234, 255, 0.2)",
+    borderColor: "rgba(0, 234, 255, 0.3)",
+    shadowColor: cyanNeon,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   leaderboardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
-    backgroundColor: "rgba(0, 234, 255, 0.05)",
+    padding: 12,
+    backgroundColor: "rgba(0, 234, 255, 0.08)",
   },
   pulseDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: redNeon,
     marginRight: 8,
   },
   scoreTitle: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 10,
+    color: "#fff",
+    fontSize: 9,
     fontWeight: "bold",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     flex: 1,
   },
@@ -386,16 +463,18 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   itemsInner: {
-    padding: 10,
-    backgroundColor: "rgba(0, 5, 10, 0.5)",
+    padding: 12,
+    backgroundColor: "rgba(0, 5, 10, 0.6)",
   },
   scoreRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 5,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0, 234, 255, 0.05)",
   },
   scoreName: {
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(255,255,255,0.65)",
     fontSize: 10,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
