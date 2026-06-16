@@ -60,7 +60,7 @@ const TransitionController = forwardRef((props, ref) => {
                     toValue: 1,
                     duration: 1500,
                     easing: Easing.linear,
-                    useNativeDriver: false, 
+                    useNativeDriver: false,
                 })
             ).start();
         };
@@ -226,12 +226,12 @@ const styles = StyleSheet.create({
         position: "absolute",
         width: "100%",
         height: height / 2,
-        backgroundColor: "#020813", 
+        backgroundColor: "#020813",
         zIndex: 5,
     },
     loaderWrapper: {
         position: "absolute",
-        zIndex: 10, 
+        zIndex: 10,
         alignItems: "center",
         justifyContent: "center",
         width: 320,
@@ -246,9 +246,7 @@ const styles = StyleSheet.create({
         fontWeight: "900",
         fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
         letterSpacing: 3,
-        textShadowColor: "rgba(0, 234, 255, 0.6)",
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 8,
+        textShadow: "0px 0px 8px rgba(0, 234, 255, 0.6)",
     },
     progressTrack: {
         width: "100%",
@@ -261,10 +259,7 @@ const styles = StyleSheet.create({
     progressBar: {
         height: "100%",
         backgroundColor: cyanNeon,
-        shadowColor: cyanNeon,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 4,
+        boxShadow: "0px 0px 4px rgba(0, 234, 255, 0.8)",
     },
     telemetryStatus: {
         color: cyanNeon,

@@ -279,9 +279,7 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: "900",
     letterSpacing: 5,
-    textShadowColor: "rgba(0, 234, 255, 0.75)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 15,
+    textShadow: "0px 0px 15px rgba(0, 234, 255, 0.75)",
   },
   bracketLine: {
     width: 250,
@@ -304,11 +302,7 @@ const styles = StyleSheet.create({
     transform: [{ skewX: "-10deg" }],
     borderLeftWidth: 5,
     borderLeftColor: cyanNeon,
-    // Sombra Neon Dinâmica nativa
-    shadowColor: cyanNeon,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    boxShadow: "0px 0px 4px rgba(0, 234, 255, 0.2)",
   },
   buttonContinue: {
     borderLeftColor: "#ffffff",
@@ -325,9 +319,7 @@ const styles = StyleSheet.create({
   },
   neonText: {
     color: cyanNeon,
-    textShadowColor: "rgba(0, 234, 255, 0.5)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadow: "0px 0px 8px rgba(0, 234, 255, 0.5)",
   },
   buttonSubText: {
     color: "rgba(255, 255, 255, 0.5)",
@@ -415,9 +407,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     letterSpacing: 2,
     fontWeight: "700",
-    textShadowColor: "rgba(255, 69, 58, 0.4)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
+    textShadow: "0px 0px 6px rgba(255, 69, 58, 0.4)",
   },
   /* WIDGET RANKING HOLOGRÁFICO */
   leaderboardWidget: {
@@ -428,10 +418,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 10, 15, 0.85)",
     borderWidth: 1,
     borderColor: "rgba(0, 234, 255, 0.3)",
-    shadowColor: cyanNeon,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    boxShadow: "0px 0px 8px rgba(0, 234, 255, 0.15)",
   },
   leaderboardHeader: {
     flexDirection: "row",

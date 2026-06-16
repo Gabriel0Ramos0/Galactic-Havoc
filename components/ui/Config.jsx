@@ -411,8 +411,7 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: "#fff",
-    textShadowColor: "rgba(0, 234, 255, 0.5)",
-    textShadowRadius: 6,
+    textShadow: "0px 0px 6px rgba(0, 234, 255, 0.5)",
   },
   abortButton: {
     backgroundColor: "rgba(255, 69, 58, 0.05)",
