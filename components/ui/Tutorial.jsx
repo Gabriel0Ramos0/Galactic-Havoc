@@ -1,4 +1,3 @@
-// app/components/Tutorial.jsx
 import React, { useState, useEffect } from "react";
 import { View } from "react-native";
 import MessageBox from "@/components/ui/MessageBox";
@@ -7,21 +6,22 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
     const [step, setStep] = useState(initialStep);
 
     const steps = [
-        "",
-        "Piloto… o campo gravitacional local distorceu os eixos da nave! Precisamos recalibrar manualmente.",
-        "Prepare-se. Vamos executar o protocolo de Estabilização Primária.",
-        "Reinicie os propulsores na seguinte ordem: [S] → [T] → [A] → [R] → [T].",
-        "Bom trabalho, propulsores restaurados! Agora mova-se com [W], [A], [S] e [D].",
-        "Excelente. Ajuste a altitude com [↑] e [↓].",
-        "Perfeito. Ative o BOOST! Segure [W] e pressione [SHIFT].",
-        "Um sinal desconhecido foi detectado… analisando origem. Aguarde um momento.",
-        "Aproximando-se do ponto de energia. Vá até o objeto para identificá-lo.",
-        "É um módulo de defesa… use [E] para inspecionar.",
-        "Suprimentos encontrados. Abra a Interface da Nave com [TAB] para equipar os módulos de disparo.",
-        "Atenção… três naves piratas estão se aproximando!",
-        "Prepare o sistema de armas. Pressione [ESPAÇO] para disparar.",
-        "Ótimo trabalho, piloto! Os piratas foram neutralizados.",
-        "Restauração completa. O sistema de navegação está online. Siga para o próximo destino e continue sua aventura!",
+        "", // 0
+        "Piloto… o campo gravitacional local distorceu os eixos da nave! Precisamos recalibrar manualmente.", // 1
+        "Prepare-se. Vamos executar o protocolo de Estabilização Primária.", // 2
+        "Reinicie os propulsores na seguinte ordem: [S] → [T] → [A] → [R] → [T].", // 3
+        "Bom trabalho, propulsores restaurados! Agora mova-se com [W], [A], [S] e [D].", // 4
+        "Excelente. Ajuste a altitude com [↑] e [↓].", // 5
+        "Perfeito. Ative o BOOST! Segure [W] e pressione [SHIFT].", // 6
+        "Um sinal desconhecido foi detectado… analisando origem. Aguarde um momento.", // 7
+        "Aproximando-se do ponto de energia. Vá até o objeto para identificá-lo.", // 8
+        "É um módulo de defesa… use [E] para inspecionar.", // 9
+        "Suprimentos encontrados. Abra a Interface da Nave com [TAB] para equipar os módulos de disparo.", // 10
+        "Selecione o módulo de disparo no seu inventário e equipe-o em um slot ativo.", // 11 ← NOVA ETAPA!
+        "Atenção… três naves piratas estão se aproximando!", // 12
+        "Prepare o sistema de armas. Pressione [ESPAÇO] para disparar.", // 13
+        "Ótimo trabalho, piloto! Os piratas foram neutralizados.", // 14
+        "Restauração completa. O sistema de navegação está online. Siga para o próximo destino e continue sua aventura!", // 15
     ];
 
     // Notifica mudanças de step
@@ -146,7 +146,7 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
         return () => window.removeEventListener("blueMarkerReached", onReached);
     }, [step]);
 
-    // STEP 9 → tecla I
+    // STEP 9 → tecla E
     useEffect(() => {
         if (step !== 9) return;
 
@@ -174,7 +174,7 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
         const handleKey = (e) => {
             if (advanced) return;
 
-            if (e.key === "Tab") {
+            if (e.key.toLowerCase() === "tab") {
                 advanced = true;
                 e.preventDefault();
                 setStep(11);
@@ -185,24 +185,36 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
         return () => window.removeEventListener("keydown", handleKey);
     }, [step]);
 
-    // STEP 11 → auto
+    // STEP 11 → NOVO: Espera o item ser equipado no painel de inventário
     useEffect(() => {
         if (step !== 11) return;
 
-        const t = setTimeout(() => setStep(12), 4000);
+        const onEquipped = () => {
+            setStep(12);
+        };
+
+        window.addEventListener("itemEquipped", onEquipped);
+        return () => window.removeEventListener("itemEquipped", onEquipped);
+    }, [step]);
+
+    // STEP 12 → auto (Naves piratas se aproximando)
+    useEffect(() => {
+        if (step !== 12) return;
+
+        const t = setTimeout(() => setStep(13), 4000);
         return () => clearTimeout(t);
     }, [step]);
 
-    // STEP 12 → SPACE
+    // STEP 13 → SPACE
     useEffect(() => {
-        if (step !== 12) return;
+        if (step !== 13) return;
         let advanced = false;
 
         const handleKey = (e) => {
             if (advanced) return;
             if (e.code === "Space") {
                 advanced = true;
-                setStep(13);
+                setStep(14);
             }
         };
 
@@ -210,17 +222,17 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
         return () => window.removeEventListener("keydown", handleKey);
     }, [step]);
 
-    // STEP 13 → auto
+    // STEP 14 → auto
     useEffect(() => {
-        if (step !== 13) return;
+        if (step !== 14) return;
 
-        const t = setTimeout(() => setStep(14), 4000);
+        const t = setTimeout(() => setStep(15), 4000);
         return () => clearTimeout(t);
     }, [step]);
 
-    // STEP 14 → finalizar
+    // STEP 15 → finalizar
     useEffect(() => {
-        if (step !== 14) return;
+        if (step !== 15) return;
 
         const t = setTimeout(() => {
             onComplete && onComplete();
@@ -232,7 +244,7 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
     if (step > steps.length - 1) return null;
 
     return (
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <View pointerEvents="none">
             <MessageBox
                 message={steps[step]}
                 position="bottom-left"

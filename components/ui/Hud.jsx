@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, Dimensions } from "
 import Tutorial from "@/components/ui/Tutorial";
 import FloatingScoreBalloon from "@/components/ui/FloatingScoreBalloon";
 import LootPanel from "@/components/ui/LootPanel";
+import InventoryPanel from "@/components/ui/InventoryPanel";
 
 const { width } = Dimensions.get("window");
 const verdeBase = "#00ffaa";
@@ -25,6 +26,9 @@ export default function Hud({
   lootItems = [],
   lootPanelOpen = false,
   onLootPanelClose = () => { },
+  inventoryItems = [],
+  inventoryOpen = false,
+  onInventoryClose = () => { },
   isNearbyInteraction = false
 }) {
 
@@ -177,6 +181,12 @@ export default function Hud({
         isOpen={lootPanelOpen}
         lootItems={lootItems}
         onClose={onLootPanelClose}
+      />
+
+      <InventoryPanel
+        isOpen={inventoryOpen}
+        Items={inventoryItems}
+        onClose={onInventoryClose}
       />
     </>
   );

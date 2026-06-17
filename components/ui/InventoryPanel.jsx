@@ -6,9 +6,9 @@ const verdeBase = "#00ffaa";
 const vermelhoNeon = "#ff453a";
 const amareloNeon = "#ffd54a";
 
-export default function LootPanel({
+export default function InventoryPanel({
     isOpen = false,
-    lootItems = [],
+    inventoryItems = [],
     onClose = () => { },
 }) {
     const opacity = useRef(new Animated.Value(0)).current;
@@ -20,7 +20,7 @@ export default function LootPanel({
     const [scanProgress, setScanProgress] = useState(0);
 
     // Fallback padrão exigido: Arma Laser com 32% de durabilidade se a lista vier vazia
-    const activeLoot = lootItems.length > 0 ? lootItems : [
+    const activeLoot = inventoryItems.length > 0 ? inventoryItems : [
         { name: "CANHÃO LASER DE PLASMA // SÉRIE-VX", rarity: "rare", durability: 32, quantity: 1, type: "ARM" }
     ];
 
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     },
     container: {
         position: "absolute",
-        right: 100,
+        left: 100,
         width: 380,
         backgroundColor: "rgba(1, 12, 22, 0.96)",
         borderRadius: 4,

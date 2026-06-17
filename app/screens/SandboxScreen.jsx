@@ -89,6 +89,12 @@ export default function SandboxScreen() {
   const [lootItems, setLootItems] = useState([]);
   const [isNearbyInteraction, setIsNearbyInteraction] = useState(false);
 
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [inventoryItems, setInventoryItems] = useState([
+    { id: "1", name: "Sucata de Titânio", quantity: 5 },
+    { id: "2", name: "Célula de Energia", quantity: 2 },
+  ]);
+
   const addLootItem = (item) => {
     setLootItems(prev => [...prev, item]);
   };
@@ -124,10 +130,7 @@ export default function SandboxScreen() {
           obj.visible = debugMode.current;
         });
 
-        // Chunks
         chunkManagerRef.current?.setDebugVisible(debugMode.current);
-
-        // Asteróides
         chunkManagerRef.current?.setCollisionDebugVisible(debugMode.current);
       }
     };
@@ -159,7 +162,6 @@ export default function SandboxScreen() {
   useEffect(() => {
     if (gameState !== GameState.PLAYING || isTransitioning) return;
 
-    // entrou em crítico
     if (energy <= 0 && !isCritical) {
       setIsCritical(true);
       setCanControl(false);
@@ -167,15 +169,12 @@ export default function SandboxScreen() {
       criticalRecoveryTriggeredRef.current = false;
     }
 
-    // começou a recarregar DURANTE crítico
     if (isRecharging && isCritical && !criticalRecoveryTriggeredRef.current) {
       criticalRecoveryTriggeredRef.current = true;
-
       playSfx("tutorial_intro");
       animateShipStartup(shipLightsRef.current);
     }
 
-    // saiu do crítico
     if (energy >= 100 && isCritical) {
       setCanControl(true);
       setIsCritical(false);
@@ -246,24 +245,25 @@ export default function SandboxScreen() {
         criticalRecoveryTriggeredRef.current = false;
         break;
 
-      case 3:// sequência START
+      case 3:
         playSfx("tutorial_alert");
         break;
 
-      case 4: // sequência DWAS
+      case 4:
         playSfx("tutorial_alert");
         break;
 
       case 5:
-      case 6: // Boost
+      case 6:
         playSfx("tutorial_alert");
         break;
 
-      case 8: // Marcador Azul
+      case 8:
         playSfx("tutorial_marker");
         break;
 
-      case 11: // piratas
+      case 12:
+        setInventoryOpen(false);
         blueMarkerRef.current?.remove();
         scrapRef.current?.remove();
         blueMarkerRef.current = null;
@@ -273,7 +273,7 @@ export default function SandboxScreen() {
         playSfx("tutorial_combat");
         break;
 
-      case 13:
+      case 14:
         stopTutorialCombat();
         transitionToTrack(4);
         break;
@@ -295,16 +295,22 @@ export default function SandboxScreen() {
     controls,
     gameState,
     lootPanelOpen,
+    inventoryOpen,
     onNearbyChange: (isNearby) => {
       setIsNearbyInteraction(isNearby);
     },
-    onInspect: () => { },
     onOpenLootPanel: () => {
-      setLootPanelOpen(true);
+      if (controls.inspect) {
+        setLootPanelOpen(true);
+      }
     },
-    onCloseLootPanel: () => {
-      setLootPanelOpen(false);
+    onCloseLootPanel: () => setLootPanelOpen(false),
+    onOpenInventory: () => {
+      if (controls.inventory) {
+        setInventoryOpen(true);
+      }
     },
+    onCloseInventory: () => setInventoryOpen(false),
   });
 
   const { updateProjectiles, projectiles, spawnProjectileParticles } = useProjectiles(shipRef, sceneRef, {
@@ -321,7 +327,6 @@ export default function SandboxScreen() {
     shipVelocityRef: velocity
   });
 
-  // Áudio desbloqueado na Custscene após iniciar.
   const unlockAudio = async () => {
     if (audioUnlocked.current) return;
     audioUnlocked.current = true;
@@ -335,24 +340,19 @@ export default function SandboxScreen() {
 
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
 
-    // Renderer
     const renderer = new Renderer({ gl });
     renderer.setSize(width, height);
 
-    // Cena
     const scene = new THREE.Scene();
 
-    // Câmera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 6000);
     camera.position.set(0, 10, 15);
     cameraRef.current = camera;
 
-    // Nave
     const ship = await createShip(scene);
     shipRef.current = ship;
     ship.userData.velocity = new THREE.Vector3();
 
-    // Efeito de Propulsão
     const thrusterEffect = createThrusterEffect(scene, shipRef);
     thrusterEffectRef.current = thrusterEffect;
 
@@ -380,13 +380,11 @@ export default function SandboxScreen() {
       helper: axesHelper,
       update() {
         if (!ship) return;
-
         axesHelper.position.copy(ship.position);
         axesHelper.rotation.copy(ship.rotation);
       }
     });
 
-    // Universo
     const delay = () => new Promise(res => setTimeout(res, 0));
     await delay();
     const stars = await createStars(3000, 2000);
@@ -394,14 +392,11 @@ export default function SandboxScreen() {
 
     scene.add(stars);
 
-    // Marcador Azul (Tutorial)
     sceneRef.current = scene;
 
-    // Iluminação Nave
     const shipLights = setupShipLighting(scene, ship);
     shipLightsRef.current = shipLights;
 
-    // Loop de animação
     const clock = new THREE.Clock();
 
     const animate = () => {
@@ -414,26 +409,20 @@ export default function SandboxScreen() {
         updateCamera();
         updateProjectiles(dt);
 
-        // Atualiza velocidade da nave
         if (shipRef.current && velocity.current) {
           shipRef.current.userData.velocity = velocity.current;
         }
 
-        // Atualiza efeito de propulsão
         if (thrusterEffectRef.current) {
           thrusterEffectRef.current.update(dt);
         }
 
-        // Efeitos Visuais
         effectsRef.current = effectsRef.current.filter(effect => {
           if (!effect.userData.update) return false;
-
           effect.userData.update(dt);
-
           return effect.parent !== null;
         });
 
-        // Atualiza chunks
         if (chunkManagerRef.current && shipRef.current) {
           chunkManagerRef.current.update(shipRef.current.position);
         }
@@ -523,7 +512,6 @@ export default function SandboxScreen() {
     };
     animate();
 
-    // Cleanup ao desmontar ou quando necessário
     return () => {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
@@ -531,7 +519,6 @@ export default function SandboxScreen() {
     };
   };
 
-  // Handlers para cutscene fim / pular
   const handleCutsceneFinish = async () => {
     transitionRef.current.start(async () => {
       setCutsceneVisible(false);
@@ -544,6 +531,7 @@ export default function SandboxScreen() {
   return (
     <View style={styles.container} {...panHandlers} onWheel={onWheel}>
       <TransitionController ref={transitionRef} />
+
       {/* CUTSCENE */}
       {cutsceneVisible && (
         <CutsceneScreen
@@ -559,7 +547,6 @@ export default function SandboxScreen() {
       {!cutsceneVisible && menuVisible && (
         <Menu
           onStart={async ({ mode, seed }) => {
-
             if (mode === "continue") {
               setPaused(false);
               setGameState(GameState.PLAYING);
@@ -656,10 +643,17 @@ export default function SandboxScreen() {
             setTutorialStep={setTutorialStep}
             initialTutorialStep={tutorialStep}
             markerCoords={markerCoords}
+
+            // Injeção dos dados de Loot
             lootItems={lootItems}
             lootPanelOpen={lootPanelOpen}
             onLootPanelClose={() => setLootPanelOpen(false)}
             isNearbyInteraction={isNearbyInteraction}
+
+            // Injeção dos dados do Inventário (Adicionado aqui!)
+            inventoryItems={inventoryItems}
+            inventoryOpen={inventoryOpen}
+            onInventoryClose={() => setInventoryOpen(false)}
           />
           {Platform.OS !== "web" && (
             <Joystick
