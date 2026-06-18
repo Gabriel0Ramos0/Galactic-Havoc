@@ -322,17 +322,6 @@ export default function SandboxScreen() {
 
         break;
 
-      // case 12:
-      //   setInventoryOpen(false);
-      //   blueMarkerRef.current?.remove();
-      //   scrapRef.current?.remove();
-      //   blueMarkerRef.current = null;
-      //   scrapRef.current = null;
-      //   setMarkerCoords(null);
-      //   transitionToTrack(null);
-      //   playSfx("tutorial_combat");
-      //   break;
-
       case 14:
         stopTutorialCombat();
         transitionToTrack(4);
