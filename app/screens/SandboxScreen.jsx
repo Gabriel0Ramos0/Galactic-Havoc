@@ -290,14 +290,48 @@ export default function SandboxScreen() {
 
       case 12:
         setInventoryOpen(false);
-        blueMarkerRef.current?.remove();
-        scrapRef.current?.remove();
-        blueMarkerRef.current = null;
-        scrapRef.current = null;
+        setLootPanelOpen(false);
+
+        setTimeout(() => {
+
+          const position = scrapRef.current?.group?.position?.clone();
+
+          if (position) {
+            const effect = spawnAsteroidDestruction(
+              sceneRef.current,
+              position,
+              new THREE.Vector3(0, 1, 0),
+              8
+            );
+
+            effectsRef.current.push(effect);
+            playSfx("explosion");
+          }
+
+          blueMarkerRef.current?.remove();
+          scrapRef.current?.remove();
+
+          blueMarkerRef.current = null;
+          scrapRef.current = null;
+
+        }, 800);
+
         setMarkerCoords(null);
         transitionToTrack(null);
         playSfx("tutorial_combat");
+
         break;
+
+      // case 12:
+      //   setInventoryOpen(false);
+      //   blueMarkerRef.current?.remove();
+      //   scrapRef.current?.remove();
+      //   blueMarkerRef.current = null;
+      //   scrapRef.current = null;
+      //   setMarkerCoords(null);
+      //   transitionToTrack(null);
+      //   playSfx("tutorial_combat");
+      //   break;
 
       case 14:
         stopTutorialCombat();

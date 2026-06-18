@@ -112,7 +112,7 @@ export default function Hud({
 
             {markerCoords && (
               <Text style={styles.markerCoordsText}>
-                ⌖ ALVO TRAVADO → X: {markerCoords.x.toFixed(0)} Y: {markerCoords.y.toFixed(0)}
+                ⌖ ALVO TRAVADO → X: {markerCoords.x.toFixed(0)} Y: {markerCoords.y.toFixed(0)} Z: {markerCoords.z.toFixed(0)}
               </Text>
             )}
           </View>
