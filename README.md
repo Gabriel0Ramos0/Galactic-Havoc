@@ -1,6 +1,6 @@
 # Galactic Havoc
 
-![Galactic Havoc Banner](assets/images/Game.png)
+![Galactic Havoc Banner](assets/images/Game.jpg)
 
 **Galactic Havoc** é um jogo espacial 3D interativo desenvolvido com **React Native + Expo**, focado em combate, exploração e uma experiência imersiva diretamente no navegador.
 
