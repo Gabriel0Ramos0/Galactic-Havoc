@@ -17,7 +17,7 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
         "Aproximando-se do ponto de energia. Vá até o objeto para identificá-lo.", // 8
         "É um módulo de defesa… use [E] para inspecionar.", // 9
         "Suprimentos encontrados. Abra a Interface da Nave com [TAB] para equipar os módulos de disparo.", // 10
-        "Selecione o módulo de disparo no seu inventário e equipe-o em um slot ativo.", // 11 ← NOVA ETAPA!
+        "Identifique o módulo de disparo e equipe-o em um slot ativo.", // 11 ← NOVA ETAPA!
         "Atenção… três naves piratas estão se aproximando!", // 12
         "Prepare o sistema de armas. Pressione [ESPAÇO] para disparar.", // 13
         "Ótimo trabalho, piloto! Os piratas foram neutralizados.", // 14
@@ -189,12 +189,21 @@ export default function Tutorial({ onComplete, onStepChange, initialStep = 0 }) 
     useEffect(() => {
         if (step !== 11) return;
 
-        const onEquipped = () => {
-            setStep(12);
+        const onEquipped = (event) => {
+            const { slot, itemId } = event.detail || {};
+
+            if (
+                slot === "WPN-L" &&
+                itemId === "laser_vx"
+            ) {
+                setStep(12);
+            }
         };
 
         window.addEventListener("itemEquipped", onEquipped);
-        return () => window.removeEventListener("itemEquipped", onEquipped);
+
+        return () =>
+            window.removeEventListener("itemEquipped", onEquipped);
     }, [step]);
 
     // STEP 12 → auto (Naves piratas se aproximando)

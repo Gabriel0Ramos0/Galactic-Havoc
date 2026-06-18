@@ -24,6 +24,8 @@ export default function Hud({
   initialTutorialStep = 0,
   markerCoords = null,
   lootItems = [],
+  setLootItems,
+  onTakeLootItem,
   lootPanelOpen = false,
   onLootPanelClose = () => { },
   inventoryItems = [],
@@ -180,6 +182,8 @@ export default function Hud({
       <LootPanel
         isOpen={lootPanelOpen}
         lootItems={lootItems}
+        setLootItems={setLootItems}
+        onTransferItem={onTakeLootItem}
         onClose={onLootPanelClose}
       />
 

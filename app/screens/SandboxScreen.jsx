@@ -27,13 +27,16 @@ import History from "@/components/ui/History";
 import createScrap from "@/components/systems/Scrap";
 import createBlueMarker from "@/components/effects/BlueMarker";
 import useInspection from "@/components/systems/useInspection";
+import InventoryPanel from "@/components/ui/InventoryPanel";
+import { transferLootToStorage, generateTutorialLoot, generateRandomLoot } from "@/components/controllers/ItemController";
 
-// Game State Constants
 const GameState = {
   MENU: "menu",
   PLAYING: "playing",
   PAUSED: "paused",
 };
+
+const TOTAL_STORAGE_SLOTS = 20;
 
 export default function SandboxScreen() {
   const glRef = useRef();
@@ -88,12 +91,35 @@ export default function SandboxScreen() {
   const [lootPanelOpen, setLootPanelOpen] = useState(false);
   const [lootItems, setLootItems] = useState([]);
   const [isNearbyInteraction, setIsNearbyInteraction] = useState(false);
-
+  const isFirstLootInteraction = useRef(true);
   const [inventoryOpen, setInventoryOpen] = useState(false);
-  const [inventoryItems, setInventoryItems] = useState([
-    { id: "1", name: "Sucata de Titânio", quantity: 5 },
-    { id: "2", name: "Célula de Energia", quantity: 2 },
-  ]);
+  const [storageSlots, setStorageSlots] = useState(() => {
+    const slots = Array(TOTAL_STORAGE_SLOTS).fill(null);
+    slots[0] = { id: "carbon_fragment", qty: 14 };
+    slots[1] = { id: "iron_ore", qty: 6 };
+    slots[2] = { id: "silicon_crystal", qty: 22 };
+    return slots;
+  });
+
+  const [shipHardware, setShipHardware] = useState({
+    "WPN-L": { slot: "WPN-L", allowedType: "WPN", id: null, durability: 0, active: false },
+    "WPN-R": { slot: "WPN-R", allowedType: "WPN", id: "laser_vx", durability: 32, active: true },
+    "POW-1": { slot: "POW-1", allowedType: "POW", id: "cell_alpha", durability: 94, active: true },
+    "POW-2": { slot: "POW-2", allowedType: "POW", id: null, durability: 0, active: false },
+    "NAV": { slot: "NAV", allowedType: "NAV", id: null, durability: 0, active: false },
+    "WRP": { slot: "WRP", allowedType: "WRP", id: null, durability: 0, active: false },
+    "THR": { slot: "THR", allowedType: "THR", id: "ion_thruster", durability: 78, active: true }
+  });
+
+  const handleTakeLootItem = (lootIndex) => {
+    console.log("TRANSFERINDO", lootIndex);
+    const result = transferLootToStorage(lootIndex, lootItems, storageSlots);
+    if (result) {
+      setLootItems(result.updatedLoot);
+      setStorageSlots(result.updatedStorage);
+      playSfx("tutorial_marker");
+    }
+  };
 
   const addLootItem = (item) => {
     setLootItems(prev => [...prev, item]);
@@ -301,6 +327,13 @@ export default function SandboxScreen() {
     },
     onOpenLootPanel: () => {
       if (controls.inspect) {
+        if (isFirstLootInteraction.current) {
+          setLootItems(generateTutorialLoot());
+          isFirstLootInteraction.current = false;
+        } else {
+          setLootItems(generateRandomLoot());
+        }
+
         setLootPanelOpen(true);
       }
     },
@@ -561,6 +594,7 @@ export default function SandboxScreen() {
               setIsCritical(false);
               setIsRecharging(false);
               criticalRecoveryTriggeredRef.current = false;
+              isFirstLootInteraction.current = true;
               setTutorialStep(0);
               setIsTransitioning(true);
 
@@ -643,18 +677,23 @@ export default function SandboxScreen() {
             setTutorialStep={setTutorialStep}
             initialTutorialStep={tutorialStep}
             markerCoords={markerCoords}
-
-            // Injeção dos dados de Loot
             lootItems={lootItems}
+            setLootItems={setLootItems}
             lootPanelOpen={lootPanelOpen}
             onLootPanelClose={() => setLootPanelOpen(false)}
             isNearbyInteraction={isNearbyInteraction}
-
-            // Injeção dos dados do Inventário (Adicionado aqui!)
-            inventoryItems={inventoryItems}
-            inventoryOpen={inventoryOpen}
-            onInventoryClose={() => setInventoryOpen(false)}
+            onTakeLootItem={handleTakeLootItem}
           />
+
+          {/* NOVO INVENTORY SYSTEM TOTALMENTE CONTROLADO */}
+          <InventoryPanel
+            isOpen={inventoryOpen}
+            storageSlots={storageSlots}
+            setStorageSlots={setStorageSlots}
+            shipHardware={shipHardware}
+            setShipHardware={setShipHardware}
+          />
+
           {Platform.OS !== "web" && (
             <Joystick
               onMove={(delta) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Animated, StyleSheet, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from "react-native";
-import { getItemData } from "../systems/ItemsDB"; // Utilizando a mesma base do inventário
+import { View, Text, Animated, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from "react-native";
+import { getItemData } from "../systems/ItemsDB";
 
 const cianoNeon = "#00eaff";
 const verdeBase = "#00ffaa";
@@ -8,38 +8,37 @@ const vermelhoNeon = "#ff453a";
 const amareloNeon = "#ffd54a";
 const escuroProfundo = "rgba(2, 8, 16, 0.98)";
 
+const TOTAL_SLOTS = 6;
+
 export default function LootPanel({
     isOpen = false,
+    lootItems = [],      // Array fixo de 12 posições gerenciado pelo Pai
+    setLootItems,       // Atualiza a estrutura no Pai
+    onTransferItem,     // Envia o item identificado ao inventário
     onClose = () => { },
 }) {
     const opacity = useRef(new Animated.Value(0)).current;
     const translateXRight = useRef(new Animated.Value(100)).current;
     const pulse = useRef(new Animated.Value(0.4)).current;
 
-    // Escâner geral do contêiner externo
     const [isScanning, setIsScanning] = useState(true);
     const [scanProgress, setScanProgress] = useState(0);
 
-    // Lista fixa exigida mapeando IDs do seu ItemsDB + mecânica Tarkov
-    const [discoveredItems, setDiscoveredItems] = useState([]);
+    // Tarkov Exam States
     const [examiningIndex, setExaminingIndex] = useState(null);
     const [examineProgress, setExamineProgress] = useState(0);
 
-    const fixedLoot = [
-        { id: "laser_vx", rarity: "rare", durability: 32, qty: 1, hasDurability: true },
-        { id: "scrap_metal", rarity: "common", qty: 3, hasDurability: false },
-        { id: "copper_wire", rarity: "common", qty: 1, hasDurability: false }
-    ];
+    // Sistema de Seleção para Mover Itens dentro da grade de loot
+    const [selectedSlotIndex, setSelectedSlotIndex] = useState(null);
 
     useEffect(() => {
         let interval;
         if (isOpen) {
+            setSelectedSlotIndex(null); // Reseta seleção interna ao abrir
             Animated.parallel([
                 Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
                 Animated.timing(translateXRight, { toValue: 0, duration: 250, useNativeDriver: true }),
             ]).start();
-
-            setDiscoveredItems(fixedLoot.map(item => ({ ...item, revealed: false })));
 
             const pulseLoop = Animated.loop(
                 Animated.sequence([
@@ -61,7 +60,7 @@ export default function LootPanel({
                 } else {
                     setScanProgress(progress);
                 }
-            }, 40);
+            }, 30);
 
             return () => {
                 pulseLoop.stop();
@@ -75,47 +74,90 @@ export default function LootPanel({
         }
     }, [isOpen]);
 
-    const handleExamineItem = (index) => {
-        if (discoveredItems[index].revealed || examiningIndex !== null) return;
+    // Lida com cliques, exame e movimentação interna dos slots
+    const handleSlotPress = (index) => {
+        if (examiningIndex !== null) return; // Bloqueia ações enquanto examina
 
-        setExaminingIndex(index);
-        setExamineProgress(0);
+        // 1. SE JÁ EXISTE UM SLOT SELECIONADO -> Move/Troca para a nova posição (vazia ou ocupada)
+        if (selectedSlotIndex !== null) {
+            if (selectedSlotIndex === index) {
+                setSelectedSlotIndex(null); // Desmarca se clicar nele mesmo
+                return;
+            }
 
-        let currentProg = 0;
-        const examInterval = setInterval(() => {
-            currentProg += 10;
-            if (currentProg >= 100) {
-                clearInterval(examInterval);
-                setDiscoveredItems(prev => {
+            if (setLootItems) {
+                setLootItems(prev => {
                     const next = [...prev];
-                    next[index].revealed = true;
+
+                    while (next.length < TOTAL_SLOTS) next.push(null);
+
+                    const temp = next[selectedSlotIndex];
+                    next[selectedSlotIndex] = next[index] || null;
+                    next[index] = temp || null;
+
                     return next;
                 });
-                setExaminingIndex(null);
-                setExamineProgress(0);
-            } else {
-                setExamineProgress(currentProg);
             }
-        }, 120);
+            setSelectedSlotIndex(null);
+            return;
+        }
+
+        // 2. SE NÃO HÁ SELEÇÃO PRÉVIA -> Trata o slot clicado
+        const clickedItem = lootItems[index];
+        if (!clickedItem) return; // Slot vazio sem seleção prévia: ignora
+
+        // SISTEMA DE EXAME ESTILO TARKOV (Se o item não foi revelado ainda)
+        if (!clickedItem.revealed) {
+            setExaminingIndex(index);
+            setExamineProgress(0);
+
+            let currentProg = 0;
+            const examInterval = setInterval(() => {
+                currentProg += 20;
+                if (currentProg >= 100) {
+                    clearInterval(examInterval);
+
+                    if (setLootItems) {
+                        setLootItems(prev => {
+                            const next = [...prev];
+                            if (next[index]) {
+                                next[index] = { ...next[index], revealed: true };
+                            }
+                            return next;
+                        });
+                    }
+                    setExaminingIndex(null);
+                    setExamineProgress(0);
+                } else {
+                    setExamineProgress(currentProg);
+                }
+            }, 120);
+        } else {
+            // SE JÁ ESTÁ REVELADO -> Seleciona para mover
+            setSelectedSlotIndex(index);
+        }
+    };
+
+    const handleSlotLongPress = (index, item) => {
+        console.log("LONG PRESS", index, item);
+        if (item && item.revealed && onTransferItem) {
+            console.log("CHAMANDO TRANSFER");
+            setSelectedSlotIndex(null);
+            onTransferItem(index);
+        }
     };
 
     if (!isOpen) return null;
 
     const getRarityColor = (rarity) => {
         const colors = {
-            common: "#a0a0a0",
-            uncommon: verdeBase,
-            rare: cianoNeon,
-            epic: "#c478ff",
-            legendary: "#ff9d00",
+            COMMON: "#505050",
+            UNCOMMON: verdeBase,
+            RARE: cianoNeon,
+            EPIC: "#c478ff",
+            LEGENDARY: "#ff9d00",
         };
-        return colors[rarity] || "#ffffff";
-    };
-
-    const getDurabilityColor = (pct) => {
-        if (pct < 35) return vermelhoNeon;
-        if (pct < 70) return amareloNeon;
-        return verdeBase;
+        return colors[rarity?.toUpperCase()] || "rgba(255,255,255,0.15)";
     };
 
     const transformTranslateX = translateXRight.interpolate({
@@ -124,110 +166,162 @@ export default function LootPanel({
     });
 
     return (
-        // pointerEvents="box-none" garante que cliques fora passem direto, mas o painel capture os seus próprios
         <Animated.View style={[styles.screenOverlay, { opacity }]} pointerEvents="box-none">
-
             <Animated.View style={[styles.rightPanel, { transform: [{ translateX: transformTranslateX }] }]}>
                 <View style={styles.topAccentBar} />
 
                 <View style={styles.innerContent}>
-                    {/* Cabeçalho do Módulo */}
                     <View style={styles.headerRow}>
-                        <Text style={styles.title}>MÓDULO // EXTRATOR_SALVAGEM</Text>
+                        <Text style={styles.title}>MÓDULO DE CARGA DANIFICADA</Text>
                         <Text style={[styles.statusTag, { color: isScanning ? amareloNeon : verdeBase }]}>
                             {isScanning ? "VARRENDO..." : "PRONTO"}
                         </Text>
                     </View>
 
-                    {/* Área de Diagnóstico e Dificuldade de Acesso */}
                     <View style={styles.shipScanArea}>
                         <View style={styles.gridOverlay} />
-
                         {isScanning ? (
                             <View style={styles.scannerCenter}>
                                 <Text style={styles.scanPercentage}>{scanProgress}%</Text>
-                                <Text style={styles.scanSubText}>VERIFICANDO SEGURANÇA DO COMPARTIMENTO...</Text>
+                                <Text style={styles.scanSubText}>SINCRONIZANDO ASSINATURAS MAGNÉTICAS...</Text>
                                 <View style={styles.progressFrame}>
                                     <View style={[styles.progressBarFill, { width: `${scanProgress}%` }]} />
                                 </View>
                             </View>
                         ) : (
                             <View style={styles.analysisSuccessContainer}>
-                                <Text style={styles.successTitle}>NÍVEL DE ACESSO AOS RECURSOS:</Text>
+                                <Text style={styles.successTitle}>SISTEMA DE TRANSFERÊNCIA ATIVO:</Text>
                                 <View style={styles.accessChip}>
-                                    <Text style={styles.accessChipText}>[ CRIPTO-SEGURANÇA: LIVRE ]</Text>
+                                    <Text style={styles.accessChipText}>[ CLIQUE PARA IDENTIFICAR // SEGURE PARA COLETAR ]</Text>
                                 </View>
-                                <Text style={styles.hardwareSpecsText}>ESTRUTURA DE DADOS DESBLOQUEADA SEM RESTRIÇÕES</Text>
+                                <Text style={styles.hardwareSpecsText}>VOCÊ PODE MOVER ITENS ENTRE OS SLOTS</Text>
                             </View>
                         )}
                         {isScanning && <View style={styles.laserScanLine} />}
                     </View>
 
-                    {/* Lista de Itens com Mecânica Tarkov */}
                     <View style={styles.salvageBox}>
-                        <Text style={styles.sectionTitle}>RECURSOS EM COMPARTIMENTO EXTERNO</Text>
+                        <Text style={styles.sectionTitle}>MATRIZ DE EXTRAÇÃO DE ITENS</Text>
 
-                        <ScrollView style={styles.itemsScroll} showsVerticalScrollIndicator={false}>
-                            {!isScanning ? (
-                                discoveredItems.map((item, index) => {
-                                    const dbItem = getItemData(item.id);
+                        {!isScanning ? (
+                            <View style={styles.gridContainer}>
+                                {Array.from({ length: TOTAL_SLOTS }).map((_, index) => {
+                                    const item = lootItems[index] || null;
+                                    const dbItem = item?.id ? getItemData(item.id) : null;
                                     const isThisExamining = examiningIndex === index;
+                                    const isSelected = selectedSlotIndex === index;
+                                    const anItemIsSelected = selectedSlotIndex !== null;
 
-                                    if (!item.revealed) {
+                                    // SLOT VAZIO
+                                    if (!item) {
                                         return (
-                                            <TouchableOpacity
-                                                key={index}
-                                                style={[styles.lootItem, styles.itemUnexplored]}
-                                                onPress={() => handleExamineItem(index)}
-                                                activeOpacity={0.8}
-                                            >
-                                                <View style={styles.itemMainInfo}>
-                                                    {isThisExamining ? (
-                                                        <View style={styles.examiningContainer}>
-                                                            <ActivityIndicator size="small" color={amareloNeon} style={{ marginRight: 8 }} />
-                                                            <Text style={styles.examineText}>IDENTIFICANDO... {examineProgress}%</Text>
-                                                        </View>
-                                                    ) : (
-                                                        <Text style={styles.itemNameHidden}>[ ⚠️ COMPONENTE NÃO IDENTIFICADO ]</Text>
-                                                    )}
-                                                    <Text style={styles.actionPrompt}>{!isThisExamining && "CLIQUE PARA EXAMINAR HARDWARE"}</Text>
-                                                </View>
-                                                <Text style={[styles.itemQuantity, { color: "rgba(255,255,255,0.2)" }]}>x{item.qty}</Text>
-                                            </TouchableOpacity>
+                                            <View key={index} style={styles.slotWrapper}>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.slotBase,
+                                                        styles.slotEmpty,
+                                                    ]}
+                                                    onPress={() => handleSlotPress(index)}
+                                                    activeOpacity={0.6}
+                                                >
+                                                    <View style={styles.emptySlotIndicator} />
+                                                </TouchableOpacity>
+                                            </View>
                                         );
                                     }
 
-                                    return (
-                                        <View key={index} style={[styles.lootItem, { borderLeftColor: getRarityColor(item.rarity) }]}>
-                                            <Text style={styles.itemEmojiIcon}>{dbItem?.icon || "📦"}</Text>
-                                            <View style={styles.itemMainInfo}>
-                                                <Text style={styles.itemName} numberOfLines={1}>{dbItem?.name.toUpperCase() || "ITEM_DESCONHECIDO"}</Text>
-
-                                                {/* Condicional correta: Apenas armas/equipamentos exibem integridade */}
-                                                {item.hasDurability && item.durability !== undefined && (
-                                                    <View style={styles.durabilityWrapper}>
-                                                        <Text style={styles.durabilityLabel}>INTEGRIDADE:</Text>
-                                                        <View style={styles.durabilityTrack}>
-                                                            <View style={[styles.durabilityFill, { width: `${item.durability}%`, backgroundColor: getDurabilityColor(item.durability) }]} />
+                                    // SLOT NÃO IDENTIFICADO
+                                    if (!item.revealed) {
+                                        return (
+                                            <View key={index} style={styles.slotWrapper}>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.slotBase,
+                                                        styles.slotUnexplored,
+                                                    ]}
+                                                    onPress={() => handleSlotPress(index)}
+                                                    activeOpacity={0.8}
+                                                >
+                                                    {isThisExamining ? (
+                                                        <View style={styles.slotExaminingOverlay}>
+                                                            <ActivityIndicator
+                                                                size="small"
+                                                                color={amareloNeon}
+                                                            />
+                                                            <Text style={styles.slotExamineText}>
+                                                                {examineProgress}%
+                                                            </Text>
                                                         </View>
-                                                        <Text style={[styles.durabilityPct, { color: getDurabilityColor(item.durability) }]}>{item.durability}%</Text>
+                                                    ) : (
+                                                        <Text style={styles.slotUnknownIcon}>⚠️</Text>
+                                                    )}
+
+                                                    <View style={styles.qtyBadge}>
+                                                        <Text style={styles.slotQuantity}>
+                                                            {item.qty}
+                                                        </Text>
                                                     </View>
-                                                )}
+                                                </TouchableOpacity>
                                             </View>
-                                            <Text style={[styles.itemQuantity, { color: getRarityColor(item.rarity) }]}>x{item.qty}</Text>
+                                        );
+                                    }
+
+                                    // SLOT IDENTIFICADO
+                                    return (
+                                        <View key={index} style={styles.slotWrapper}>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.slotBase,
+                                                    { borderColor: getRarityColor(item.rarity || dbItem?.rarity) },
+                                                    isSelected && styles.slotHolded,
+                                                ]}
+                                                onPress={() => handleSlotPress(index)}
+                                                onLongPress={() => handleSlotLongPress(index, item)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={styles.itemContent}>
+                                                    <Text style={styles.storageIcon}>
+                                                        {dbItem?.icon || "📦"}
+                                                    </Text>
+
+                                                    {item.qty > 1 && (
+                                                        <View style={styles.qtyBadge}>
+                                                            <Text style={styles.slotQuantity}>
+                                                                {item.qty}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+
+                                                    {item.hasDurability &&
+                                                        item.durability !== undefined && (
+                                                            <View
+                                                                style={[
+                                                                    styles.miniDurabilityDot,
+                                                                    {
+                                                                        backgroundColor:
+                                                                            item.durability < 40
+                                                                                ? vermelhoNeon
+                                                                                : verdeBase,
+                                                                    },
+                                                                ]}
+                                                            />
+                                                        )}
+                                                </View>
+                                            </TouchableOpacity>
                                         </View>
                                     );
-                                })
-                            ) : (
-                                <View style={styles.loadingItemsRow}>
-                                    <Text style={styles.interceptText}>RECONECTANDO BARRAMENTO DE SALVAGEM...</Text>
-                                </View>
-                            )}
-                        </ScrollView>
+                                })}
+                            </View>
+                        ) : (
+                            <View style={styles.loadingGridRow}>
+                                <ActivityIndicator size="small" color={cianoNeon} />
+                                <Text style={styles.interceptText}>ESTABELECENDO LINK DA GRADE...</Text>
+                            </View>
+                        )}
                     </View>
 
                     <TouchableOpacity style={styles.collectButton} onPress={onClose}>
-                        <Text style={styles.collectButtonText}>[ COMPARTIMENTAR TUDO E RETORNAR ]</Text>
+                        <Text style={styles.collectButtonText}>[ FECHAR COMPARTIMENTO ]</Text>
                     </TouchableOpacity>
                 </View>
             </Animated.View>
@@ -238,7 +332,7 @@ export default function LootPanel({
 const styles = StyleSheet.create({
     screenOverlay: {
         ...StyleSheet.absoluteFillObject,
-        zIndex: 99, // Z-index alto para ficar acima do HUD base e gerenciar cliques de forma isolada
+        zIndex: 99,
     },
     rightPanel: {
         position: "absolute",
@@ -336,80 +430,133 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     accessChipText: {
-        fontSize: 11,
+        fontSize: 9,
         color: verdeBase,
         fontWeight: "bold",
         fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     },
     hardwareSpecsText: {
-        fontSize: 8,
+        fontSize: 7.5,
         color: "rgba(255,255,255,0.3)",
+        textAlign: "center",
         fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     },
     salvageBox: { flex: 1 },
     sectionTitle: {
         color: "rgba(255,255,255,0.4)",
         fontSize: 9.5,
-        marginBottom: 8,
+        marginBottom: 12,
         fontWeight: "bold",
         fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     },
-    itemsScroll: { flex: 1 },
-    lootItem: {
+    gridContainer: {
         flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        marginBottom: 6,
-        backgroundColor: "rgba(0, 234, 255, 0.02)",
-        borderWidth: 1,
-        borderColor: "rgba(255, 255, 255, 0.04)",
-        borderLeftWidth: 3,
+        flexWrap: "wrap",
+        backgroundColor: "rgba(0,0,0,0.2)",
+        padding: 4,
+        gap: 6,
+        justifyContent: "flex-start",
     },
-    itemUnexplored: {
+    slotWrapper: {
+        width: "12.5%",
+        maxWidth: 100,
+        aspectRatio: 1,
+    },
+    slotBase: {
+        width: "100%",
+        height: "100%",
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.06)",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    slotEmpty: {
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        borderColor: "rgba(255,255,255,0.06)",
+    },
+    slotItemIcon: {
+        fontSize: 16,
+    },
+    slotUnexplored: {
         backgroundColor: "rgba(255, 213, 74, 0.01)",
-        borderLeftColor: "rgba(255, 213, 74, 0.2)",
+        borderColor: "rgba(255, 213, 74, 0.25)",
         borderStyle: "dashed",
     },
-    examiningContainer: { flexDirection: "row", alignItems: "center" },
-    examineText: {
+    slotUnknownIcon: {
+        fontSize: 18,
+        opacity: 0.6,
+    },
+    slotHolded: {
+        borderColor: amareloNeon,
+        backgroundColor: "rgba(255, 213, 74, 0.1)",
+    },
+    qtyBadge: {
+        position: "absolute",
+        bottom: 1,
+        right: 1,
+        backgroundColor: "#020b14",
+        paddingHorizontal: 2,
+    },
+    itemContent: {
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+    },
+    slotQuantity: {
+        color: "#fff",
+        fontSize: 8,
+        fontWeight: "bold",
+    },
+    slotQtyIndicator: {
+        position: "absolute",
+        bottom: 1,
+        right: 1,
+        backgroundColor: "#020b14",
+        paddingHorizontal: 2,
+        color: "#fff",
+        fontSize: 8,
+        fontWeight: "bold",
+    },
+    emptySlotIndicator: {
+        width: 2,
+        height: 2,
+        backgroundColor: "rgba(0, 234, 255, 0.15)",
+    },
+    slotExaminingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0,0,0,0.85)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    slotExamineText: {
         color: amareloNeon,
-        fontSize: 10.5,
+        fontSize: 9,
         fontWeight: "bold",
-        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    },
-    itemEmojiIcon: { fontSize: 16, marginRight: 10 },
-    itemMainInfo: { flex: 1 },
-    itemName: {
-        color: "#ffffff",
-        fontSize: 11,
-        fontWeight: "bold",
-        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    },
-    itemNameHidden: {
-        color: "rgba(255,255,255,0.4)",
-        fontSize: 11,
-        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    },
-    actionPrompt: {
-        color: "rgba(255, 213, 74, 0.5)",
-        fontSize: 7.5,
         marginTop: 2,
         fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     },
-    durabilityWrapper: { flexDirection: "row", alignItems: "center", marginTop: 4 },
-    durabilityLabel: { fontSize: 7.5, color: "rgba(255,255,255,0.3)", marginRight: 4, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
-    durabilityTrack: { flex: 1, height: 3, backgroundColor: "rgba(255,255,255,0.05)", maxWidth: 80 },
-    durabilityFill: { height: "100%" },
-    durabilityPct: { fontSize: 7.5, fontWeight: "bold", marginLeft: 4, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
-    itemQuantity: {
-        fontSize: 12,
-        fontWeight: "bold",
-        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-        marginLeft: 8,
+    miniDurabilityDot: {
+        position: "absolute",
+        top: 4,
+        left: 4,
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
     },
-    loadingItemsRow: { paddingVertical: 20, alignItems: "center" },
-    interceptText: { fontSize: 9.5, color: "rgba(255,255,255,0.2)", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
+    loadingGridRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        paddingVertical: 40
+    },
+    interceptText: {
+        fontSize: 9.5,
+        color: "rgba(255,255,255,0.2)",
+        fontFamily: Platform.OS === "ios" ? "Courier" : "monospace"
+    },
     collectButton: {
         backgroundColor: "rgba(0, 234, 255, 0.08)",
         borderColor: cianoNeon,

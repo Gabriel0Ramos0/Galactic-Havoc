@@ -8,34 +8,18 @@ const amareloNeon = "#ffd54a";
 const vermelhoAlerta = "#ff4a4a";
 const escuroProfundo = "rgba(2, 8, 16, 0.98)";
 
-const TOTAL_STORAGE_SLOTS = 20;
-
-export default function InventorySystem({ isOpen = false }) {
+export default function InventorySystem({
+    isOpen = false,
+    storageSlots = [],         // Recebido via Controller Pai
+    setStorageSlots,          // Função do Pai para mutar os slots do baú/mochila
+    shipHardware = {},         // Recebido via Controller Pai
+    setShipHardware,          // Função do Pai para mutar os slots da nave
+}) {
     const animLeftPanel = useRef(new Animated.Value(-100)).current;
     const opacity = useRef(new Animated.Value(0)).current;
 
     const [activeTab, setActiveTab] = useState("inventory");
     const [hoveredName, setHoveredName] = useState("SELECIONE UM ITEM");
-
-    // --- ESTADOS DO JOGADOR ---
-    const [storageSlots, setStorageSlots] = useState(() => {
-        const slots = Array(TOTAL_STORAGE_SLOTS).fill(null);
-        slots[0] = { id: "scrap_metal", qty: 14 };
-        slots[1] = { id: "iron_plate", qty: 6 };
-        slots[2] = { id: "copper_wire", qty: 22 };
-        return slots;
-    });
-
-    const [shipHardware, setShipHardware] = useState({
-        "WPN-L": { slot: "WPN-L", allowedType: "WPN", id: null, durability: 0, active: false },
-        "WPN-R": { slot: "WPN-R", allowedType: "WPN", id: "laser_vx", durability: 32, active: true },
-        "POW-1": { slot: "POW-1", allowedType: "POW", id: "cell_alpha", durability: 94, active: true },
-        "POW-2": { slot: "POW-2", allowedType: "POW", id: null, durability: 0, active: false },
-        "NAV": { slot: "NAV", allowedType: "NAV", id: null, durability: 0, active: false },
-        "WRP": { slot: "WRP", allowedType: "WRP", id: "null", durability: 0, active: false },
-        "THR": { slot: "THR", allowedType: "THR", id: "ion_thruster", durability: 78, active: true }
-    });
-
     const [draggedItem, setDraggedItem] = useState(null);
 
     useEffect(() => {
@@ -148,6 +132,19 @@ export default function InventorySystem({ isOpen = false }) {
 
                     setShipHardware(updatedHardware);
                     setStorageSlots(updatedStorage);
+                    if (
+                        hardwareKey === "WPN-L" &&
+                        draggedItem.id === "laser_vx"
+                    ) {
+                        window.dispatchEvent(
+                            new CustomEvent("itemEquipped", {
+                                detail: {
+                                    slot: hardwareKey,
+                                    itemId: draggedItem.id
+                                }
+                            })
+                        );
+                    }
                     setHoveredName(`EQUIPADO: ${globalItemData.name}`);
                     setDraggedItem(null);
                 }
@@ -189,12 +186,10 @@ export default function InventorySystem({ isOpen = false }) {
                     </TouchableOpacity>
                 </View>
 
-                {/* --- ABA 1: SÓ DADOS (NÃO EXIBE CONSOLE HUD) --- */}
+                {/* --- ABA 1: STATUS DA NAVE --- */}
                 {activeTab === "status" && (
                     <View style={styles.tabContentContainer}>
                         <View style={styles.statsPanel}>
-
-                            {/* SEÇÃO 1: STATUS GERAL */}
                             <Text style={styles.subSectionLabel}>// 01. INTEGRALIDADE E DANOS GERAIS</Text>
                             <View style={styles.statGroup}>
                                 <View style={styles.statRow}>
@@ -213,7 +208,6 @@ export default function InventorySystem({ isOpen = false }) {
 
                             <View style={styles.divider} />
 
-                            {/* SEÇÃO 2: MUDANÇA RÁPIDA / DINÂMICOS */}
                             <Text style={styles.subSectionLabel}>// 02. VARIÁVEIS DE MUDANÇA RÁPIDA</Text>
                             <View style={styles.statGroup}>
                                 <View style={styles.statRow}>
@@ -236,7 +230,6 @@ export default function InventorySystem({ isOpen = false }) {
 
                             <View style={styles.divider} />
 
-                            {/* SEÇÃO 3: OUTROS DADOS / SISTEMAS */}
                             <Text style={styles.subSectionLabel}>// 03. TELEMETRIA DO REATOR E ENERGIA</Text>
                             <View style={styles.statGroup}>
                                 <View style={styles.statRow}>
@@ -252,15 +245,13 @@ export default function InventorySystem({ isOpen = false }) {
                                     <Text style={styles.statValue}>94.2%</Text>
                                 </View>
                             </View>
-
                         </View>
                     </View>
                 )}
 
-                {/* --- ABA 2: ESQUEMA + INVENTÁRIO + CONSOLE HUD FIXO NA BASE --- */}
+                {/* --- ABA 2: GRADES TÁTICAS --- */}
                 {activeTab === "inventory" && (
                     <View style={styles.tabContentContainer}>
-
                         {/* ESQUEMA DA NAVE */}
                         <Text style={styles.sectionLabel}>EQUIPAMENTO INTEGRADO</Text>
                         <View style={styles.shipSchemaContainer}>
@@ -313,19 +304,19 @@ export default function InventorySystem({ isOpen = false }) {
                             })}
                         </View>
 
-                        {/* CONSOLE HUD TRAVADO APENAS AQUI NA BASE DO INVENTÁRIO */}
+                        {/* CONSOLE HUD FIXO NA BASE */}
                         <View style={styles.consoleDisplay}>
                             <Text style={styles.consoleText}>&gt; {hoveredName.toUpperCase()}</Text>
                         </View>
                     </View>
                 )}
-
             </Animated.View>
         </Animated.View>
     );
 }
 
 const renderActiveSlot = (item, key, onPress, draggedItem, setHoveredName) => {
+    if (!item) return null;
     const isBeingDragged = draggedItem?.origin === "hardware" && draggedItem?.key === key;
     const currentItemData = item.active ? getItemData(item.id) : null;
 
