@@ -20,6 +20,7 @@ export default function LootPanel({
     const opacity = useRef(new Animated.Value(0)).current;
     const translateXRight = useRef(new Animated.Value(100)).current;
     const pulse = useRef(new Animated.Value(0.4)).current;
+    const [isVisible, setIsVisible] = useState(isOpen);
 
     const [isScanning, setIsScanning] = useState(true);
     const [scanProgress, setScanProgress] = useState(0);
@@ -34,6 +35,8 @@ export default function LootPanel({
     useEffect(() => {
         let interval;
         if (isOpen) {
+            setIsVisible(true);
+
             setSelectedSlotIndex(null); // Reseta seleção interna ao abrir
             Animated.parallel([
                 Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
@@ -70,7 +73,9 @@ export default function LootPanel({
             Animated.parallel([
                 Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
                 Animated.timing(translateXRight, { toValue: 100, duration: 200, useNativeDriver: true }),
-            ]).start();
+            ]).start(() => {
+                setIsVisible(false);
+            });
         }
     }, [isOpen]);
 
@@ -139,15 +144,13 @@ export default function LootPanel({
     };
 
     const handleSlotLongPress = (index, item) => {
-        console.log("LONG PRESS", index, item);
         if (item && item.revealed && onTransferItem) {
-            console.log("CHAMANDO TRANSFER");
             setSelectedSlotIndex(null);
             onTransferItem(index);
         }
     };
 
-    if (!isOpen) return null;
+    if (!isVisible) return null;
 
     const getRarityColor = (rarity) => {
         const colors = {

@@ -17,6 +17,7 @@ export default function InventorySystem({
 }) {
     const animLeftPanel = useRef(new Animated.Value(-100)).current;
     const opacity = useRef(new Animated.Value(0)).current;
+    const [isVisible, setIsVisible] = useState(isOpen);
 
     const [activeTab, setActiveTab] = useState("inventory");
     const [hoveredName, setHoveredName] = useState("SELECIONE UM ITEM");
@@ -24,6 +25,8 @@ export default function InventorySystem({
 
     useEffect(() => {
         if (isOpen) {
+            setIsVisible(true);
+
             Animated.parallel([
                 Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
                 Animated.timing(animLeftPanel, { toValue: 0, duration: 250, useNativeDriver: true }),
@@ -32,11 +35,13 @@ export default function InventorySystem({
             Animated.parallel([
                 Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
                 Animated.timing(animLeftPanel, { toValue: -100, duration: 200, useNativeDriver: true }),
-            ]).start();
+            ]).start(() => {
+                setIsVisible(false);
+            });
         }
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isVisible) return null;
 
     const handleSlotPress = (index, type = "storage", hardwareKey = null) => {
         if (type === "storage") {

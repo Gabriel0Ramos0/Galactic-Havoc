@@ -78,7 +78,7 @@ const CINEMATIC_SCRIPTS = [
     lines: [
       "Terminal MK-IV vinculado.",
       "Piloto designado: RS-07",
-      "Senha ativa: Bruxo"
+      "Senha activa: Bruxo"
     ],
     type: "system"
   },
@@ -128,26 +128,26 @@ const IndividualCircuitNode = memo(({ elem }) => {
       });
     };
 
-runAnimationLoop();
-return () => { isMounted = false; };
+    runAnimationLoop();
+    return () => { isMounted = false; };
   }, [elem.isGlitch]);
 
-const getGlitchStyle = () => {
-  if (elem.isGlitch) {
-    return {
-      color: elem.glitchColor,
-      textShadow: "0px 0px 8px rgba(255, 69, 58, 0.9)",
-      fontSize: elem.glitchSize,
-    };
-  }
-  return styles.circuitSymbol;
-};
+  const getGlitchStyle = () => {
+    if (elem.isGlitch) {
+      return {
+        color: elem.glitchColor,
+        textShadow: "0px 0px 8px rgba(255, 69, 58, 0.9)",
+        fontSize: elem.glitchSize,
+      };
+    }
+    return styles.circuitSymbol;
+  };
 
-return (
-  <Animated.View style={[styles.circuitContainer, { top: elem.top, left: elem.left, opacity: animatedOpacity }]}>
-    <Text style={[styles.circuitSymbol, getGlitchStyle()]}>{elem.type}</Text>
-  </Animated.View>
-);
+  return (
+    <Animated.View style={[styles.circuitContainer, { top: elem.top, left: elem.left, opacity: animatedOpacity }]}>
+      <Text style={[styles.circuitSymbol, getGlitchStyle()]}>{elem.type}</Text>
+    </Animated.View>
+  );
 });
 
 export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
@@ -172,7 +172,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   const componentAudioTime = useRef(0);
 
   const skipTimer = useRef(null);
-  const typewriterTimerRef = useRef(null); // Ref adicionada para controlar o timer da digitação
+  const typewriterTimerRef = useRef(null);
   const skipAnimWidth = useRef(new Animated.Value(0)).current;
   const [isSkipping, setIsSkipping] = useState(false);
 
@@ -249,7 +249,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     return () => clearInterval(cursorInterval);
   }, [started]);
 
-  // Limpa os timers pendentes caso o componente seja desmontado inesperadamente
   useEffect(() => {
     return () => {
       if (skipTimer.current) clearTimeout(skipTimer.current);
@@ -300,9 +299,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
     if (!started) return;
 
     const handleKeyDown = (e) => {
-
       if (e.repeat) return;
-
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         startSkipPress();
@@ -383,7 +380,6 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   };
 
   const executeForceQuit = () => {
-    // CRUCIAL: Cancela qualquer loop de digitação pendente imediatamente ao pular
     if (typewriterTimerRef.current) {
       clearTimeout(typewriterTimerRef.current);
     }
@@ -446,10 +442,19 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      {...(started ? {
+        onTouchStart: startSkipPress,
+        onTouchEnd: cancelSkipPress,
+        onMouseDown: startSkipPress,
+        onMouseUp: cancelSkipPress,
+        onMouseLeave: cancelSkipPress,
+      } : {})}
+    >
       <Wall />
 
-      {/* Glifos Estáveis — Mapeados pelo ID estável e único */}
+      {/* Glifos Estáveis */}
       {started && circuitElements.map((elem) => (
         <IndividualCircuitNode key={elem.id} elem={elem} />
       ))}
@@ -475,7 +480,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
         <Animated.View style={[styles.scanline, { transform: [{ translateY: scanlineY }] }]} pointerEvents="none" />
       )}
 
-      {/* Clarão Branco Puramente na Mudança de Tela Final */}
+      {/* Clarão Branco */}
       <Animated.View style={[styles.whiteoutOverlay, { opacity: whiteoutOpacity }]} pointerEvents="none" />
 
       {/* Tela de Entrada */}
@@ -508,6 +513,7 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
               transform: [{ translateY: textTranslateY }]
             }
           ]}
+          pointerEvents="none" // Permite que os toques passem direto para o container de fundo
         >
           <View style={styles.textGroupContainer}>
             {displayedTextLines.map((lineText, idx) => {
@@ -534,16 +540,9 @@ export default function CutsceneScreen({ onFinish, glReady, onUnlockAudio }) {
         </Animated.View>
       )}
 
-      {/* BOTÃO ÉPICO: HOLD TO SKIP (CANTO INFERIOR DIREITO) */}
+      {/* INDICADOR HUD: MANTIDO APENAS VISUALMENTE SEM CAPTURAR TOQUE INDEPENDENTE */}
       {started && (
-        <View
-          style={styles.skipContainer}
-          onTouchStart={startSkipPress}
-          onTouchEnd={cancelSkipPress}
-          onMouseDown={startSkipPress}
-          onMouseUp={cancelSkipPress}
-          onMouseLeave={cancelSkipPress}
-        >
+        <View style={styles.skipContainer} pointerEvents="none">
           <Text style={[styles.skipText, isSkipping && styles.skipTextActive]}>
             {isSkipping ? "IGNORANDO..." : "SEGURE PARA PULAR"}
           </Text>
@@ -660,20 +659,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     zIndex: 20,
   },
-  
-  /* ESTILOS DO SKIP BUTTON HUD */
   skipContainer: {
     position: "absolute",
     bottom: 45,
     right: 40,
     width: 150,
-    zIndex: 30,
     alignItems: "flex-end",
     backgroundColor: "rgba(0,0,0,0.4)",
     padding: 8,
     borderRadius: 4,
     borderWidth: 1,
-    cursor: "pointer",
     borderColor: "rgba(0, 255, 170, 0.15)",
   },
   skipText: {

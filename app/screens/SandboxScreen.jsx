@@ -112,7 +112,6 @@ export default function SandboxScreen() {
   });
 
   const handleTakeLootItem = (lootIndex) => {
-    console.log("TRANSFERINDO", lootIndex);
     const result = transferLootToStorage(lootIndex, lootItems, storageSlots);
     if (result) {
       setLootItems(result.updatedLoot);
