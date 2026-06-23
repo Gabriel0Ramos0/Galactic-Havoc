@@ -287,6 +287,10 @@ export default function SandboxScreen() {
         playSfx("tutorial_marker");
         break;
 
+      case 9:
+        setMarkerCoords(null);
+        break;
+
       case 12:
         setInventoryOpen(false);
         setLootPanelOpen(false);
@@ -315,7 +319,6 @@ export default function SandboxScreen() {
 
         }, 800);
 
-        setMarkerCoords(null);
         transitionToTrack(null);
         playSfx("tutorial_combat");
 

@@ -26,7 +26,7 @@ async function loadEnemyModel() {
                 objLoader.setPath(basePath);
 
                 objLoader.load(
-                    "d5class.obj",
+                    "13898_Sci-Fi_Bomber_v1_l2.obj",
                     (object) => {
                         object.scale.set(3, 3, 3);
                         object.rotation.x = Math.PI / 2;
