@@ -146,8 +146,8 @@ export function createSunLight(
     sun,
     {
         color = 0xffcc66,
-        intensity = 1000,
-        distance = 1000,
+        intensity = 5000,
+        distance = 3000,
         decay = 1,
         debug = false
     } = {}
