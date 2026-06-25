@@ -1,7 +1,7 @@
 // app/components/ChunkManager.js
 import * as THREE from "three";
 import { createNoise3D } from "simplex-noise";
-import { createSpaceBackground } from "./Star"; // Novo import do domo único
+import { createSpaceBackground, createSpeedParticles } from "./Star"; // Novo import do domo único
 import BiomeManager from "@/components/systems/BiomeManager";
 import { createAsteroid } from "@/components/systems/Asteroids";
 
@@ -28,11 +28,11 @@ export default class ChunkManager {
         this.noise3D = createNoise3D(rng);
         const rng2 = this.createRNG(this.seed + 9999);
         this.sunNoise3D = createNoise3D(rng2);
-
-        // Injeção do gerenciador de biomas dedicado
         this.biomeManager = new BiomeManager(this.seed, this.createRNG);
 
         this.starField = null; // Domo único de estrelas de fundo
+        this.speedParticles = null;
+        this.starTime = 0;
         this.initDeepSpace();
 
         this.spawnQueue = [];
@@ -89,6 +89,10 @@ export default class ChunkManager {
         // Instancia o domo de estrelas de fundo fixo
         this.starField = createSpaceBackground(2500, 6000);
         this.scene.add(this.starField);
+
+        // Cria o domo menor reativo
+        this.speedParticles = createSpeedParticles(400, 1200);
+        this.scene.add(this.speedParticles);
     }
 
     processQueue(limit = 5) {
@@ -484,10 +488,21 @@ export default class ChunkManager {
         }
     }
 
-    update(playerPosition) {
-        // Move o domo estelar junto com o jogador para manter a ilusão de distância infinita
-        if (this.starField) {
-            this.starField.position.copy(playerPosition);
+    update(playerPosition, shipVelocityVector = null, currentSpeedNormalized = 0, dt = 0.016) {
+        if (this.starField) this.starField.position.copy(playerPosition);
+
+        if (this.speedParticles) {
+            this.speedParticles.position.copy(playerPosition);
+            const shaderMat = this.speedParticles.material;
+
+            if (shipVelocityVector && shipVelocityVector.lengthSq() > 0.01) {
+                this.starTime += dt * currentSpeedNormalized;
+                shaderMat.uniforms.uTime.value = this.starTime;
+                shaderMat.uniforms.uShipDirection.value.copy(shipVelocityVector).normalize();
+                shaderMat.uniforms.uSpeed.value = THREE.MathUtils.clamp(currentSpeedNormalized, 0.0, 1.0);
+            } else {
+                shaderMat.uniforms.uSpeed.value = 0.0;
+            }
         }
 
         const chunk = this.getChunkCoord(playerPosition);
@@ -684,6 +699,12 @@ export default class ChunkManager {
             this.starField.geometry?.dispose();
             this.starField.material?.dispose();
             this.starField = null;
+        }
+        if (this.speedParticles) {
+            this.scene.remove(this.speedParticles);
+            this.speedParticles.geometry?.dispose();
+            this.speedParticles.material?.dispose();
+            this.speedParticles = null;
         }
 
         this.suns.forEach(sun => {

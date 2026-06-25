@@ -474,7 +474,17 @@ export default function SandboxScreen() {
         });
 
         if (chunkManagerRef.current && shipRef.current) {
-          chunkManagerRef.current.update(shipRef.current.position);
+          const shipVelocityVector = velocity.current || new THREE.Vector3();
+          const actualSpeed = shipVelocityVector.length();
+          const MAX_SHIP_SPEED = 5.0;
+          const currentSpeedNormalized = Math.min(actualSpeed / MAX_SHIP_SPEED, 1.0);
+
+          chunkManagerRef.current.update(
+            shipRef.current.position,
+            shipVelocityVector,
+            currentSpeedNormalized,
+            dt
+          );
         }
 
         const scale = 0.01;
