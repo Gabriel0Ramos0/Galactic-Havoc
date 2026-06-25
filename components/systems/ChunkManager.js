@@ -1,6 +1,8 @@
 // app/components/ChunkManager.js
 import * as THREE from "three";
 import { createNoise3D } from "simplex-noise";
+import { createSpaceBackground } from "./Star"; // Novo import do domo único
+import BiomeManager from "@/components/systems/BiomeManager";
 import { createAsteroid } from "@/components/systems/Asteroids";
 
 const CHUNK_SIZE = 1000;
@@ -26,6 +28,13 @@ export default class ChunkManager {
         this.noise3D = createNoise3D(rng);
         const rng2 = this.createRNG(this.seed + 9999);
         this.sunNoise3D = createNoise3D(rng2);
+
+        // Injeção do gerenciador de biomas dedicado
+        this.biomeManager = new BiomeManager(this.seed, this.createRNG);
+
+        this.starField = null; // Domo único de estrelas de fundo
+        this.initDeepSpace();
+
         this.spawnQueue = [];
     }
 
@@ -76,6 +85,12 @@ export default class ChunkManager {
         return Math.abs(hash);
     }
 
+    initDeepSpace() {
+        // Instancia o domo de estrelas de fundo fixo
+        this.starField = createSpaceBackground(2500, 6000);
+        this.scene.add(this.starField);
+    }
+
     processQueue(limit = 5) {
         this.spawnQueue.sort((a, b) => a.priority - b.priority);
 
@@ -87,13 +102,14 @@ export default class ChunkManager {
 
             if (!this.chunks.has(key)) continue;
 
-            // Criação básica
+            // Criação básica do Chunk
             if (!type) {
                 this.createChunkDebug(cx, cy, cz);
-
                 this.createSunInChunk(cx, cy, cz).catch(console.error);
 
-                // agenda asteroides
+                // Removida totalmente a criação de estrelas locais (localStars) por chunk
+
+                // Agenda asteroides normalmente
                 this.spawnQueue.push({
                     type: "asteroids",
                     cx, cy, cz,
@@ -188,45 +204,32 @@ export default class ChunkManager {
         return this.loadingAsteroidBase;
     }
 
-    getBiome(x, y, z) {
-        const scale = 0.00005;
-
-        return this.noise3D(
-            x * scale,
-            y * scale,
-            z * scale
-        );
-    }
-
-    getDensity(x, y, z) {
-        const scale = 0.0002;
-
-        return this.noise3D(
-            x * scale,
-            y * scale,
-            z * scale
-        );
-    }
-
-    getSpaceType(x, y, z) {
-        const biome = this.getBiome(x, y, z);
-        const density = this.getDensity(x, y, z);
-
-        return (biome * 0.7) + (density * 0.3);
-    }
-
     calculateAsteroidCount(x, y, z) {
         const worldX = x * CHUNK_SIZE;
         const worldY = y * CHUNK_SIZE;
         const worldZ = z * CHUNK_SIZE;
 
-        const space = this.getSpaceType(worldX, worldY, worldZ);
+        // Consulta a topologia global delegada ao BiomeManager
+        const biomeData = this.biomeManager.getBiomeAt(worldX, worldY, worldZ);
 
-        if (space < -0.25) return 0;
-        if (space < 0.05) return Math.random() < 0.3 ? 1 : 0;
-        if (space < 0.35) return Math.random() < 0.6 ? 2 : 1;
-        if (space < 0.6) return 3;
-        return 5 + Math.floor(Math.random() * 3);
+        let count = biomeData.baseAsteroidCount;
+
+        const chunkSeed = this.getChunkSeed(x, y, z);
+        const chunkRng = this.createRNG(chunkSeed);
+
+        if (biomeData.type === "EMPTY") {
+            return 0;
+        }
+
+        if (biomeData.type === "ASTEROID_FIELD") {
+            return count + (chunkRng() > 0.5 ? 1 : -1);
+        }
+
+        if (biomeData.type === "RESOURCE_RICH") {
+            return count + Math.floor(chunkRng() * 4);
+        }
+
+        return count;
     }
 
     async createAsteroidsInChunk(x, y, z) {
@@ -482,6 +485,11 @@ export default class ChunkManager {
     }
 
     update(playerPosition) {
+        // Move o domo estelar junto com o jogador para manter a ilusão de distância infinita
+        if (this.starField) {
+            this.starField.position.copy(playerPosition);
+        }
+
         const chunk = this.getChunkCoord(playerPosition);
         const key = this.getChunkKey(chunk.x, chunk.y, chunk.z);
 
@@ -613,12 +621,11 @@ export default class ChunkManager {
 
     removeChunkObjects(key) {
         const chunkData = this.chunks.get(key);
+        if (!chunkData) return;
 
         if (chunkData?.sun) {
-            // Remove da cena
             this.scene.remove(chunkData.sun);
 
-            // Limpa material e geometria
             chunkData.sun.traverse((child) => {
                 if (child.geometry) child.geometry.dispose?.();
                 if (child.material) {
@@ -630,7 +637,6 @@ export default class ChunkManager {
                 }
             });
 
-            // Remove do array
             const index = this.suns.indexOf(chunkData.sun);
             if (index !== -1) {
                 this.suns.splice(index, 1);
@@ -672,6 +678,12 @@ export default class ChunkManager {
         for (let key of this.chunks.keys()) {
             this.removeChunkDebug(key);
             this.removeChunkObjects(key);
+        }
+        if (this.starField) {
+            this.scene.remove(this.starField);
+            this.starField.geometry?.dispose();
+            this.starField.material?.dispose();
+            this.starField = null;
         }
 
         this.suns.forEach(sun => {

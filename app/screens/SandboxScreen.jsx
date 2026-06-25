@@ -10,7 +10,6 @@ import Hud from "@/components/ui/Hud";
 import useCameraController from "@/components/controllers/CameraController";
 import { transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/components/controllers/AudioController";
 import ChunkManager from "@/components/systems/ChunkManager";
-import createStars from "@/components/systems/Star";
 import spawnAsteroidDestruction from "@/components/effects/AsteroidDestruction";
 import { createShip } from "@/components/entities/Nave";
 import useProjectiles from "@/components/systems/Projectiles";
@@ -443,13 +442,6 @@ export default function SandboxScreen() {
       }
     });
 
-    const delay = () => new Promise(res => setTimeout(res, 0));
-    await delay();
-    const stars = await createStars(3000, 2000);
-    await delay();
-
-    scene.add(stars);
-
     sceneRef.current = scene;
 
     const shipLights = setupShipLighting(scene, ship);
@@ -498,7 +490,6 @@ export default function SandboxScreen() {
           });
         }
 
-        stars.recycle(ship.position, 1500);
         debugObjects.current.forEach(obj => {
           if (obj.update) obj.update();
 
