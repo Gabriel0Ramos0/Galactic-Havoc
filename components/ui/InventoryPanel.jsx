@@ -54,20 +54,35 @@ export default function InventorySystem({
                     const updatedStorage = [...storageSlots];
 
                     if (!clickedItem) {
+                        updatedStorage[index] = {
+                            id: draggedItem.id,
+                            qty: 1,
+                            durability: draggedItem.durability // Preserva o gasto
+                        };
+
                         updatedHardware[draggedItem.key] = {
                             ...updatedHardware[draggedItem.key],
                             id: null, active: false, durability: 0
                         };
-                        updatedStorage[index] = { id: draggedItem.id, qty: 1 };
                         setHoveredName(`DESEQUIPADO: ${hwItemData.name}`);
                     } else {
                         const targetStorageItemData = getItemData(clickedItem.id);
                         if (targetStorageItemData.slotType === updatedHardware[draggedItem.key].allowedType) {
+                            const savedStorageDurability = clickedItem.durability !== undefined ? clickedItem.durability : 100;
+
                             updatedHardware[draggedItem.key] = {
                                 ...updatedHardware[draggedItem.key],
-                                id: clickedItem.id, active: true, durability: 100
+                                id: clickedItem.id,
+                                active: true,
+                                durability: savedStorageDurability
                             };
-                            updatedStorage[index] = { id: draggedItem.id, qty: 1 };
+
+                            updatedStorage[index] = {
+                                id: draggedItem.id,
+                                qty: 1,
+                                durability: draggedItem.durability
+                            };
+
                             setHoveredName(`REMANEJADO: ${hwItemData.name} <=> ${targetStorageItemData.name}`);
                         } else {
                             setHoveredName(`❌ EXIGE TAG [${updatedHardware[draggedItem.key].allowedType}]`);
@@ -81,13 +96,24 @@ export default function InventorySystem({
                     return;
                 }
 
+                // Movimentação interna do storage
                 const updatedStorage = [...storageSlots];
                 updatedStorage[draggedItem.index] = clickedItem;
-                updatedStorage[index] = { id: draggedItem.id, qty: draggedItem.qty };
+                updatedStorage[index] = {
+                    id: draggedItem.id,
+                    qty: draggedItem.qty,
+                    durability: draggedItem.durability
+                };
                 setStorageSlots(updatedStorage);
                 setDraggedItem(null);
             } else if (clickedItem) {
-                setDraggedItem({ id: clickedItem.id, qty: clickedItem.qty, index, origin: "storage" });
+                setDraggedItem({
+                    id: clickedItem.id,
+                    qty: clickedItem.qty,
+                    index,
+                    origin: "storage",
+                    durability: clickedItem.durability !== undefined ? clickedItem.durability : 100
+                });
                 setHoveredName(`SELECIONADO: ${getItemData(clickedItem.id).name}`);
             }
         }
@@ -110,7 +136,7 @@ export default function InventorySystem({
 
                     updatedHardware[hardwareKey] = {
                         ...currentHardwareSlot,
-                        id: draggedItem.id, active: true, durability: draggedItem.durability || 100
+                        id: draggedItem.id, active: true, durability: draggedItem.durability ?? 100
                     };
                     updatedHardware[draggedItem.key] = {
                         ...updatedHardware[draggedItem.key],
@@ -131,9 +157,18 @@ export default function InventorySystem({
                     const updatedHardware = { ...shipHardware };
                     const updatedStorage = [...storageSlots];
                     const oldHardwareId = currentHardwareSlot.id;
+                    const oldHardwareDurability = currentHardwareSlot.durability;
 
-                    updatedHardware[hardwareKey] = { ...currentHardwareSlot, id: draggedItem.id, active: true, durability: 100 };
-                    updatedStorage[draggedItem.index] = oldHardwareId ? { id: oldHardwareId, qty: 1 } : null;
+                    updatedHardware[hardwareKey] = {
+                        ...currentHardwareSlot,
+                        id: draggedItem.id,
+                        active: true,
+                        durability: draggedItem.durability ?? 100
+                    };
+
+                    updatedStorage[draggedItem.index] = oldHardwareId
+                        ? { id: oldHardwareId, qty: 1, durability: oldHardwareDurability }
+                        : null;
 
                     setShipHardware(updatedHardware);
                     setStorageSlots(updatedStorage);

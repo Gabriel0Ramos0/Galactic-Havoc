@@ -173,7 +173,7 @@ export default function SandboxScreen() {
       boost: tutorialStep >= 6,
       inspect: tutorialStep >= 9,
       inventory: tutorialStep >= 10,
-      shooting: tutorialStep >= 12,
+      shooting: tutorialStep >= 13,
     });
   }, [tutorialStep]);
 
