@@ -318,9 +318,13 @@ export default function SandboxScreen() {
       case 12:
         setInventoryOpen(false);
         setLootPanelOpen(false);
+        setMarkerCoords(null);
+
+        if (blueMarkerRef.current) {
+          blueMarkerRef.current.update = null;
+        }
 
         setTimeout(() => {
-
           const position = scrapRef.current?.group?.position?.clone();
 
           if (position) {
