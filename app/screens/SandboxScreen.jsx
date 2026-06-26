@@ -1,6 +1,7 @@
 // app/screens/SandboxScreen.jsx
 import { useRef, useState, useEffect } from "react";
 import { View, Platform } from "react-native";
+import Stats from 'stats.js';
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
@@ -109,6 +110,8 @@ export default function SandboxScreen() {
     "WRP": { slot: "WRP", allowedType: "WRP", id: null, durability: 0, active: false },
     "THR": { slot: "THR", allowedType: "THR", id: "ion_thruster", durability: 78, active: true }
   });
+  const statsRef = useRef(null);
+  const showFps = useRef(false);
 
   const handleTakeLootItem = (lootIndex) => {
     const result = transferLootToStorage(lootIndex, lootItems, storageSlots);
@@ -146,6 +149,18 @@ export default function SandboxScreen() {
   }, [gameState]);
 
   useEffect(() => {
+    const stats = new Stats();
+    stats.showPanel(0);
+
+    stats.dom.style.position = 'absolute';
+    stats.dom.style.top = '0px';
+    stats.dom.style.left = '0px';
+    stats.dom.style.zIndex = '100';
+    stats.dom.style.display = showFps.current ? 'block' : 'none';
+
+    document.body.appendChild(stats.dom);
+    statsRef.current = stats;
+
     const handleDebugKey = (e) => {
       if (e.key === "-") {
         debugMode.current = !debugMode.current;
@@ -157,12 +172,22 @@ export default function SandboxScreen() {
         chunkManagerRef.current?.setDebugVisible(debugMode.current);
         chunkManagerRef.current?.setCollisionDebugVisible(debugMode.current);
       }
+
+      if (e.key === "=") {
+        showFps.current = !showFps.current;
+        if (statsRef.current) {
+          statsRef.current.dom.style.display = showFps.current ? 'block' : 'none';
+        }
+      }
     };
 
     window.addEventListener("keydown", handleDebugKey);
 
     return () => {
       window.removeEventListener("keydown", handleDebugKey);
+      if (stats.dom && document.body.contains(stats.dom)) {
+        document.body.removeChild(stats.dom);
+      }
     };
   }, []);
 
@@ -453,6 +478,8 @@ export default function SandboxScreen() {
       rafRef.current = requestAnimationFrame(animate);
       const dt = clock.getDelta();
 
+      if (statsRef.current) statsRef.current.begin();
+
       if (gameStateRef.current === GameState.PLAYING) {
 
         updateShip();
@@ -481,6 +508,7 @@ export default function SandboxScreen() {
 
           chunkManagerRef.current.update(
             shipRef.current.position,
+            cameraRef.current,
             shipVelocityVector,
             currentSpeedNormalized,
             dt
@@ -567,6 +595,7 @@ export default function SandboxScreen() {
       }
 
       renderer.render(scene, camera);
+      if (statsRef.current) statsRef.current.end();
       gl.endFrameEXP();
     };
     animate();
@@ -621,6 +650,23 @@ export default function SandboxScreen() {
               setIsRecharging(false);
               criticalRecoveryTriggeredRef.current = false;
               isFirstLootInteraction.current = true;
+              const defaultSlots = Array(TOTAL_STORAGE_SLOTS).fill(null);
+              defaultSlots[0] = { id: "carbon_fragment", qty: 14 };
+              defaultSlots[1] = { id: "iron_ore", qty: 6 };
+              defaultSlots[2] = { id: "silicon_crystal", qty: 22 };
+              setStorageSlots(defaultSlots);
+              setShipHardware({
+                "WPN-L": { slot: "WPN-L", allowedType: "WPN", id: null, durability: 0, active: false },
+                "WPN-R": { slot: "WPN-R", allowedType: "WPN", id: "laser_vx", durability: 32, active: true },
+                "POW-1": { slot: "POW-1", allowedType: "POW", id: "cell_alpha", durability: 94, active: true },
+                "POW-2": { slot: "POW-2", allowedType: "POW", id: null, durability: 0, active: false },
+                "NAV": { slot: "NAV", allowedType: "NAV", id: null, durability: 0, active: false },
+                "WRP": { slot: "WRP", allowedType: "WRP", id: null, durability: 0, active: false },
+                "THR": { slot: "THR", allowedType: "THR", id: "ion_thruster", durability: 78, active: true }
+              });
+              setLootPanelOpen(false);
+              setInventoryOpen(false);
+              setLootItems([]);
               setTutorialStep(0);
               setIsTransitioning(true);
 
