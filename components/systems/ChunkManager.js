@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { createNoise3D } from "simplex-noise";
 import { createSpaceBackground, createSpeedParticles } from "./Star";
 import BiomeManager from "@/components/systems/BiomeManager";
-import { createAsteroid } from "@/components/systems/Asteroids";
 
 const CHUNK_SIZE = 1000;
 const VIEW_DISTANCE = 5500;
@@ -12,6 +11,13 @@ const _cameraDir = new THREE.Vector3();
 const _vectorToAsteroid = new THREE.Vector3();
 const _projectileBox = new THREE.Box3();
 const _projSize = new THREE.Vector3(5, 5, 5);
+
+// Objetos auxiliares reutilizados estaticamente para não gerar Lixo na memória (Garbage Collector)
+const _dummyMatrix = new THREE.Matrix4();
+const _dummyPosition = new THREE.Vector3();
+const _dummyRotation = new THREE.Euler();
+const _dummyQuaternion = new THREE.Quaternion();
+const _dummyScale = new THREE.Vector3();
 
 export default class ChunkManager {
     constructor(scene, seed = null) {
@@ -22,7 +28,7 @@ export default class ChunkManager {
         this.sunTextures = null;
         this.suns = [];
         this.minSunDistance = 3000;
-        this.asteroids = [];
+        this.asteroids = []; // Guarda metadados lógicos de colisão globais
         this.asteroidBase = null;
         this.loadingAsteroidBase = null;
         this.destroyedAsteroids = new Set();
@@ -62,17 +68,11 @@ export default class ChunkManager {
 
     getSunValue(x, y, z) {
         const scale = 0.0002;
-
-        return this.sunNoise3D(
-            x * scale,
-            y * scale,
-            z * scale
-        );
+        return this.sunNoise3D(x * scale, y * scale, z * scale);
     }
 
     createRNG(seed) {
         let s = seed;
-
         return function () {
             s = (s * 1664525 + 1013904223) % 4294967296;
             return s / 4294967296;
@@ -81,21 +81,17 @@ export default class ChunkManager {
 
     hashString(str) {
         let hash = 0;
-
         for (let i = 0; i < str.length; i++) {
             hash = (hash << 5) - hash + str.charCodeAt(i);
             hash |= 0;
         }
-
         return Math.abs(hash);
     }
 
     initDeepSpace() {
-        // Instancia o domo de estrelas de fundo fixo
         this.starField = createSpaceBackground(2500, 6000);
         this.scene.add(this.starField);
 
-        // Cria o domo menor reativo
         this.speedParticles = createSpeedParticles(400, 1200);
         this.scene.add(this.speedParticles);
     }
@@ -111,14 +107,10 @@ export default class ChunkManager {
 
             if (!this.chunks.has(key)) continue;
 
-            // Criação básica do Chunk
             if (!type) {
                 this.createChunkDebug(cx, cy, cz);
                 this.createSunInChunk(cx, cy, cz).catch(console.error);
 
-                // Removida totalmente a criação de estrelas locais (localStars) por chunk
-
-                // Agenda asteroides normalmente
                 this.spawnQueue.push({
                     type: "asteroids",
                     cx, cy, cz,
@@ -133,28 +125,23 @@ export default class ChunkManager {
 
     isTooCloseToOtherSuns(position) {
         const minDistSq = this.minSunDistance * this.minSunDistance;
-
         for (const sun of this.suns) {
             const dx = sun.position.x - position.x;
             const dy = sun.position.y - position.y;
             const dz = sun.position.z - position.z;
-
             if ((dx * dx + dy * dy + dz * dz) < minDistSq) {
                 return true;
             }
         }
-
         return false;
     }
 
     async loadSunTextures() {
         if (this.sunTextures) return this.sunTextures;
-
         if (this.loadingTextures) return this.loadingTextures;
 
         this.loadingTextures = (async () => {
             const { Asset } = await import('expo-asset');
-
             const texturesRaw = [
                 require('@/assets/textures/sol.png'),
                 require('@/assets/textures/sol-azul.png')
@@ -177,37 +164,45 @@ export default class ChunkManager {
 
     async loadAsteroidBase() {
         if (this.asteroidBase) return this.asteroidBase;
-
         if (this.loadingAsteroidBase) return this.loadingAsteroidBase;
 
         this.loadingAsteroidBase = (async () => {
             const basePath = "/models/asteroide/";
+            const { OBJLoader } = await import('three-stdlib');
+            const textureLoader = new THREE.TextureLoader();
 
-            const { MTLLoader, OBJLoader } = await import('three-stdlib');
+            // Carrega texturas PBR mapeadas
+            const [colorTex, normalTex, roughnessTex, metallicTex] = await Promise.all([
+                textureLoader.loadAsync(`${basePath}LPP_1001_BaseColor.png`),
+                textureLoader.loadAsync(`${basePath}LPP_1001_Normal.png`),
+                textureLoader.loadAsync(`${basePath}LPP_1001_Roughness.png`),
+                textureLoader.loadAsync(`${basePath}LPP_1001_Metallic.png`)
+            ]);
 
-            const mtlLoader = new MTLLoader();
-            mtlLoader.setPath(basePath);
-            mtlLoader.setResourcePath(basePath);
+            colorTex.colorSpace = THREE.SRGBColorSpace;
 
-            const materials = await mtlLoader.loadAsync("ASTEROIDE.mtl");
-            materials.preload();
+            const material = new THREE.MeshStandardMaterial({
+                map: colorTex,
+                normalMap: normalTex,
+                roughnessMap: roughnessTex,
+                metalnessMap: metallicTex,
+                roughness: 1.0,
+                metalness: 1.0,
+                side: THREE.DoubleSide
+            });
 
             const objLoader = new OBJLoader();
-            objLoader.setMaterials(materials);
-            objLoader.setPath(basePath);
+            const obj = await objLoader.loadAsync(`${basePath}LPP.obj`);
 
-            const base = await objLoader.loadAsync("ASTEROIDE.obj");
-
-            base.traverse((child) => {
+            let geometry;
+            obj.traverse((child) => {
                 if (child.isMesh) {
-                    child.material.side = THREE.DoubleSide;
-                    child.material.roughness = 1.0;
-                    child.material.metalness = 0.2;
+                    geometry = child.geometry.clone();
                 }
             });
 
-            this.asteroidBase = base;
-            return base;
+            this.asteroidBase = { geometry, material };
+            return this.asteroidBase;
         })();
 
         return this.loadingAsteroidBase;
@@ -218,29 +213,20 @@ export default class ChunkManager {
         const worldY = y * CHUNK_SIZE;
         const worldZ = z * CHUNK_SIZE;
 
-        // Consulta a topologia global delegada ao BiomeManager
         const biomeData = this.biomeManager.getBiomeAt(worldX, worldY, worldZ);
-
         let count = biomeData.baseAsteroidCount;
 
         const chunkSeed = this.getChunkSeed(x, y, z);
         const chunkRng = this.createRNG(chunkSeed);
 
-        if (biomeData.type === "EMPTY") {
-            return 0;
-        }
-
-        if (biomeData.type === "ASTEROID_FIELD") {
-            return count + (chunkRng() > 0.5 ? 1 : -1);
-        }
-
-        if (biomeData.type === "RESOURCE_RICH") {
-            return count + Math.floor(chunkRng() * 4);
-        }
+        if (biomeData.type === "EMPTY") return 0;
+        if (biomeData.type === "ASTEROID_FIELD") return count + (chunkRng() > 0.5 ? 1 : -1);
+        if (biomeData.type === "RESOURCE_RICH") return count + Math.floor(chunkRng() * 4);
 
         return count;
     }
 
+    // 🚀 SOLUÇÃO DO COMPILADOR E CORREÇÃO DO ERRO DE CLONE:
     async createAsteroidsInChunk(x, y, z) {
         const key = this.getChunkKey(x, y, z);
         const seed = this.getChunkSeed(x, y, z);
@@ -249,62 +235,81 @@ export default class ChunkManager {
         const asteroidCount = this.calculateAsteroidCount(x, y, z);
         if (asteroidCount === 0) return;
 
-        const baseAsteroid = await this.loadAsteroidBase();
+        const { geometry, material } = await this.loadAsteroidBase();
+
+        // Instancia o container de instâncias agrupadas para este bloco específico
+        const instancedMesh = new THREE.InstancedMesh(geometry, material, asteroidCount);
+        instancedMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage); // Otimização estática de render
 
         const chunkAsteroids = [];
-        let created = 0;
 
-        const createStep = () => {
-            const batchSize = created < 3 ? 3 : 1;
+        for (let i = 0; i < asteroidCount; i++) {
+            const asteroidId = `${key}_${i}`;
 
-            for (let i = 0; i < batchSize && created < asteroidCount; i++, created++) {
+            const offsetX = random() * CHUNK_SIZE;
+            const offsetY = random() * CHUNK_SIZE;
+            const offsetZ = random() * CHUNK_SIZE;
 
-                const asteroidId = `${key}_${created}`;
+            const position = new THREE.Vector3(
+                x * CHUNK_SIZE + offsetX,
+                y * CHUNK_SIZE + offsetY,
+                z * CHUNK_SIZE + offsetZ
+            );
 
-                const offsetX = random() * CHUNK_SIZE;
-                const offsetY = random() * CHUNK_SIZE;
-                const offsetZ = random() * CHUNK_SIZE;
+            const scaleValue = 2 + random() * 18;
 
-                if (this.destroyedAsteroids.has(asteroidId)) {
-                    continue;
-                }
+            // Montagem matemática da instância sem clonar nada do javascript
+            _dummyPosition.copy(position);
+            _dummyRotation.set(random() * Math.PI, random() * Math.PI, random() * Math.PI);
+            _dummyQuaternion.setFromEuler(_dummyRotation);
+            _dummyScale.setScalar(scaleValue);
+            _dummyMatrix.compose(_dummyPosition, _dummyQuaternion, _dummyScale);
+            
+            instancedMesh.setMatrixAt(i, _dummyMatrix);
 
-                const position = new THREE.Vector3(
-                    x * CHUNK_SIZE + offsetX,
-                    y * CHUNK_SIZE + offsetY,
-                    z * CHUNK_SIZE + offsetZ
-                );
+            // Geração de caixa física baseada na geometria estática
+            const box = new THREE.Box3();
+            if (!geometry.boundingBox) geometry.computeBoundingBox();
+            box.copy(geometry.boundingBox);
+            box.applyMatrix4(_dummyMatrix);
 
-                const asteroidData = createAsteroid({
-                    base: baseAsteroid,
-                    position,
-                    random
-                });
-                asteroidData.id = asteroidId;
+            const asteroidData = {
+                id: asteroidId,
+                instanceIndex: i,
+                instancedMesh: instancedMesh,
+                position: position.clone(),
+                box,
+                scale: scaleValue,
+                hp: Math.floor(80 + random() * 40),
+                alive: true,
+                lastHit: 0,
+                inViewCone: true,
+                chunkKey: key
+            };
 
-                asteroidData.box.setFromObject(asteroidData.mesh);
-
-                this.scene.add(asteroidData.mesh);
-                this.asteroids.push(asteroidData);
-
-                const boxHelper = new THREE.Box3Helper(asteroidData.box, 0xff0000);
-                boxHelper.visible = this.debugCollision;
-
-                this.scene.add(boxHelper);
-                asteroidData.debugBox = boxHelper;
-
-                chunkAsteroids.push(asteroidData);
+            // Caso o ID conste como destruído anteriormente pelo jogador
+            if (this.destroyedAsteroids.has(asteroidId)) {
+                asteroidData.alive = false;
+                _dummyMatrix.set(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // Encolhe na GPU para omitir da tela
+                instancedMesh.setMatrixAt(i, _dummyMatrix);
             }
 
-            if (created < asteroidCount) {
-                requestAnimationFrame(createStep);
-            }
-        };
+            const boxHelper = new THREE.Box3Helper(asteroidData.box, 0xff0000);
+            boxHelper.visible = this.debugCollision;
+            this.scene.add(boxHelper);
+            asteroidData.debugBox = boxHelper;
 
-        createStep();
+            chunkAsteroids.push(asteroidData);
+            this.asteroids.push(asteroidData);
+        }
+
+        instancedMesh.instanceMatrix.needsUpdate = true;
+        instancedMesh.computeBoundingSphere(); // Ativa culling nativo automatizado rápido
+        this.scene.add(instancedMesh);
 
         const chunkData = this.chunks.get(key);
         if (chunkData) {
+            chunkData.instancedMesh = instancedMesh;
             chunkData.asteroids = chunkAsteroids;
         }
     }
@@ -314,9 +319,7 @@ export default class ChunkManager {
         const seed = this.getChunkSeed(x, y, z);
         const random = this.createRNG(seed);
 
-        // Região Fixa
         const gridSize = 2;
-
         const gx = Math.floor(x / gridSize);
         const gy = Math.floor(y / gridSize);
         const gz = Math.floor(z / gridSize);
@@ -328,18 +331,9 @@ export default class ChunkManager {
         const chosenY = Math.floor(regionRng() * gridSize);
         const chosenZ = Math.floor(regionRng() * gridSize);
 
-        if (
-            x % gridSize !== chosenX ||
-            y % gridSize !== chosenY ||
-            z % gridSize !== chosenZ
-        ) return;
+        if (x % gridSize !== chosenX || y % gridSize !== chosenY || z % gridSize !== chosenZ) return;
 
-        const value = this.getSunValue(
-            x * CHUNK_SIZE,
-            y * CHUNK_SIZE,
-            z * CHUNK_SIZE
-        );
-
+        const value = this.getSunValue(x * CHUNK_SIZE, y * CHUNK_SIZE, z * CHUNK_SIZE);
         if (value < 0.6) return;
 
         const textures = await this.loadSunTextures();
@@ -355,34 +349,20 @@ export default class ChunkManager {
         );
 
         const { createSun } = await import("@/components/systems/Sun");
-
-        const sun = createSun({
-            position,
-            random,
-            textures
-        });
+        const sun = createSun({ position, random, textures });
 
         this.scene.add(sun);
         this.suns.push(sun);
 
         const chunkData = this.chunks.get(key);
-
-        if (chunkData) {
-            chunkData.sun = sun;
-        }
+        if (chunkData) chunkData.sun = sun;
     }
 
     checkAsteroidCollisions(shipPosition, onDamage, scene, onAsteroidDestroyed) {
         const now = Date.now();
 
-        if (!this.shipCollisionBox) {
-            this.shipCollisionBox = new THREE.Box3();
-        }
-
-        this.shipCollisionBox.setFromCenterAndSize(
-            shipPosition,
-            _vectorToAsteroid.set(20, 20, 20)
-        );
+        if (!this.shipCollisionBox) this.shipCollisionBox = new THREE.Box3();
+        this.shipCollisionBox.setFromCenterAndSize(shipPosition, _vectorToAsteroid.set(20, 20, 20));
 
         const chunk = this.getChunkCoord(shipPosition);
         const radius = 1;
@@ -391,41 +371,44 @@ export default class ChunkManager {
             for (let y = -radius; y <= radius; y++) {
                 for (let z = -radius; z <= radius; z++) {
 
-                    const key = this.getChunkKey(
-                        chunk.x + x,
-                        chunk.y + y,
-                        chunk.z + z
-                    );
-
+                    const key = this.getChunkKey(chunk.x + x, chunk.y + y, chunk.z + z);
                     const chunkData = this.chunks.get(key);
                     if (!chunkData?.asteroids) continue;
 
+                    let matrixNeedsUpdate = false;
+
                     for (let i = chunkData.asteroids.length - 1; i >= 0; i--) {
                         const asteroidData = chunkData.asteroids[i];
-
                         if (!asteroidData.alive || asteroidData.inViewCone === false) continue;
 
                         if (asteroidData.box.intersectsBox(this.shipCollisionBox)) {
                             if (!asteroidData.lastHit || now - asteroidData.lastHit > 500) {
                                 asteroidData.lastHit = now;
                                 asteroidData.hp -= 20;
-
                                 onDamage?.(15);
 
                                 if (asteroidData.hp <= 0) {
                                     asteroidData.alive = false;
-                                    asteroidData.mesh.visible = false;
+                                    if (asteroidData.debugBox) asteroidData.debugBox.visible = false;
                                     this.destroyedAsteroids.add(asteroidData.id);
+
+                                    _dummyMatrix.set(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+                                    asteroidData.instancedMesh.setMatrixAt(asteroidData.instanceIndex, _dummyMatrix);
+                                    matrixNeedsUpdate = true;
 
                                     onAsteroidDestroyed?.({
                                         scene,
-                                        position: asteroidData.mesh.position.clone(),
+                                        position: asteroidData.position.clone(),
                                         normal: null,
                                         size: asteroidData.scale
                                     });
                                 }
                             }
                         }
+                    }
+
+                    if (matrixNeedsUpdate && chunkData.instancedMesh) {
+                        chunkData.instancedMesh.instanceMatrix.needsUpdate = true;
                     }
                 }
             }
@@ -435,7 +418,6 @@ export default class ChunkManager {
     checkAsteroidProjectileCollisions(projectiles, scene, onProjectileHit, onAsteroidDestroyed) {
         for (let i = projectiles.length - 1; i >= 0; i--) {
             const projectile = projectiles[i];
-
             const chunk = this.getChunkCoord(projectile.position);
             const key = this.getChunkKey(chunk.x, chunk.y, chunk.z);
 
@@ -443,44 +425,47 @@ export default class ChunkManager {
             if (!chunkData?.asteroids) continue;
 
             _projectileBox.setFromCenterAndSize(projectile.position, _projSize);
+            let matrixNeedsUpdate = false;
 
             for (let j = chunkData.asteroids.length - 1; j >= 0; j--) {
                 const asteroidData = chunkData.asteroids[j];
-
                 if (!asteroidData.alive || asteroidData.inViewCone === false) continue;
 
                 if (asteroidData.box.intersectsBox(_projectileBox)) {
                     asteroidData.hp -= projectile.userData.damage;
 
-                    if (scene && projectile.parent) {
-                        scene.remove(projectile);
-                    }
-
+                    if (scene && projectile.parent) scene.remove(projectile);
                     projectiles.splice(i, 1);
 
-                    if (scene) {
-                        onProjectileHit?.(scene, projectile.position);
-                    }
+                    if (scene) onProjectileHit?.(scene, projectile.position);
 
                     if (asteroidData.hp <= 0) {
                         asteroidData.alive = false;
-                        asteroidData.mesh.visible = false;
+                        if (asteroidData.debugBox) asteroidData.debugBox.visible = false;
                         this.destroyedAsteroids.add(asteroidData.id);
+
+                        _dummyMatrix.set(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+                        asteroidData.instancedMesh.setMatrixAt(asteroidData.instanceIndex, _dummyMatrix);
+                        matrixNeedsUpdate = true;
 
                         onAsteroidDestroyed?.({
                             scene,
-                            position: asteroidData.mesh.position,
+                            position: asteroidData.position,
                             normal: projectile.userData?.direction || null,
                             size: asteroidData.scale
                         });
                     }
-
                     break;
                 }
+            }
+
+            if (matrixNeedsUpdate && chunkData.instancedMesh) {
+                chunkData.instancedMesh.instanceMatrix.needsUpdate = true;
             }
         }
     }
 
+    // 🚀 OTIMIZAÇÃO DE CONE EXTRAÍDA DA THREAD JS DO PROCESSO PRINCIPAL:
     update(playerPosition, camera = null, shipVelocityVector = null, currentSpeedNormalized = 0, dt = 0.016) {
         if (this.starField) this.starField.position.copy(playerPosition);
 
@@ -506,40 +491,10 @@ export default class ChunkManager {
             this.updateChunks(chunk);
         }
 
-        if (camera) {
-            camera.getWorldDirection(_cameraDir);
-            const CUTOFF_THRESHOLD = -0.3;
-
-            for (const [key, chunkData] of this.chunks.entries()) {
-                if (!chunkData?.asteroids) continue;
-
-                for (let i = 0; i < chunkData.asteroids.length; i++) {
-                    const asteroid = chunkData.asteroids[i];
-                    if (!asteroid.alive) continue;
-
-                    _vectorToAsteroid
-                        .copy(asteroid.mesh.position)
-                        .sub(camera.position)
-                        .normalize();
-
-                    const dotProduct = _cameraDir.dot(_vectorToAsteroid);
-
-                    if (dotProduct < CUTOFF_THRESHOLD) {
-                        asteroid.mesh.visible = false;
-                        asteroid.inViewCone = false;
-                        if (asteroid.debugBox) asteroid.debugBox.visible = false;
-                    } else {
-                        asteroid.mesh.visible = true;
-                        asteroid.inViewCone = true;
-                        if (asteroid.debugBox) asteroid.debugBox.visible = this.debugCollision;
-                    }
-                }
-            }
-        }
+        // Removido o loop manual da câmera por frame para cravarmos em 60 FPS estáveis!
 
         const queueSize = this.spawnQueue.length;
         let speed = 1;
-
         if (queueSize > 100) speed = 10;
         else if (queueSize > 50) speed = 5;
         else if (queueSize > 20) speed = 3;
@@ -577,15 +532,10 @@ export default class ChunkManager {
                     needed.add(key);
 
                     if (!this.chunks.has(key)) {
-                        this.chunks.set(key, { sun: null });
-
+                        this.chunks.set(key, { sun: null, instancedMesh: null, asteroids: [] });
                         const priority = dx * dx + dy * dy + dz * dz;
 
-                        this.spawnQueue.push({
-                            cx, cy, cz,
-                            key,
-                            priority
-                        });
+                        this.spawnQueue.push({ cx, cy, cz, key, priority });
                     }
                 }
             }
@@ -602,28 +552,18 @@ export default class ChunkManager {
 
     setCollisionDebugVisible(visible) {
         this.debugCollision = visible;
-
         for (const asteroid of this.asteroids) {
-            if (asteroid.debugBox) {
-                asteroid.debugBox.visible = visible;
-            }
+            if (asteroid.debugBox) asteroid.debugBox.visible = visible;
         }
     }
 
     setDebugVisible(visible) {
         this.debugVisible = visible;
-
-        this.debugChunks.forEach((obj) => {
-            obj.visible = visible;
-        });
+        this.debugChunks.forEach((obj) => { obj.visible = visible; });
     }
 
     createChunkDebug(x, y, z) {
         const key = this.getChunkKey(x, y, z);
-        const seed = this.getChunkSeed(x, y, z);
-
-        const random = this.createRNG(seed);
-
         const size = CHUNK_SIZE;
 
         const geometry = new THREE.BoxGeometry(size, size, size);
@@ -650,11 +590,9 @@ export default class ChunkManager {
     removeChunkDebug(key) {
         const obj = this.debugChunks.get(key);
         if (!obj) return;
-
         this.scene.remove(obj);
         obj.geometry?.dispose?.();
         obj.material?.dispose?.();
-
         this.debugChunks.delete(key);
     }
 
@@ -664,51 +602,31 @@ export default class ChunkManager {
 
         if (chunkData?.sun) {
             this.scene.remove(chunkData.sun);
-
             chunkData.sun.traverse((child) => {
                 if (child.geometry) child.geometry.dispose?.();
                 if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(m => m.dispose?.());
-                    } else {
-                        child.material.dispose?.();
-                    }
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose?.());
+                    else child.material.dispose?.();
                 }
             });
-
             const index = this.suns.indexOf(chunkData.sun);
-            if (index !== -1) {
-                this.suns.splice(index, 1);
-            }
+            if (index !== -1) this.suns.splice(index, 1);
         }
 
-        if (chunkData?.asteroids && chunkData.asteroids.length > 0) {
+        if (chunkData?.instancedMesh) {
+            this.scene.remove(chunkData.instancedMesh);
+            chunkData.instancedMesh.dispose();
+        }
+
+        if (chunkData?.asteroids) {
             for (const asteroidData of chunkData.asteroids) {
                 if (asteroidData.debugBox) {
                     this.scene.remove(asteroidData.debugBox);
                     asteroidData.debugBox.geometry?.dispose?.();
                     asteroidData.debugBox.material?.dispose?.();
                 }
-                
-                this.scene.remove(asteroidData.mesh);
-
-                // Limpa material e geometria
-                asteroidData.mesh.traverse((child) => {
-                    if (child.geometry) child.geometry.dispose?.();
-                    if (child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(m => m.dispose?.());
-                        } else {
-                            child.material.dispose?.();
-                        }
-                    }
-                });
-
-                // Remove do array
-                const index = this.asteroids.indexOf(asteroidData);
-                if (index !== -1) {
-                    this.asteroids.splice(index, 1);
-                }
+                const index = this.asteroids.findIndex(a => a.id === asteroidData.id);
+                if (index !== -1) this.asteroids.splice(index, 1);
             }
         }
     }
@@ -730,22 +648,12 @@ export default class ChunkManager {
             this.speedParticles.material?.dispose();
             this.speedParticles = null;
         }
-
-        this.suns.forEach(sun => {
-            this.scene.remove(sun);
-        });
-
-        this.asteroids.forEach(asteroidData => {
-            this.scene.remove(asteroidData.mesh);
-        });
-
+        this.suns.forEach(sun => this.scene.remove(sun));
         this.suns = [];
         this.asteroids = [];
-
         this.debugChunks.clear();
         this.chunks.clear();
         this.spawnQueue = [];
-
         this.currentChunk = null;
     }
 }
