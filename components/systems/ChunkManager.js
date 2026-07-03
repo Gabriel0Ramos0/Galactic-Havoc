@@ -400,7 +400,8 @@ export default class ChunkManager {
                                         scene,
                                         position: asteroidData.position.clone(),
                                         normal: null,
-                                        size: asteroidData.scale
+                                        size: asteroidData.scale,
+                                        asteroidBase: this.asteroidBase
                                     });
                                 }
                             }
@@ -452,7 +453,8 @@ export default class ChunkManager {
                             scene,
                             position: asteroidData.position,
                             normal: projectile.userData?.direction || null,
-                            size: asteroidData.scale
+                            size: asteroidData.scale,
+                            asteroidBase: this.asteroidBase
                         });
                     }
                     break;

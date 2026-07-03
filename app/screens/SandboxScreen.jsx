@@ -549,8 +549,8 @@ export default function SandboxScreen() {
               setShipHP(prev => Math.max(prev - damage, 0));
             },
             scene,
-            ({ scene, position, normal, size }) => {
-              const effect = spawnAsteroidDestruction(scene, position, normal, size);
+            ({ scene, position, normal, size, asteroidBase }) => {
+              const effect = spawnAsteroidDestruction(scene, position, normal, size, asteroidBase);
               effectsRef.current.push(effect);
               playSfx("explosion");
               setCurrentScore(prev => prev + 10);
@@ -563,8 +563,8 @@ export default function SandboxScreen() {
             projectiles.current,
             scene,
             (scene, position) => spawnProjectileParticles(scene, position),
-            ({ scene, position, normal, size }) => {
-              const effect = spawnAsteroidDestruction(scene, position, normal, size);
+            ({ scene, position, normal, size, asteroidBase }) => {
+              const effect = spawnAsteroidDestruction(scene, position, normal, size, asteroidBase);
               effectsRef.current.push(effect);
               playSfx("explosion");
               setCurrentScore(prev => prev + 10);

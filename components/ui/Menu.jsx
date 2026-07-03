@@ -79,14 +79,6 @@ export default function Menu({ onStart, hasSession, onConfig, onCredits, onHisto
       duration: 800,
       useNativeDriver: true,
     }).start();
-
-    // Loop de pulsação para elementos com energia neon viva
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0.4, duration: 1500, useNativeDriver: true }),
-      ])
-    ).start();
   }, []);
 
   const toggleLeaderboard = () => {
@@ -390,7 +382,8 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 11,
     paddingHorizontal: 12,
-    letterSpacing: 2,
+    height: "100%",
+    textAlign: "center",
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
   abortButton: {

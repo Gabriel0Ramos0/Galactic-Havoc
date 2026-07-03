@@ -108,6 +108,11 @@ export default function History({ visible, onClose }) {
     }, 60);
   }
 
+  const handleClose = () => {
+    playSfx("textDigital");
+    onClose();
+  };
+
   function processCommand(cmd) {
     if (!logged) return handleLogin(cmd);
 
@@ -371,7 +376,7 @@ export default function History({ visible, onClose }) {
           <View style={styles.pulseNode} />
           <Text style={styles.topTitle}>SECURE_LOG // TERMINAL MK-IV</Text>
         </View>
-        <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={styles.closeBtn}>[X FECHAR]</Text>
         </TouchableOpacity>
       </View>
