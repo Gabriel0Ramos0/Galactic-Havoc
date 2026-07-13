@@ -13,6 +13,7 @@ import { transitionToTrack, stopTutorialCombat, playSfx, loadSfx } from "@/compo
 import ChunkManager from "@/components/systems/ChunkManager";
 import spawnAsteroidDestruction from "@/components/effects/AsteroidDestruction";
 import { createShip } from "@/components/entities/Nave";
+import { createEnemy, updateEnemy } from "@/components/entities/enemy/Enemy";
 import useProjectiles from "@/components/systems/Projectiles";
 import useMovement from "@/components/controllers/MovimentController";
 import Joystick from "@/components/controllers/JoystickController";
@@ -44,6 +45,8 @@ export default function SandboxScreen() {
   const audioUnlocked = useRef(false);
   const chunkManagerRef = useRef(null);
   const shipRef = useRef();
+  const enemyRefs = useRef([]);
+  const enemiesSpawnedRef = useRef(false);
   const effectsRef = useRef([]);
   const debugMode = useRef(false);
   const debugObjects = useRef([]);
@@ -259,6 +262,16 @@ export default function SandboxScreen() {
     return () => clearInterval(interval);
   }, [gameState]);
 
+  const removeEnemies = () => {
+    enemyRefs.current.forEach(enemy => {
+      if (enemy && enemy.parent) {
+        enemy.parent.remove(enemy);
+      }
+    });
+    enemyRefs.current = [];
+    enemiesSpawnedRef.current = false;
+  };
+
   useEffect(() => {
     if (tutorialStep === 8 && sceneRef.current && !blueMarkerRef.current) {
       (async () => {
@@ -276,6 +289,22 @@ export default function SandboxScreen() {
         blueMarkerRef.current = marker;
       })();
     }
+  }, [tutorialStep]);
+
+  useEffect(() => {
+    if (tutorialStep !== 12 || enemiesSpawnedRef.current) return;
+    if (!sceneRef.current || !shipRef.current) return;
+
+    enemiesSpawnedRef.current = true;
+
+    (async () => {
+      const enemies = [];
+      for (let i = 0; i < 3; i += 1) {
+        const enemy = await createEnemy(sceneRef.current);
+        enemies.push(enemy);
+      }
+      enemyRefs.current = enemies;
+    })();
   }, [tutorialStep]);
 
   useEffect(() => {
@@ -494,6 +523,10 @@ export default function SandboxScreen() {
           shipRef.current.userData.velocity = velocity.current;
         }
 
+        if (enemyRefs.current.length > 0 && shipRef.current) {
+          enemyRefs.current.forEach((enemy) => updateEnemy(enemy, shipRef.current));
+        }
+
         if (thrusterEffectRef.current) {
           thrusterEffectRef.current.update(dt);
         }
@@ -673,6 +706,7 @@ export default function SandboxScreen() {
               setLootItems([]);
               setTutorialStep(0);
               setIsTransitioning(true);
+              removeEnemies();
 
               if (blueMarkerRef.current) {
                 try {

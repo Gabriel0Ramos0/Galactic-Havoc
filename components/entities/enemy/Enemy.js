@@ -18,7 +18,7 @@ async function loadEnemyModel() {
 
     loadingPromise = new Promise((resolve, reject) => {
         mtlLoader.load(
-            "d5class.mtl",
+            "13898_Sci-Fi_Bomber_v1_l2.mtl",
             (materials) => {
                 materials.preload();
 
@@ -28,7 +28,7 @@ async function loadEnemyModel() {
                 objLoader.load(
                     "13898_Sci-Fi_Bomber_v1_l2.obj",
                     (object) => {
-                        object.scale.set(3, 3, 3);
+                        object.scale.set(0.009, 0.009, 0.009);
                         object.rotation.x = Math.PI / 2;
 
                         cachedEnemy = object;
